@@ -236,6 +236,7 @@ class mainWindow(Qt.QMainWindow):
         self.disturbance = self.disturbance_frame.get_disturbance()
         self.observer = self.observer_frame.get_observer()
         self.observer.set_system_model_and_step_size(self.heliSim.get_model_type(), self.timeStep)
+        self.observer.set_dynamic_inertia(self.heliSim.dynamic_inertia_torque)
         if self.observer_initial_value is not None:
             self.observer.set_estimated_state(self.observer_initial_value)
         self.feedforward_method,  self.feedforward_model = self.feedforward_frame.get_feedforward_method_and_model()

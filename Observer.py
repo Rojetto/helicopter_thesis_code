@@ -9,6 +9,7 @@ from helicontrollers.util import compute_linear_ss
 import scipy.linalg
 from numpy.ma import cos, sin
 import ModelConstants as mc
+from HeliSimulation import getInertia
 
 L1 = mc.l_p
 L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
@@ -68,18 +69,26 @@ def get_gyro_matrices(operating_point, v_f, v_b, dynamic_inertia):
     :arg v_f, v_b: operating point input values
     :arg dynamic_inertia: False ==> static inertia, True ==> dynamic inertia
     :return A, B"""
-    if dynamic_inertia:
-        raise NotImplementedError("Dynamic Torque is not implemented for the kalman filter yet")
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = operating_point
 
-    A = np.array([[0, 0, 0, 1, 0, 0, 0, 0],
-                  [0, 0, 0, 0, 1, 0, 0, 0],
-                  [0, 0, 0, 0, 0, 1, 0, 0],
-                  [(-mc.J_m*de*(b_speed - f_speed)*np.sin(p) + mc.J_m*dlamb*(-b_speed + f_speed)*np.cos(e)*np.cos(p) - Jp_static*(de**2 - dlamb**2*np.cos(e)**2)*np.sin(p)**2 + Jp_static*(de**2 - dlamb**2*np.cos(e)**2)*np.cos(p)**2)/Jp_static, (-mc.J_m*dlamb*(-b_speed + f_speed)*np.sin(e)*np.sin(p) + 2*Jp_static*dlamb**2*np.sin(e)*np.sin(p)*np.cos(e)*np.cos(p))/Jp_static, 0, -mc.d_p/Jp_static, (mc.J_m*(b_speed - f_speed)*np.cos(p) + 2*Jp_static*de*np.sin(p)*np.cos(p))/Jp_static, (mc.J_m*(-b_speed + f_speed)*np.sin(p)*np.cos(e) - 2*Jp_static*dlamb*np.sin(p)*np.cos(e)**2*np.cos(p))/Jp_static, (-mc.J_m*de*np.cos(p) + mc.J_m*dlamb*np.sin(p)*np.cos(e) + mc.K*L1)/Jp_static, (mc.J_m*de*np.cos(p) - mc.J_m*dlamb*np.sin(p)*np.cos(e) - mc.K*L1)/Jp_static],
-                  [(-mc.J_m*dlamb*(b_speed - f_speed)*np.sin(e)*np.sin(p) - mc.J_m*dp*(-b_speed + f_speed)*np.sin(p) - mc.K*L3*(b_speed + f_speed)*np.sin(p) + mc.K_m*(-b_speed + f_speed)*np.cos(p))/Je_static, (Je_static*dlamb**2*np.sin(e)**2 - Je_static*dlamb**2*np.cos(e)**2 + mc.J_m*dlamb*(b_speed - f_speed)*np.cos(e)*np.cos(p) - L2*np.sin(e))/Je_static, 0, mc.J_m*(-b_speed + f_speed)*np.cos(p)/Je_static, -mc.d_e/Je_static, (-2*Je_static*dlamb*np.sin(e)*np.cos(e) + mc.J_m*(b_speed - f_speed)*np.sin(e)*np.cos(p))/Je_static, (-mc.J_m*dlamb*np.sin(e)*np.cos(p) + mc.J_m*dp*np.cos(p) + mc.K*L3*np.cos(p) + mc.K_m*np.sin(p))/Je_static, (mc.J_m*dlamb*np.sin(e)*np.cos(p) - mc.J_m*dp*np.cos(p) + mc.K*L3*np.cos(p) - mc.K_m*np.sin(p))/Je_static],
-                  [(mc.J_m*dlamb*(-b_speed + f_speed)*np.cos(e)*np.cos(p) + mc.J_m*dp*(-b_speed + f_speed)*np.cos(e)*np.cos(p) + mc.K*L4*(b_speed + f_speed)*np.cos(e)*np.cos(p) - mc.K_m*(b_speed - f_speed)*np.sin(p)*np.cos(e))/Jl_static, (-mc.J_m*dlamb*(-b_speed + f_speed)*np.sin(e)*np.sin(p) - mc.J_m*dp*(-b_speed + f_speed)*np.sin(e)*np.sin(p) - mc.K*L4*(b_speed + f_speed)*np.sin(e)*np.sin(p) - mc.K_m*(b_speed - f_speed)*np.sin(e)*np.cos(p))/Jl_static, 0, mc.J_m*(-b_speed + f_speed)*np.sin(p)*np.cos(e)/Jl_static, 0, (mc.J_m*(-b_speed + f_speed)*np.sin(p)*np.cos(e) - mc.d_l)/Jl_static, (mc.J_m*dlamb*np.sin(p)*np.cos(e) + mc.J_m*dp*np.sin(p)*np.cos(e) + mc.K*L4*np.sin(p)*np.cos(e) - mc.K_m*np.cos(e)*np.cos(p))/Jl_static, (-mc.J_m*dlamb*np.sin(p)*np.cos(e) - mc.J_m*dp*np.sin(p)*np.cos(e) + mc.K*L4*np.sin(p)*np.cos(e) + mc.K_m*np.cos(e)*np.cos(p))/Jl_static],
-                  [0, 0, 0, 0, 0, 0, -1/mc.T_f, 0],
-                  [0, 0, 0, 0, 0, 0, 0, -1/mc.T_b]])
+    if dynamic_inertia:
+        A = np.array([[0,0,0,1,0,0,0,0],
+                     [0,0,0,0,1,0,0,0],
+                     [0,0,0,0,0,1,0,0],
+                     [-(mc.J_m*de*np.sin(p)*(b_speed-f_speed)+2*mc.l_p**2*mc.m_p*np.cos(p)**2*(dlamb**2*np.cos(e)**2-de**2)-2*mc.l_p**2*mc.m_p*np.sin(p)**2*(dlamb**2*np.cos(e)**2-de**2)+mc.J_m*dlamb*np.cos(e)*np.cos(p)*(b_speed-f_speed))/(2*mc.l_p**2*mc.m_p),(4*mc.m_p*np.cos(e)*np.cos(p)*np.sin(e)*np.sin(p)*dlamb**2*mc.l_p**2+mc.J_m*np.sin(e)*np.sin(p)*(b_speed-f_speed)*dlamb)/(2*mc.l_p**2*mc.m_p),0,-mc.d_p/(2*mc.l_p**2*mc.m_p),(4*de*mc.m_p*np.cos(p)*np.sin(p)*mc.l_p**2+mc.J_m*np.cos(p)*(b_speed-f_speed))/(2*mc.l_p**2*mc.m_p),-(mc.J_m*np.cos(e)*np.sin(p)*(b_speed-f_speed)+4*dlamb*mc.l_p**2*mc.m_p*np.cos(e)**2*np.cos(p)*np.sin(p))/(2*mc.l_p**2*mc.m_p),(mc.K*L1-mc.J_m*de*np.cos(p)+mc.J_m*dlamb*np.cos(e)*np.sin(p))/(2*mc.l_p**2*mc.m_p),-(mc.K*L1-mc.J_m*de*np.cos(p)+mc.J_m*dlamb*np.cos(e)*np.sin(p))/(2*mc.l_p**2*mc.m_p)],
+                     [(4*mc.l_p**2*mc.m_p*np.cos(p)*np.sin(p)*(np.cos(e)*np.sin(e)*(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2))*dlamb**2-mc.J_m*np.cos(p)*np.sin(e)*(b_speed-f_speed)*dlamb+mc.d_e*de-L2*np.cos(e)+mc.K_m*np.sin(p)*(b_speed-f_speed)+mc.J_m*dp*np.cos(p)*(b_speed-f_speed)-mc.K*L3*np.cos(p)*(b_speed+f_speed)))/(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2))**2-(4*mc.m_p*np.cos(e)*np.cos(p)*np.sin(e)*np.sin(p)*dlamb**2*mc.l_p**2+mc.J_m*np.sin(e)*np.sin(p)*(b_speed-f_speed)*dlamb+mc.K_m*np.cos(p)*(b_speed-f_speed)+mc.K*L3*np.sin(p)*(b_speed+f_speed)-mc.J_m*dp*np.sin(p)*(b_speed-f_speed))/(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c),-(L2*np.sin(e)+dlamb**2*np.cos(e)**2*(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c)-dlamb**2*np.sin(e)**2*(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c)-mc.J_m*dlamb*np.cos(e)*np.cos(p)*(b_speed-f_speed))/(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c),0,-(mc.J_m*np.cos(p)*(b_speed-f_speed))/(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c),-mc.d_e/(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c),-(2*dlamb*np.cos(e)*np.sin(e)*(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c)-mc.J_m*np.cos(p)*np.sin(e)*(b_speed-f_speed))/(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c),(mc.K_m*np.sin(p)+mc.K*L3*np.cos(p)+mc.J_m*dp*np.cos(p)-mc.J_m*dlamb*np.cos(p)*np.sin(e))/(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c),-(mc.K_m*np.sin(p)-mc.K*L3*np.cos(p)+mc.J_m*dp*np.cos(p)-mc.J_m*dlamb*np.cos(p)*np.sin(e))/(2*mc.m_p*(mc.l_h**2+mc.l_p**2*np.sin(p)**2)+mc.l_c**2*mc.m_c)],
+                     [-(mc.K_m*np.cos(e)*np.sin(p)*(b_speed-f_speed)+mc.J_m*dlamb*np.cos(e)*np.cos(p)*(b_speed-f_speed)+mc.J_m*dp*np.cos(e)*np.cos(p)*(b_speed-f_speed)-mc.K*L4*np.cos(e)*np.cos(p)*(b_speed+f_speed))/(2*mc.m_p*(mc.l_h**2*np.cos(e)**2+mc.l_p**2*np.cos(e)**2*np.sin(p)**2+mc.l_p**2*np.cos(p)**2)+mc.l_c**2*mc.m_c*np.cos(e)**2)-(2*mc.m_p*(2*mc.l_p**2*np.cos(p)*np.sin(p)-2*mc.l_p**2*np.cos(e)**2*np.cos(p)*np.sin(p))*(mc.d_l*dlamb-mc.K_m*np.cos(e)*np.cos(p)*(b_speed-f_speed)+mc.J_m*dlamb*np.cos(e)*np.sin(p)*(b_speed-f_speed)+mc.J_m*dp*np.cos(e)*np.sin(p)*(b_speed-f_speed)-mc.K*L4*np.cos(e)*np.sin(p)*(b_speed+f_speed)))/(2*mc.m_p*(mc.l_h**2*np.cos(e)**2+mc.l_p**2*np.cos(e)**2*np.sin(p)**2+mc.l_p**2*np.cos(p)**2)+mc.l_c**2*mc.m_c*np.cos(e)**2)**2,-(mc.K_m*np.cos(p)*np.sin(e)*(b_speed-f_speed)-mc.J_m*dlamb*np.sin(e)*np.sin(p)*(b_speed-f_speed)-mc.J_m*dp*np.sin(e)*np.sin(p)*(b_speed-f_speed)+mc.K*L4*np.sin(e)*np.sin(p)*(b_speed+f_speed))/(2*mc.m_p*(mc.l_h**2*np.cos(e)**2+mc.l_p**2*np.cos(e)**2*np.sin(p)**2+mc.l_p**2*np.cos(p)**2)+mc.l_c**2*mc.m_c*np.cos(e)**2)-((2*mc.m_c*np.cos(e)*np.sin(e)*mc.l_c**2+2*mc.m_p*(2*np.cos(e)*np.sin(e)*mc.l_h**2+2*np.cos(e)*np.sin(e)*mc.l_p**2*np.sin(p)**2))*(mc.d_l*dlamb-mc.K_m*np.cos(e)*np.cos(p)*(b_speed-f_speed)+mc.J_m*dlamb*np.cos(e)*np.sin(p)*(b_speed-f_speed)+mc.J_m*dp*np.cos(e)*np.sin(p)*(b_speed-f_speed)-mc.K*L4*np.cos(e)*np.sin(p)*(b_speed+f_speed)))/(2*mc.m_p*(mc.l_h**2*np.cos(e)**2+mc.l_p**2*np.cos(e)**2*np.sin(p)**2+mc.l_p**2*np.cos(p)**2)+mc.l_c**2*mc.m_c*np.cos(e)**2)**2,0,-(mc.J_m*np.cos(e)*np.sin(p)*(b_speed-f_speed))/(2*mc.m_p*(mc.l_h**2*np.cos(e)**2+mc.l_p**2*np.cos(e)**2*np.sin(p)**2+mc.l_p**2*np.cos(p)**2)+mc.l_c**2*mc.m_c*np.cos(e)**2),0,-(mc.d_l+mc.J_m*np.cos(e)*np.sin(p)*(b_speed-f_speed))/(2*mc.m_p*(mc.l_h**2*np.cos(e)**2+mc.l_p**2*np.cos(e)**2*np.sin(p)**2+mc.l_p**2*np.cos(p)**2)+mc.l_c**2*mc.m_c*np.cos(e)**2),(mc.K*L4*np.cos(e)*np.sin(p)-mc.K_m*np.cos(e)*np.cos(p)+mc.J_m*dlamb*np.cos(e)*np.sin(p)+mc.J_m*dp*np.cos(e)*np.sin(p))/(2*mc.m_p*(mc.l_h**2*np.cos(e)**2+mc.l_p**2*np.cos(e)**2*np.sin(p)**2+mc.l_p**2*np.cos(p)**2)+mc.l_c**2*mc.m_c*np.cos(e)**2),(mc.K_m*np.cos(e)*np.cos(p)+mc.K*L4*np.cos(e)*np.sin(p)-mc.J_m*dlamb*np.cos(e)*np.sin(p)-mc.J_m*dp*np.cos(e)*np.sin(p))/(2*mc.m_p*(mc.l_h**2*np.cos(e)**2+mc.l_p**2*np.cos(e)**2*np.sin(p)**2+mc.l_p**2*np.cos(p)**2)+mc.l_c**2*mc.m_c*np.cos(e)**2)],
+                     [0,0,0,0,0,0,-1/mc.T_f,0],
+                     [0,0,0,0,0,0,0,-1/mc.T_b]])
+    else:
+        A = np.array([[0, 0, 0, 1, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 1, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 1, 0, 0],
+                      [(-mc.J_m*de*(b_speed - f_speed)*np.sin(p) + mc.J_m*dlamb*(-b_speed + f_speed)*np.cos(e)*np.cos(p) - Jp_static*(de**2 - dlamb**2*np.cos(e)**2)*np.sin(p)**2 + Jp_static*(de**2 - dlamb**2*np.cos(e)**2)*np.cos(p)**2)/Jp_static, (-mc.J_m*dlamb*(-b_speed + f_speed)*np.sin(e)*np.sin(p) + 2*Jp_static*dlamb**2*np.sin(e)*np.sin(p)*np.cos(e)*np.cos(p))/Jp_static, 0, -mc.d_p/Jp_static, (mc.J_m*(b_speed - f_speed)*np.cos(p) + 2*Jp_static*de*np.sin(p)*np.cos(p))/Jp_static, (mc.J_m*(-b_speed + f_speed)*np.sin(p)*np.cos(e) - 2*Jp_static*dlamb*np.sin(p)*np.cos(e)**2*np.cos(p))/Jp_static, (-mc.J_m*de*np.cos(p) + mc.J_m*dlamb*np.sin(p)*np.cos(e) + mc.K*L1)/Jp_static, (mc.J_m*de*np.cos(p) - mc.J_m*dlamb*np.sin(p)*np.cos(e) - mc.K*L1)/Jp_static],
+                      [(-mc.J_m*dlamb*(b_speed - f_speed)*np.sin(e)*np.sin(p) - mc.J_m*dp*(-b_speed + f_speed)*np.sin(p) - mc.K*L3*(b_speed + f_speed)*np.sin(p) + mc.K_m*(-b_speed + f_speed)*np.cos(p))/Je_static, (Je_static*dlamb**2*np.sin(e)**2 - Je_static*dlamb**2*np.cos(e)**2 + mc.J_m*dlamb*(b_speed - f_speed)*np.cos(e)*np.cos(p) - L2*np.sin(e))/Je_static, 0, mc.J_m*(-b_speed + f_speed)*np.cos(p)/Je_static, -mc.d_e/Je_static, (-2*Je_static*dlamb*np.sin(e)*np.cos(e) + mc.J_m*(b_speed - f_speed)*np.sin(e)*np.cos(p))/Je_static, (-mc.J_m*dlamb*np.sin(e)*np.cos(p) + mc.J_m*dp*np.cos(p) + mc.K*L3*np.cos(p) + mc.K_m*np.sin(p))/Je_static, (mc.J_m*dlamb*np.sin(e)*np.cos(p) - mc.J_m*dp*np.cos(p) + mc.K*L3*np.cos(p) - mc.K_m*np.sin(p))/Je_static],
+                      [(mc.J_m*dlamb*(-b_speed + f_speed)*np.cos(e)*np.cos(p) + mc.J_m*dp*(-b_speed + f_speed)*np.cos(e)*np.cos(p) + mc.K*L4*(b_speed + f_speed)*np.cos(e)*np.cos(p) - mc.K_m*(b_speed - f_speed)*np.sin(p)*np.cos(e))/Jl_static, (-mc.J_m*dlamb*(-b_speed + f_speed)*np.sin(e)*np.sin(p) - mc.J_m*dp*(-b_speed + f_speed)*np.sin(e)*np.sin(p) - mc.K*L4*(b_speed + f_speed)*np.sin(e)*np.sin(p) - mc.K_m*(b_speed - f_speed)*np.sin(e)*np.cos(p))/Jl_static, 0, mc.J_m*(-b_speed + f_speed)*np.sin(p)*np.cos(e)/Jl_static, 0, (mc.J_m*(-b_speed + f_speed)*np.sin(p)*np.cos(e) - mc.d_l)/Jl_static, (mc.J_m*dlamb*np.sin(p)*np.cos(e) + mc.J_m*dp*np.sin(p)*np.cos(e) + mc.K*L4*np.sin(p)*np.cos(e) - mc.K_m*np.cos(e)*np.cos(p))/Jl_static, (-mc.J_m*dlamb*np.sin(p)*np.cos(e) - mc.J_m*dp*np.sin(p)*np.cos(e) + mc.K*L4*np.sin(p)*np.cos(e) + mc.K_m*np.cos(e)*np.cos(p))/Jl_static],
+                      [0, 0, 0, 0, 0, 0, -1/mc.T_f, 0],
+                      [0, 0, 0, 0, 0, 0, 0, -1/mc.T_b]])
     B = np.array([[0, 0],
                   [0, 0],
                   [0, 0],
@@ -132,6 +141,10 @@ class Observer(object):
 
     def set_estimated_state(self, x_estimated_state):
         self.x_estimated_state = np.resize(np.array(x_estimated_state), (8, 1))
+
+    def set_dynamic_inertia(self, dynamic_inertia):
+        self.dynamic_inertia = dynamic_inertia
+        print("Dynamic Inertia was set to " + str(self.dynamic_inertia))
 
 
 class KalmanFilterBase(Observer):
@@ -349,7 +362,6 @@ class ExtKalmanFilterEasyModel(KalmanFilterBase):
         return x_estimated_state, u_with_noise, y_with_noise
 
 
-
 class ExtKalmanFilterGyroModel(KalmanFilterBase):
 
     def __init__(self, init_state, init_cov_matrix):
@@ -364,7 +376,7 @@ class ExtKalmanFilterGyroModel(KalmanFilterBase):
         and saves it for calc_observation
         :arg operating_point: 8-element-state vector"""
 
-        At, Bt = get_gyro_matrices(operating_point, v_f, v_b, False)
+        At, Bt = get_gyro_matrices(operating_point, v_f, v_b, self.dynamic_inertia)
         Ct = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
                       [0, 1, 0, 0, 0, 0, 0, 0],
                       [0, 0, 1, 0, 0, 0, 0, 0],
@@ -382,13 +394,15 @@ class ExtKalmanFilterGyroModel(KalmanFilterBase):
     def rhs_time_continuous(self, t, x, v_f, v_b):
         """Attention: think of v_f and v_b instead of v_s and v_d"""
         p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+        J_p, J_e, J_l = getInertia(x, self.dynamic_inertia)
+
         df_speed = - f_speed / mc.T_f + mc.K_f / mc.T_f * v_f
         db_speed = - b_speed / mc.T_b + mc.K_b/mc.T_b * v_b
-        ddp = 1/Jp_static*(L1*mc.K * (f_speed - b_speed) - mc.d_p * dp + Jp_static * np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) \
+        ddp = 1/J_p*(L1*mc.K * (f_speed - b_speed) - mc.d_p * dp + J_p * np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) \
                 + np.cos(p) * de * mc.J_m *(b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed) * dlamb)
-        dde = 1/Je_static *(L2 * np.cos(e) + L3*mc.K * np.cos(p) * (f_speed + b_speed) - mc.d_e * de - Je_static * np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed) \
+        dde = 1/J_e *(L2 * np.cos(e) + L3*mc.K * np.cos(p) * (f_speed + b_speed) - mc.d_e * de - J_e * np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed) \
                 + np.cos(p) * dp * mc.J_m * (f_speed -b_speed) + np.sin(e) * np.cos(p) * dlamb * mc.J_m *(b_speed - f_speed))
-        ddlamb = 1/Jl_static * (L4*mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) - mc.d_l * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)\
+        ddlamb = 1/J_l * (L4*mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) - mc.d_l * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)\
                 + np.sin(p) * np.cos(e) * dp * mc.J_m *(f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m *(f_speed - b_speed))
         return np.array([dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed])
 
