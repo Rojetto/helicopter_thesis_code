@@ -1,0 +1,55 @@
+import numpy as np
+
+# l_a = ? (not given in Fig. 7)
+l_p = 0.18 #m
+l_h = 0.65
+l_c = 0.52
+m_p = 0.5 * 0.771 #kg
+m_c_min = 2* l_h/l_c * m_p
+
+vtk_l_a = 10*l_h
+vtk_l_h = 10*l_h
+vtk_l_p = 10*l_p
+vtk_l_c = 10*l_c
+
+#Static Theta values (for initialization)
+#s_theta1 = 0
+#s_theta2 = 0
+#s_theta3 = 0
+
+T_vtk = np.array([[1, 0, 0, 0],
+                  [0, 0, 1, 0],
+                  [0, -1, 0, 0],
+                  [0, 0, 0, 1]])
+
+#Alignment and position of geometrical joints relative to T_i_minus_one
+T_j1 = np.array([[1, 0, 0, 0],
+                 [0, 0, 1, 0],
+                 [0, -1, 0, 0],
+                 [0, 0, 0, 1]])
+
+T_j2 = np.array([[1, 0, 0, 0],
+                 [0, 0, -1, 0],
+                 [0, 1, 0, 0],
+                 [0, 0, 0, 1]])
+
+T_j3 = np.array([[1, 0, 0, 0],
+                 [0, 0, -1, 0],
+                 [0, 1, 0, vtk_l_h],
+                 [0, 0, 0, 1]])
+
+#endeffector alignment and position relative to T_i
+T_e1 = np.array([[1, 0, 0, 0],
+                 [0, 1, 0, -vtk_l_p],
+                 [0, 0, 1, 0],
+                 [0, 0, 0, 1]])
+
+T_e2 = np.array([[1, 0, 0, 0],
+                 [0, 1, 0, vtk_l_p],
+                 [0, 0, 1, 0],
+                 [0, 0, 0, 1]])
+
+T_e3 = np.array([[1, 0, 0, 0],
+                 [0, 1, 0, 0],
+                 [0, 0, 1, -vtk_l_c],
+                 [0, 0, 0, 1]])
