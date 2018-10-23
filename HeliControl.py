@@ -3,6 +3,7 @@ import ModelConstants as mc
 
 class HeliControl(object):
     def __init__(self):
+        self.operatingPoint = np.array([0, 0, 0])
         pass
 
     def control(self, t, x):
@@ -13,3 +14,8 @@ class HeliControl(object):
             Returns:
                 u: control output. u = [Vf, Vb]"""
         return [0, 0]
+
+    def setOperatingPoint(self, point):
+        """This function is called in order to set the current operating point of the controller."""
+        self.operatingPoint = np.array(point)
+        print("Operating Point was set to " + str (self.operatingPoint))

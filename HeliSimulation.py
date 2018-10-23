@@ -14,7 +14,7 @@ J_l = mc.m_c_min * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2)
 class HeliSimulation(object):
     def __init__(self, theta1_0, theta2_0, theta3_0, timeStep):
         """Initializes the simulation"""
-        self.currentState = [theta1_0, theta2_0, theta3_0, 0, 0, 0]
+        self.currentState = np.array([theta1_0, theta2_0, theta3_0, 0, 0, 0])
         self.timeStep = timeStep
         self.solver = scipy.integrate.ode(lambda t, x: self.rhs(t, x, self.V_s, self.V_d))
         self.solver.set_initial_value([theta1_0, theta2_0, theta3_0, 0, 0, 0])
@@ -44,3 +44,7 @@ class HeliSimulation(object):
 
     def getCurrentTime(self):
         return self.solver.t
+
+    def setCurrentState(self, state):
+        self.currentState = np.array(state)
+        self.solver.set_initial_value(self.currentState, self.solver.t)
