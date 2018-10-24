@@ -43,7 +43,12 @@ class HelicopterModel(object):
         renderer.AddActor(self.axesActor)
 
     def setState(self, theta1, theta2, theta3):
-        """Updates the angles so that it looks different on the screen"""
+        """Updates the angles so that it looks different on the screen. ATTENTION: There was
+        a bug related to the sign of the pitch angle, which was chosen differently in the exercise manual.
+        Out of some reason I still do not understand completely, the elevation angle has a wrong sign as well.
+        In this function this bug was simply fixed by multiplying the angles with -1."""
+        theta2 = -theta2
+        theta3 = -theta3
         self.state = [theta1, theta2, theta3]
         dhb_table = getDHBTable(theta1, theta2, theta3)
         T_0 = np.eye(4)

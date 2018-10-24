@@ -16,6 +16,10 @@ class HeliControl(object):
         return [0, 0]
 
     def setOperatingPoint(self, point):
-        """This function is called in order to set the current operating point of the controller."""
+        """This function is called in order to set the current operating point of the controller.
+        point: list of coordinates
+        point[0]: Pitch
+        point[1]: Elevation
+        point[2]: Lambda """
         self.operatingPoint = np.array(point)
-        print("Operating Point was set to " + str (self.operatingPoint))
+        #print("Pitch = " + str(point[0]) + " Elevation = " + str(point[1]) + " Lambda = " + str(point[2]))
