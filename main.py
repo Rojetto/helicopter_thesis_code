@@ -62,18 +62,24 @@ class mainWindow(Qt.QMainWindow):
         self.inputVf.setValidator(QtGui.QDoubleValidator())
         self.inputVb = QtWidgets.QLineEdit("0")
         self.inputVb.setValidator(QtGui.QDoubleValidator())
+        self.labelLambda = QtWidgets.QLabel("Lambda")
+        self.labelElevation = QtWidgets.QLabel("Elevation")
+        self.labelPitch = QtWidgets.QLabel("Pitch")
         ##vtkWidget##
         self.vtkWidget = QVTKRenderWindowInteractor(self.frame)
 
-        self.manualGridVL.addWidget(self.sliderTheta1, 0, 0)
-        self.manualGridVL.addWidget(self.sliderTheta1edit, 0, 1)
-        self.manualGridVL.addWidget(self.sliderTheta2, 1, 0)
-        self.manualGridVL.addWidget(self.sliderTheta2edit, 1, 1)
-        self.manualGridVL.addWidget(self.sliderTheta3, 2, 0)
-        self.manualGridVL.addWidget(self.sliderTheta3edit, 2, 1)
-        self.manualGridVL.addWidget(self.theta1OPedit, 0, 2)
-        self.manualGridVL.addWidget(self.theta2OPedit, 1, 2)
-        self.manualGridVL.addWidget(self.theta3OPedit, 2, 2)
+        self.manualGridVL.addWidget(self.sliderTheta1, 0, 1)
+        self.manualGridVL.addWidget(self.sliderTheta1edit, 0, 2)
+        self.manualGridVL.addWidget(self.sliderTheta2, 1, 1)
+        self.manualGridVL.addWidget(self.sliderTheta2edit, 1, 2)
+        self.manualGridVL.addWidget(self.sliderTheta3, 2, 1)
+        self.manualGridVL.addWidget(self.sliderTheta3edit, 2, 2)
+        self.manualGridVL.addWidget(self.theta1OPedit, 0, 3)
+        self.manualGridVL.addWidget(self.theta2OPedit, 1, 3)
+        self.manualGridVL.addWidget(self.theta3OPedit, 2, 3)
+        self.manualGridVL.addWidget(self.labelLambda, 0, 0)
+        self.manualGridVL.addWidget(self.labelElevation, 1, 0)
+        self.manualGridVL.addWidget(self.labelPitch, 2, 0)
 
         self.vl.addWidget(self.vtkWidget)
         self.vl.addWidget(self.radioButton_man)
@@ -171,8 +177,8 @@ class mainWindow(Qt.QMainWindow):
                                       0, 0, 0])
 
     def btnSetOP_clicked(self):
-        self.ctrlObj.setOperatingPoint([float(self.theta1OPedit.text()), float(self.theta2OPedit.text()),
-                                        float(self.theta3OPedit.text())])
+        self.ctrlObj.setOperatingPoint([float(self.theta3OPedit.text()), float(self.theta2OPedit.text()),
+                                        float(self.theta1OPedit.text())])
 
 
 
