@@ -2,10 +2,10 @@ import numpy as np
 import scipy.integrate
 import ModelConstants as mc
 
-L_1 = 1
-L_2 = 1
-L_3 = 1
-L_4 = 1
+L_1 = mc.l_p
+L_2 = mc.g * (mc.l_c * mc.m_c_min - 2 * mc.l_h * mc.m_p)
+L_3 = mc.l_h
+L_4 = mc.l_h
 
 J_p = 2*mc.m_p*mc.l_p**2
 J_e = mc.m_c_min * mc.l_c**2 + 2* mc.m_p*mc.l_h**2
@@ -26,7 +26,7 @@ class HeliSimulation(object):
 
         # calculate dp, de and dlamb
         ddp = (L_1 / J_p) * V_d
-        dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.sin(p) * V_s
+        dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s
         ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s
         return [dp, de, dlamb, ddp, dde, ddlamb]
 
