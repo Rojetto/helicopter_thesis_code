@@ -5,7 +5,10 @@ l_p = 0.18 #m
 l_h = 0.65
 l_c = 0.52
 m_p = 0.5 * 0.771 #kg
-m_c_min = 2* l_h/l_c * m_p
+m_c_max = 2 * l_h/l_c * m_p
+m_c = 0.9  # arbitrary, but has to be smaller than m_c_max
+
+g = 9.81  # m/s^2
 
 vtk_l_a = 10*l_h
 vtk_l_h = 10*l_h

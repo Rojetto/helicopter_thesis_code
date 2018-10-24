@@ -3,13 +3,13 @@ import scipy.integrate
 import ModelConstants as mc
 
 L_1 = mc.l_p
-L_2 = mc.g * (mc.l_c * mc.m_c_min - 2 * mc.l_h * mc.m_p)
+L_2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
 L_3 = mc.l_h
 L_4 = mc.l_h
 
 J_p = 2*mc.m_p*mc.l_p**2
-J_e = mc.m_c_min * mc.l_c**2 + 2* mc.m_p*mc.l_h**2
-J_l = mc.m_c_min * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2)
+J_e = mc.m_c * mc.l_c**2 + 2* mc.m_p*mc.l_h**2
+J_l = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2)
 
 class HeliSimulation(object):
     def __init__(self, theta1_0, theta2_0, theta3_0, timeStep):
