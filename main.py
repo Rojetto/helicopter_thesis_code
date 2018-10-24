@@ -135,8 +135,8 @@ class mainWindow(Qt.QMainWindow):
                 #print("[DEBUG]ValueError in main.py")
                 Vf = 0
                 Vb = 0
-            theta1, theta2, theta3, dtheta1, dtheta2, dtheta3 = self.heliSim.calcStep(Vf, Vb)
-            self.heliModel.setState(theta1, theta2, theta3)
+            p, e, lamb, dp, de, dlamb = self.heliSim.calcStep(Vf, Vb)
+            self.heliModel.setState(lamb, e, p)
 
         if self.progMode == "s_a":
             t = self.heliSim.getCurrentTime()
@@ -146,8 +146,8 @@ class mainWindow(Qt.QMainWindow):
             #Call kalman filter function
             self.kalmanObj.kalman_compute(t, x, [Vf, Vb])
             #Calculate next simulation step
-            theta1, theta2, theta3, dtheta1, dtheta2, dtheta3 = self.heliSim.calcStep(Vf, Vb)
-            self.heliModel.setState(theta1, theta2, theta3)
+            p, e, lamb, dp, de, dlamb = self.heliSim.calcStep(Vf, Vb)
+            self.heliModel.setState(lamb, e, p)
 
         self.iren.Render()
 
