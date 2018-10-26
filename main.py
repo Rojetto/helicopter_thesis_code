@@ -3,6 +3,9 @@ import vtk
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5 import Qt
 import numpy as np
+import matplotlib
+matplotlib.use('Qt5Agg')
+import matplotlib.pyplot as plot
 from HelicopterModel import HelicopterModel
 from HeliSimulation import HeliSimulation
 from HeliControl import HeliControl
@@ -111,10 +114,18 @@ class mainWindow(Qt.QMainWindow):
         self.ctrlObj = HeliControl()
         self.kalmanObj = HeliKalmanFilter()
 
+        # TEMP logging
+        self.nr_log_entries = int(4 / (self.timeStep / 1000))  # First number is the time in seconds
+        self.log_ts = np.empty(self.nr_log_entries)
+        self.log_xs = np.empty((self.nr_log_entries, 6))
+        self.log_us = np.empty((self.nr_log_entries, 2))
+        self.log_index = 0
+        self.log_enabled = False
+        # TEMP logging
+
         #Inititalize Window, Interactor, Renderer, Layout
         self.frame.setLayout(self.vl)
         self.setCentralWidget(self.frame)
-        self.ren.ResetCamera()
         self.show()
         self.iren.Initialize()
 
@@ -155,6 +166,46 @@ class mainWindow(Qt.QMainWindow):
             p, e, lamb, dp, de, dlamb = self.heliSim.calcStep(Vf, Vb)
             self.heliModel.setState(lamb, e, p)
 
+            # TEMP logging
+            if self.log_enabled:
+                self.log_ts[self.log_index] = self.heliSim.getCurrentTime()
+                self.log_xs[self.log_index] = self.heliSim.getCurrentState()
+                self.log_us[self.log_index, 0] = Vf
+                self.log_us[self.log_index, 1] = Vb
+
+                self.log_index += 1
+
+                if self.log_index >= self.nr_log_entries:
+                    self.log_enabled = False
+                    print("Finished logging")
+                    self.log_ts -= self.log_ts[0]
+
+                    plot.close("all")
+
+                    plot.figure("System state")
+                    plot.subplot(311)
+                    plot.plot(self.log_ts, self.log_xs[:, 0])
+                    plot.axhline(self.ctrlObj.operatingPoint[0])
+                    plot.grid()
+                    plot.subplot(312)
+                    plot.plot(self.log_ts, self.log_xs[:, 1])
+                    plot.axhline(self.ctrlObj.operatingPoint[1])
+                    plot.grid()
+                    plot.subplot(313)
+                    plot.plot(self.log_ts, self.log_xs[:, 2])
+                    plot.axhline(self.ctrlObj.operatingPoint[2])
+                    plot.grid()
+                    plot.tight_layout()
+
+                    plot.figure("Controller output")
+                    plot.plot(self.log_ts, self.log_us[:, 0])
+                    plot.plot(self.log_ts, self.log_us[:, 1])
+                    plot.grid()
+                    plot.tight_layout()
+
+                    plot.show()
+            # TEMP logging
+
         self.iren.Render()
 
     def radioBtnState(self, b):
@@ -169,6 +220,10 @@ class mainWindow(Qt.QMainWindow):
         if b.text() == "Simulation (Auto) Mode" and b.isChecked():
             self.progMode = 's_a'
             print("Simulation (Auto) Mode was selected")
+            # TEMP logging
+            self.log_index = 0
+            self.log_enabled = True
+            # TEMP logging
 
     def btnSetSimState_clicked(self):
         self.heliSim.setCurrentState([float(self.sliderTheta1edit.text()),
