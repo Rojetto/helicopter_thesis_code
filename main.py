@@ -8,7 +8,7 @@ matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plot
 from HelicopterModel import HelicopterModel
 from HeliSimulation import HeliSimulation
-from HeliControl import HeliControl
+from HeliControl import HeliControl, ControlMethod
 from HeliKalman import HeliKalmanFilter
 
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
@@ -247,10 +247,13 @@ class ControlWindow(Qt.QMainWindow):
 
         self.radio_poles = QtWidgets.QRadioButton("Pole placement", self)
         self.radio_poles.setChecked(True)
+        self.radio_poles.toggled.connect(self.on_radio_poles_toggle)
         self.layout.addWidget(self.radio_poles, 0, 0)
         self.radio_lqr = QtWidgets.QRadioButton("LQR", self)
+        self.radio_lqr.toggled.connect(self.on_radio_lqr_toggle)
         self.layout.addWidget(self.radio_lqr, 1, 0)
         self.radio_pid = QtWidgets.QRadioButton("PID", self)
+        self.radio_pid.toggled.connect(self.on_radio_pid_toggle)
         self.layout.addWidget(self.radio_pid, 2, 0)
 
         self.poles = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
@@ -269,6 +272,18 @@ class ControlWindow(Qt.QMainWindow):
     def on_pole_edit(self, new_pole_value):
         pole_values = [pole_edit.value() for pole_edit in self.poles]
         self.heli_controller.setFeedbackPoles(pole_values)
+
+    def on_radio_poles_toggle(self, checked):
+        if checked:
+            self.heli_controller.setControlMethod(ControlMethod.POLES)
+
+    def on_radio_lqr_toggle(self, checked):
+        if checked:
+            self.heli_controller.setControlMethod(ControlMethod.LQR)
+
+    def on_radio_pid_toggle(self, checked):
+        if checked:
+            self.heli_controller.setControlMethod(ControlMethod.PID)
 
 
 if __name__ == "__main__":

@@ -2,12 +2,21 @@ import numpy as np
 from numpy.ma import cos, sin
 import control as ctr
 
+from enum import Enum
+
 import ModelConstants as mc
+
+
+class ControlMethod(Enum):
+    POLES = 1
+    LQR = 2
+    PID = 3
 
 
 class HeliControl(object):
     def __init__(self):
         self.operatingPoint = np.array([0, 0, 0])
+        self.control_method = ControlMethod.POLES
         self.feedback_poles = [-1, -2, -3, -4, -5, -6]
         self.Vf_op = 0
         self.Vb_op = 0
@@ -62,7 +71,16 @@ class HeliControl(object):
                 u: control output. u = [Vf, Vb]"""
         u_op = np.array([self.Vf_op, self.Vb_op])
         x_op = np.array([self.operatingPoint[0], self.operatingPoint[1], self.operatingPoint[2], 0, 0, 0])
-        return u_op - self.state_feedback_gain @ (x - x_op)
+
+        u = np.zeros(2)
+
+        if self.control_method == ControlMethod.POLES:
+            u = u_op - self.state_feedback_gain @ (x - x_op)
+
+        return u
+
+    def setControlMethod(self, method):
+        self.control_method = method
 
     def setOperatingPoint(self, point):
         """This function is called in order to set the current operating point of the controller.
