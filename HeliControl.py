@@ -8,11 +8,16 @@ import ModelConstants as mc
 class HeliControl(object):
     def __init__(self):
         self.operatingPoint = np.array([0, 0, 0])
+        self.feedback_poles = [-1, -2, -3, -4, -5, -6]
         self.Vf_op = 0
         self.Vb_op = 0
-        self.state_feedback_gain = self.compute_stabilizing_state_feedback(0, 0)
+        self.state_feedback_gain = np.zeros((2, 6))
 
-    def compute_stabilizing_state_feedback(self, lambda_op, e_op):
+        self.update_stabilizing_state_feedback()
+
+    def update_stabilizing_state_feedback(self):
+        e_op = self.operatingPoint[1]
+
         L1 = mc.l_p
         L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
         L3 = mc.l_h
@@ -42,10 +47,11 @@ class HeliControl(object):
                       [L3/Je, L3/Je],
                       [0, 0]])
 
-        K = ctr.place(A, B, [-1, -2, -3, -4, -5, -6])
-        print(K)
-
-        return K
+        try:
+            K = ctr.place(A, B, self.feedback_poles)
+            self.state_feedback_gain = K
+        except:
+            print("Error during pole placement")
 
     def control(self, t, x):
         """Is called by the main loop in order to get the current controller output.
@@ -65,5 +71,8 @@ class HeliControl(object):
         point[1]: Elevation
         point[2]: Lambda """
         self.operatingPoint = np.array(point)
-        self.state_feedback_gain = self.compute_stabilizing_state_feedback(point[2], point[1])
-        print("Operating Point was set to " + str(self.operatingPoint))
+        self.update_stabilizing_state_feedback()
+
+    def setFeedbackPoles(self, poles):
+        self.feedback_poles = poles
+        self.update_stabilizing_state_feedback()

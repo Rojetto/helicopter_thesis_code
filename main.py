@@ -236,9 +236,43 @@ class mainWindow(Qt.QMainWindow):
                                         float(self.theta1OPedit.text())])
 
 
+class ControlWindow(Qt.QMainWindow):
+    def __init__(self, heli_controller, parent=None):
+        Qt.QMainWindow.__init__(self, parent)
+
+        self.heli_controller = heli_controller
+
+        self.frame = Qt.QFrame()
+        self.layout = Qt.QGridLayout()
+
+        self.radio_poles = QtWidgets.QRadioButton("Pole placement", self)
+        self.radio_poles.setChecked(True)
+        self.layout.addWidget(self.radio_poles, 0, 0)
+        self.radio_lqr = QtWidgets.QRadioButton("LQR", self)
+        self.layout.addWidget(self.radio_lqr, 1, 0)
+        self.radio_pid = QtWidgets.QRadioButton("PID", self)
+        self.layout.addWidget(self.radio_pid, 2, 0)
+
+        self.poles = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
+                      QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
+
+        for i, pole_edit in enumerate(self.poles):
+            pole_edit.setRange(-100, -0.01)
+            pole_edit.setValue(self.heli_controller.feedback_poles[i])
+            pole_edit.valueChanged.connect(self.on_pole_edit)
+            self.layout.addWidget(pole_edit, 0, i + 1)
+
+        self.frame.setLayout(self.layout)
+        self.setCentralWidget(self.frame)
+        self.show()
+
+    def on_pole_edit(self, new_pole_value):
+        pole_values = [pole_edit.value() for pole_edit in self.poles]
+        self.heli_controller.setFeedbackPoles(pole_values)
 
 
 if __name__ == "__main__":
     app = Qt.QApplication(sys.argv)
     window = mainWindow()
+    control_window = ControlWindow(window.ctrlObj)
     sys.exit(app.exec_())
