@@ -285,6 +285,23 @@ class ControlWindow(Qt.QMainWindow):
             lqr_edit.valueChanged.connect(self.on_lqr_edit)
             self.layout.addWidget(lqr_edit, 2, i + 2)
 
+        self.layout.addWidget(QtWidgets.QLabel("PID elevation"), 3, 1)
+        self.layout.addWidget(QtWidgets.QLabel("PID travel"), 4, 1)
+
+        self.pid_e_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
+        self.pid_lambda_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
+
+        for i, pid_edit in enumerate(self.pid_e_gains):
+            pid_edit.setRange(0, 100)
+            pid_edit.setValue(self.heli_controller.pid_elevation_gains[i])
+            pid_edit.valueChanged.connect(self.on_pid_edit)
+            self.layout.addWidget(pid_edit, 3, i + 2)
+        for i, pid_edit in enumerate(self.pid_lambda_gains):
+            pid_edit.setRange(0, 100)
+            pid_edit.setValue(self.heli_controller.pid_travel_gains[i])
+            pid_edit.valueChanged.connect(self.on_pid_edit)
+            self.layout.addWidget(pid_edit, 4, i + 2)
+
         self.frame.setLayout(self.layout)
         self.setCentralWidget(self.frame)
         self.show()
@@ -298,6 +315,12 @@ class ControlWindow(Qt.QMainWindow):
         r_diag = [lqr_edit.value() for lqr_edit in self.r_diagonal]
         self.heli_controller.setLqrQDiagonal(q_diag)
         self.heli_controller.setLqrRDiagonal(r_diag)
+
+    def on_pid_edit(self, new_value):
+        pid_e_gains = [pid_edit.value() for pid_edit in self.pid_e_gains]
+        pid_lambda_gains = [pid_edit.value() for pid_edit in self.pid_lambda_gains]
+        self.heli_controller.setElevationPidGains(pid_e_gains)
+        self.heli_controller.setTravelPidGains(pid_lambda_gains)
 
     def on_radio_poles_toggle(self, checked):
         if checked:

@@ -16,15 +16,22 @@ class ControlMethod(Enum):
 
 class HeliControl(object):
     def __init__(self):
-        self.operatingPoint = np.array([0, 0, 0])
+        self.operatingPoint = np.array([0, 0, 0])  # pitch, elevation, travel
         self.control_method = ControlMethod.POLES
-        self.feedback_poles = [-1, -2, -3, -4, -5, -6]
-        self.lqr_Q = [1, 1, 1, 1, 1, 1]
-        self.lqr_R = [1, 1]
-        self.Vf_op = 0
-        self.Vb_op = 0
-        self.state_feedback_gain = np.zeros((2, 6))
-        self.lqr_gain = np.zeros((2, 6))
+        self.feedback_poles = [-1, -2, -3, -4, -5, -6]  # closed loop poles to be used for state feedback
+        self.lqr_Q = [1, 1, 1, 1, 1, 1]  # diagonal of weighting matrix Q
+        self.lqr_R = [1, 1]  # diagonal of weighting matrix R
+        self.pid_elevation_gains = [10, 0, 5]  # Kp, Ki and Kd for elevation PID controller
+        self.pid_travel_gains = [1, 0.1, 0.01]  # Kp, Ki and Kd for travel PID controller
+        self.Vf_op = 0  # front rotor voltage to stay in equilibrium at the operating point
+        self.Vb_op = 0  # back rotor voltage to stay in equilibrium at the operating point
+        self.state_feedback_gain = np.zeros((2, 6))  # state feedback matrix, determined by pole placement
+        self.lqr_gain = np.zeros((2, 6))  # state feedback matrix, determined by LQR design
+
+        self.last_state = np.zeros(6)  # system state on last invocation of "control", used for PID
+        self.last_t = 0  # system time on last invocation of "control", used for PID
+        self.e_error_int = 0
+        self.lambda_error_int = 0
 
         self.update_controller_algorithms()
 
@@ -92,6 +99,28 @@ class HeliControl(object):
             u = u_op - self.state_feedback_gain @ (x - x_op)
         elif self.control_method == ControlMethod.LQR:
             u = u_op - self.lqr_gain @ (x - x_op)
+        elif self.control_method == ControlMethod.PID:
+            if not(np.linalg.norm(x - self.last_state) > 0.1 or t - self.last_t > 0.1):
+                # only calculate pid outputs when we didn't just jump by setting the state or switching the mode
+                e_error = x[1] - x_op[1]
+                self.e_error_int += e_error * (t - self.last_t)
+
+                l_error = x[2] - x_op[2]
+                self.lambda_error_int += l_error * (t - self.last_t)
+
+                Vs_diff = -(self.pid_elevation_gains[0] * e_error + self.pid_elevation_gains[1] * self.e_error_int + self.pid_elevation_gains[2] * x[4])
+                Vd_diff = -(self.pid_travel_gains[0] * l_error + self.pid_travel_gains[1] * self.lambda_error_int + self.pid_travel_gains[2] * x[5])
+
+                Vf_diff = (Vs_diff + Vd_diff) / 2
+                Vb_diff = (Vs_diff - Vd_diff) / 2
+
+                u = u_op + np.array([Vf_diff, Vb_diff])
+            else:
+                self.e_error_int = 0
+                self.lambda_error_int = 0
+
+        self.last_t = t
+        self.last_state = x
 
         return u
 
@@ -118,3 +147,9 @@ class HeliControl(object):
     def setLqrRDiagonal(self, lqr_R):
         self.lqr_R = lqr_R
         self.update_controller_algorithms()
+
+    def setElevationPidGains(self, gains):
+        self.pid_elevation_gains = gains
+
+    def setTravelPidGains(self, gains):
+        self.pid_travel_gains = gains
