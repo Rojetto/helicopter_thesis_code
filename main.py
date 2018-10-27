@@ -226,9 +226,9 @@ class mainWindow(Qt.QMainWindow):
             # TEMP logging
 
     def btnSetSimState_clicked(self):
-        self.heliSim.setCurrentState([float(self.sliderTheta1edit.text()),
+        self.heliSim.setCurrentState([float(self.sliderTheta3edit.text()),
                                       float(self.sliderTheta2edit.text()),
-                                      float(self.sliderTheta3edit.text()),
+                                      float(self.sliderTheta1edit.text()),
                                       0, 0, 0])
 
     def btnSetOP_clicked(self):
