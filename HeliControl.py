@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.ma import cos, sin
+from scipy.linalg import solve_continuous_are
 import control as ctr
 
 from enum import Enum
@@ -18,13 +19,16 @@ class HeliControl(object):
         self.operatingPoint = np.array([0, 0, 0])
         self.control_method = ControlMethod.POLES
         self.feedback_poles = [-1, -2, -3, -4, -5, -6]
+        self.lqr_Q = [1, 1, 1, 1, 1, 1]
+        self.lqr_R = [1, 1]
         self.Vf_op = 0
         self.Vb_op = 0
         self.state_feedback_gain = np.zeros((2, 6))
+        self.lqr_gain = np.zeros((2, 6))
 
-        self.update_stabilizing_state_feedback()
+        self.update_controller_algorithms()
 
-    def update_stabilizing_state_feedback(self):
+    def update_controller_algorithms(self):
         e_op = self.operatingPoint[1]
 
         L1 = mc.l_p
@@ -56,11 +60,21 @@ class HeliControl(object):
                       [L3/Je, L3/Je],
                       [0, 0]])
 
+        Q = np.diag(self.lqr_Q)
+        R = np.diag(self.lqr_R)
+
         try:
             K = ctr.place(A, B, self.feedback_poles)
             self.state_feedback_gain = K
-        except:
-            print("Error during pole placement")
+        except Exception as e:
+            print("Error during pole placement: " + str(e))
+
+        try:
+            X = solve_continuous_are(A, B, Q, R)
+            K = np.linalg.inv(R) @ B.T @ X
+            self.lqr_gain = K
+        except Exception as e:
+            print("Error during LQR computation: " + str(e))
 
     def control(self, t, x):
         """Is called by the main loop in order to get the current controller output.
@@ -76,6 +90,8 @@ class HeliControl(object):
 
         if self.control_method == ControlMethod.POLES:
             u = u_op - self.state_feedback_gain @ (x - x_op)
+        elif self.control_method == ControlMethod.LQR:
+            u = u_op - self.lqr_gain @ (x - x_op)
 
         return u
 
@@ -89,8 +105,16 @@ class HeliControl(object):
         point[1]: Elevation
         point[2]: Lambda """
         self.operatingPoint = np.array(point)
-        self.update_stabilizing_state_feedback()
+        self.update_controller_algorithms()
 
     def setFeedbackPoles(self, poles):
         self.feedback_poles = poles
-        self.update_stabilizing_state_feedback()
+        self.update_controller_algorithms()
+
+    def setLqrQDiagonal(self, lqr_Q):
+        self.lqr_Q = lqr_Q
+        self.update_controller_algorithms()
+
+    def setLqrRDiagonal(self, lqr_R):
+        self.lqr_R = lqr_R
+        self.update_controller_algorithms()

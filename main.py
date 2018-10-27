@@ -237,7 +237,7 @@ class mainWindow(Qt.QMainWindow):
 
 
 class ControlWindow(Qt.QMainWindow):
-    def __init__(self, heli_controller, parent=None):
+    def __init__(self, heli_controller: HeliControl, parent=None):
         Qt.QMainWindow.__init__(self, parent)
 
         self.heli_controller = heli_controller
@@ -254,16 +254,36 @@ class ControlWindow(Qt.QMainWindow):
         self.layout.addWidget(self.radio_lqr, 1, 0)
         self.radio_pid = QtWidgets.QRadioButton("PID", self)
         self.radio_pid.toggled.connect(self.on_radio_pid_toggle)
-        self.layout.addWidget(self.radio_pid, 2, 0)
+        self.layout.addWidget(self.radio_pid, 3, 0)
 
         self.poles = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
                       QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
 
+        self.layout.addWidget(QtWidgets.QLabel("Poles:"), 0, 1)
         for i, pole_edit in enumerate(self.poles):
             pole_edit.setRange(-100, -0.01)
             pole_edit.setValue(self.heli_controller.feedback_poles[i])
             pole_edit.valueChanged.connect(self.on_pole_edit)
-            self.layout.addWidget(pole_edit, 0, i + 1)
+            self.layout.addWidget(pole_edit, 0, i + 2)
+
+        self.q_diagonal = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
+                           QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
+
+        self.r_diagonal = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
+
+        self.layout.addWidget(QtWidgets.QLabel("diag(Q):"), 1, 1)
+        self.layout.addWidget(QtWidgets.QLabel("diag(R):"), 2, 1)
+
+        for i, lqr_edit in enumerate(self.q_diagonal):
+            lqr_edit.setRange(0.01, 100)
+            lqr_edit.setValue(self.heli_controller.lqr_Q[i])
+            lqr_edit.valueChanged.connect(self.on_lqr_edit)
+            self.layout.addWidget(lqr_edit, 1, i + 2)
+        for i, lqr_edit in enumerate(self.r_diagonal):
+            lqr_edit.setRange(0.01, 100)
+            lqr_edit.setValue(self.heli_controller.lqr_R[i])
+            lqr_edit.valueChanged.connect(self.on_lqr_edit)
+            self.layout.addWidget(lqr_edit, 2, i + 2)
 
         self.frame.setLayout(self.layout)
         self.setCentralWidget(self.frame)
@@ -272,6 +292,12 @@ class ControlWindow(Qt.QMainWindow):
     def on_pole_edit(self, new_pole_value):
         pole_values = [pole_edit.value() for pole_edit in self.poles]
         self.heli_controller.setFeedbackPoles(pole_values)
+
+    def on_lqr_edit(self, new_value):
+        q_diag = [lqr_edit.value() for lqr_edit in self.q_diagonal]
+        r_diag = [lqr_edit.value() for lqr_edit in self.r_diagonal]
+        self.heli_controller.setLqrQDiagonal(q_diag)
+        self.heli_controller.setLqrRDiagonal(r_diag)
 
     def on_radio_poles_toggle(self, checked):
         if checked:
