@@ -118,7 +118,7 @@ class mainWindow(Qt.QMainWindow):
         self.kalmanObj = HeliKalmanFilter()
 
         # TEMP logging
-        self.nr_log_entries = int(4 / (self.timeStep / 1000))  # First number is the time in seconds
+        self.nr_log_entries = int(10 / (self.timeStep / 1000))  # First number is the time in seconds
         self.log_ts = np.empty(self.nr_log_entries)
         self.log_xs = np.empty((self.nr_log_entries, 6))
         self.log_us = np.empty((self.nr_log_entries, 2))
@@ -259,9 +259,12 @@ class ControlWindow(Qt.QMainWindow):
         self.radio_lqr = QtWidgets.QRadioButton("LQR", self)
         self.radio_lqr.toggled.connect(self.on_radio_lqr_toggle)
         self.layout.addWidget(self.radio_lqr, 1, 0)
-        self.radio_pid = QtWidgets.QRadioButton("PID", self)
-        self.radio_pid.toggled.connect(self.on_radio_pid_toggle)
-        self.layout.addWidget(self.radio_pid, 3, 0)
+        self.radio_pid_direct = QtWidgets.QRadioButton("PID direct", self)
+        self.radio_pid_direct.toggled.connect(self.on_radio_pid_direct_toggle)
+        self.layout.addWidget(self.radio_pid_direct, 4, 0)
+        self.radio_pid_cascade = QtWidgets.QRadioButton("PID cascade", self)
+        self.radio_pid_cascade.toggled.connect(self.on_radio_pid_cascade_toggle)
+        self.layout.addWidget(self.radio_pid_cascade, 5, 0)
 
         self.poles = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
                       QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
@@ -293,10 +296,14 @@ class ControlWindow(Qt.QMainWindow):
             self.layout.addWidget(lqr_edit, 2, i + 2)
 
         self.layout.addWidget(QtWidgets.QLabel("PID elevation"), 3, 1)
-        self.layout.addWidget(QtWidgets.QLabel("PID travel"), 4, 1)
+        self.layout.addWidget(QtWidgets.QLabel("PID travel-Vd"), 4, 1)
+        self.layout.addWidget(QtWidgets.QLabel("PID travel-pitch"), 5, 1)
+        self.layout.addWidget(QtWidgets.QLabel("PID pitch-Vd"), 6, 1)
 
         self.pid_e_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
         self.pid_lambda_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
+        self.pid_travel_pitch_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
+        self.pid_pitch_vd_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
 
         for i, pid_edit in enumerate(self.pid_e_gains):
             pid_edit.setRange(0, 100)
@@ -308,6 +315,16 @@ class ControlWindow(Qt.QMainWindow):
             pid_edit.setValue(self.heli_controller.pid_travel_gains[i])
             pid_edit.valueChanged.connect(self.on_pid_edit)
             self.layout.addWidget(pid_edit, 4, i + 2)
+        for i, pid_edit in enumerate(self.pid_travel_pitch_gains):
+            pid_edit.setRange(0, 100)
+            pid_edit.setValue(self.heli_controller.pid_travel_pitch_gains[i])
+            pid_edit.valueChanged.connect(self.on_pid_edit)
+            self.layout.addWidget(pid_edit, 5, i + 2)
+        for i, pid_edit in enumerate(self.pid_pitch_vd_gains):
+            pid_edit.setRange(0, 100)
+            pid_edit.setValue(self.heli_controller.pid_pitch_vd_gains[i])
+            pid_edit.valueChanged.connect(self.on_pid_edit)
+            self.layout.addWidget(pid_edit, 6, i + 2)
 
         self.frame.setLayout(self.layout)
         self.setCentralWidget(self.frame)
@@ -326,8 +343,12 @@ class ControlWindow(Qt.QMainWindow):
     def on_pid_edit(self, new_value):
         pid_e_gains = [pid_edit.value() for pid_edit in self.pid_e_gains]
         pid_lambda_gains = [pid_edit.value() for pid_edit in self.pid_lambda_gains]
+        pid_travel_pitch_gains = [pid_edit.value() for pid_edit in self.pid_travel_pitch_gains]
+        pid_pitch_vd_gains = [pid_edit.value() for pid_edit in self.pid_pitch_vd_gains]
         self.heli_controller.setElevationPidGains(pid_e_gains)
         self.heli_controller.setTravelPidGains(pid_lambda_gains)
+        self.heli_controller.setTravelPitchPidGains(pid_travel_pitch_gains)
+        self.heli_controller.setPitchVdPidGains(pid_pitch_vd_gains)
 
     def on_radio_poles_toggle(self, checked):
         if checked:
@@ -337,9 +358,13 @@ class ControlWindow(Qt.QMainWindow):
         if checked:
             self.heli_controller.setControlMethod(ControlMethod.LQR)
 
-    def on_radio_pid_toggle(self, checked):
+    def on_radio_pid_direct_toggle(self, checked):
         if checked:
-            self.heli_controller.setControlMethod(ControlMethod.PID)
+            self.heli_controller.setControlMethod(ControlMethod.PID_DIRECT)
+
+    def on_radio_pid_cascade_toggle(self, checked):
+        if checked:
+            self.heli_controller.setControlMethod(ControlMethod.PID_CASCADE)
 
 
 if __name__ == "__main__":
