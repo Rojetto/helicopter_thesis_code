@@ -29,28 +29,31 @@ class mainWindow(Qt.QMainWindow):
         self.radioButton_sim.toggled.connect(lambda: self.radioBtnState(self.radioButton_sim))
         self.radioButton_auto = QtWidgets.QRadioButton("Simulation (Auto) Mode", self)
         self.radioButton_auto.toggled.connect(lambda: self.radioBtnState(self.radioButton_auto))
+
+        def set_slider_value_without_signal(slider, value):
+            blocked = slider.blockSignals(True)
+            slider.setValue(value)
+            slider.blockSignals(blocked)
+
         self.sliderTheta1 = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
+        self.sliderTheta1.setValue(50)
         self.sliderTheta1edit = QtWidgets.QLineEdit("0.0")
         self.sliderTheta1edit.setValidator(QtGui.QDoubleValidator())
-        self.sliderTheta1.sliderReleased.connect(lambda: self.sliderTheta1edit.setText(
-            str(self.sliderTheta1.value() / 100 * 2 * np.pi)))
+        self.sliderTheta1.valueChanged.connect(lambda: self.sliderTheta1edit.setText(f"{((self.sliderTheta1.value() - 49) / 50 * 180):.2f}"))
         #ATTENTION: ValueErrors can easily happen here
-        self.sliderTheta1edit.editingFinished.connect(lambda : self.sliderTheta1.setValue(
-                                                        float(self.sliderTheta1edit.text()) * 100 / (2*np.pi)))
+        self.sliderTheta1edit.editingFinished.connect(lambda: set_slider_value_without_signal(self.sliderTheta1, float(self.sliderTheta1edit.text()) / 180 * 50 + 49))
         self.sliderTheta2 = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
+        self.sliderTheta2.setValue(50)
         self.sliderTheta2edit = QtWidgets.QLineEdit("0.0")
         self.sliderTheta2edit.setValidator(QtGui.QDoubleValidator())
-        self.sliderTheta2.sliderReleased.connect(lambda: self.sliderTheta2edit.setText(
-            str(self.sliderTheta2.value() / 100 * 2 * np.pi)))
-        self.sliderTheta2edit.editingFinished.connect(lambda: self.sliderTheta2.setValue(
-            float(self.sliderTheta2edit.text()) * 100 / (2 * np.pi)))
+        self.sliderTheta2.valueChanged.connect(lambda: self.sliderTheta2edit.setText(f"{((self.sliderTheta2.value() - 49) / 50 * 90):.2f}"))
+        self.sliderTheta2edit.editingFinished.connect(lambda: set_slider_value_without_signal(self.sliderTheta2, float(self.sliderTheta2edit.text()) / 90 * 50 + 49))
         self.sliderTheta3 = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
+        self.sliderTheta3.setValue(50)
         self.sliderTheta3edit = QtWidgets.QLineEdit("0.0")
         self.sliderTheta3edit.setValidator(QtGui.QDoubleValidator())
-        self.sliderTheta3.sliderReleased.connect(lambda: self.sliderTheta3edit.setText(
-            str(self.sliderTheta3.value() / 100 * 2 * np.pi)))
-        self.sliderTheta3edit.editingFinished.connect(lambda: self.sliderTheta3.setValue(
-            float(self.sliderTheta3edit.text()) * 100 / (2 * np.pi)))
+        self.sliderTheta3.valueChanged.connect(lambda: self.sliderTheta3edit.setText(f"{((self.sliderTheta3.value() - 49) / 50 * 90):.2f}"))
+        self.sliderTheta3edit.editingFinished.connect(lambda: set_slider_value_without_signal(self.sliderTheta3, float(self.sliderTheta3edit.text()) / 90 * 50 + 49))
         self.theta1OPedit = QtWidgets.QLineEdit("0.0")
         self.theta1OPedit.setValidator(QtGui.QDoubleValidator())
         self.theta2OPedit = QtWidgets.QLineEdit("0.0")
@@ -140,9 +143,12 @@ class mainWindow(Qt.QMainWindow):
 
         if self.progMode == "m":
             #!!!!ATTENTION!!! ValueError can easily happen here
-            self.heliModel.setState(self.sliderTheta1.value()/100 * 2*np.pi,
-                                    self.sliderTheta2.value() / 100 * 2 * np.pi,
-                                    self.sliderTheta3.value() / 100 * 2 * np.pi)
+            try:
+                self.heliModel.setState(float(self.sliderTheta1edit.text()) / 180 * np.pi,
+                                        float(self.sliderTheta2edit.text()) / 180 * np.pi,
+                                        float(self.sliderTheta3edit.text()) / 180 * np.pi)
+            except:
+                pass
         if self.progMode == "s_m":
             #Calculate Simulation step
             try:
@@ -157,7 +163,7 @@ class mainWindow(Qt.QMainWindow):
 
         if self.progMode == "s_a":
             t = self.heliSim.getCurrentTime()
-            x  = self.heliSim.getCurrentState()
+            x = self.heliSim.getCurrentState()
             #Get controller output
             Vf, Vb = self.ctrlObj.control(t, x)
             #Call kalman filter function
@@ -226,14 +232,15 @@ class mainWindow(Qt.QMainWindow):
             # TEMP logging
 
     def btnSetSimState_clicked(self):
-        self.heliSim.setCurrentState([float(self.sliderTheta3edit.text()),
-                                      float(self.sliderTheta2edit.text()),
-                                      float(self.sliderTheta1edit.text()),
+        self.heliSim.setCurrentState([float(self.sliderTheta3edit.text()) / 180 * np.pi,
+                                      float(self.sliderTheta2edit.text()) / 180 * np.pi,
+                                      float(self.sliderTheta1edit.text()) / 180 * np.pi,
                                       0, 0, 0])
 
     def btnSetOP_clicked(self):
-        self.ctrlObj.setOperatingPoint([float(self.theta3OPedit.text()), float(self.theta2OPedit.text()),
-                                        float(self.theta1OPedit.text())])
+        self.ctrlObj.setOperatingPoint([float(self.theta3OPedit.text()) / 180 * np.pi,
+                                        float(self.theta2OPedit.text()) / 180 * np.pi,
+                                        float(self.theta1OPedit.text()) / 180 * np.pi])
 
 
 class ControlWindow(Qt.QMainWindow):
