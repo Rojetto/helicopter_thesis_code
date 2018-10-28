@@ -25,9 +25,9 @@ class HeliSimulation(object):
         p, e, lamb, dp, de, dlamb = x
 
         # calculate dp, de and dlamb
-        ddp = (L_1 / J_p) * V_d
-        dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s
-        ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s
+        ddp = (L_1 / J_p) * V_d - (mc.d_p / J_p) * dp
+        dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s - (mc.d_e / J_e) * de
+        ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s - (mc.d_l / J_l) * dlamb
         return [dp, de, dlamb, ddp, dde, ddlamb]
 
     def calcStep(self, V_f, V_b):
