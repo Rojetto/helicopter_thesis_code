@@ -11,7 +11,8 @@ from HeliSimulation import HeliSimulation
 from HeliControl import HeliControl, ControlMethod
 from HeliKalman import HeliKalmanFilter
 
-from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+#from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+from MyQVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 class mainWindow(Qt.QMainWindow):
     def __init__(self, parent = None):
@@ -131,6 +132,8 @@ class mainWindow(Qt.QMainWindow):
         self.setCentralWidget(self.frame)
         self.show()
         self.iren.Initialize()
+        #send t-keypress to widget
+
 
         # Create Timer
         self.timer = QtCore.QTimer()
