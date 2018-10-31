@@ -2,7 +2,6 @@ import numpy as np
 from numpy.ma import cos, sin
 from scipy.linalg import solve_continuous_are
 import control as ctr
-
 from enum import Enum
 
 import ModelConstants as mc
@@ -14,11 +13,17 @@ class ControlMethod(Enum):
     PID_DIRECT = 3
     PID_CASCADE = 4
 
+class ModelType(Enum):
+    EASY = 1
+    FRICTION = 2
+    CENTRIPETAL = 3
+
 
 class HeliControl(object):
     def __init__(self):
         self.operatingPoint = np.array([0, 0, 0])  # pitch, elevation, travel
         self.control_method = ControlMethod.POLES
+        self.model_type = ModelType.CENTRIPETAL
         self.feedback_poles = [-1, -2, -3, -4, -5, -6]  # closed loop poles to be used for state feedback
         self.lqr_Q = [1, 1, 1, 1, 1, 1]  # diagonal of weighting matrix Q
         self.lqr_R = [1, 1]  # diagonal of weighting matrix R
@@ -58,12 +63,21 @@ class HeliControl(object):
         self.Vf_op = (Vs_op + Vd_op) / 2
         self.Vb_op = (Vs_op - Vd_op) / 2
 
-        A = np.array([[0, 0, 0, 1, 0, 0],
-                      [0, 0, 0, 0, 1, 0],
-                      [0, 0, 0, 0, 0, 1],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, -L2*sin(e_op)/Je, 0, 0, 0, 0],
-                      [L4*Vs_op*cos(e_op)/Jl, 0, 0, 0, 0, 0]])
+        if self.model_type == ModelType.EASY:
+            A = np.array([[0, 0, 0, 1, 0, 0],
+                          [0, 0, 0, 0, 1, 0],
+                          [0, 0, 0, 0, 0, 1],
+                          [0, 0, 0, 0, 0, 0],
+                          [0, -L2*sin(e_op)/Je, 0, 0, 0, 0],
+                          [L4*Vs_op*cos(e_op)/Jl, 0, 0, 0, 0, 0]])
+
+        if self.model_type == ModelType.FRICTION or self.model_type == ModelType.CENTRIPETAL:
+            A = np.array([[0, 0,                  0,             1, 0, 0],
+                          [0, 0,                  0,             0, 1, 0],
+                          [0, 0,                  0,             0, 0, 1],
+                          [0, 0,                  0, - mc.d_p / Jp, 0, 0],
+                          [0, -L2*sin(e_op)/Je,   0, 0,  - mc.d_e / Je, 0],
+                          [L4*Vs_op*cos(e_op)/Jl, 0, 0, 0, 0,  - mc.d_l / Jl]])
 
         B = np.array([[0, 0],
                       [0, 0],
@@ -144,6 +158,9 @@ class HeliControl(object):
 
     def setControlMethod(self, method):
         self.control_method = method
+
+    def setModelType(self, modelType):
+        self.model_type = modelType
 
     def setOperatingPoint(self, point):
         """This function is called in order to set the current operating point of the controller.

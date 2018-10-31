@@ -1,6 +1,13 @@
 import numpy as np
 import scipy.integrate
 import ModelConstants as mc
+from enum import Enum
+
+
+class ModelType(Enum):
+    EASY = 1
+    FRICTION = 2
+    CENTRIPETAL = 3
 
 L_1 = mc.l_p
 L_2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
@@ -16,6 +23,7 @@ class HeliSimulation(object):
         """Initializes the simulation"""
         self.currentState = np.array([theta1_0, theta2_0, theta3_0, 0, 0, 0])
         self.timeStep = timeStep
+        self.model_type = ModelType.CENTRIPETAL
         self.solver = scipy.integrate.ode(lambda t, x: self.rhs(t, x, self.V_s, self.V_d))
         self.solver.set_initial_value([theta1_0, theta2_0, theta3_0, 0, 0, 0])
         self.solver.set_integrator('vode', method='adams', rtol=1e-6, atol=1e-9)
@@ -25,9 +33,21 @@ class HeliSimulation(object):
         p, e, lamb, dp, de, dlamb = x
 
         # calculate dp, de and dlamb
-        ddp = (L_1 / J_p) * V_d - (mc.d_p / J_p) * dp
-        dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s - (mc.d_e / J_e) * de
-        ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s - (mc.d_l / J_l) * dlamb
+        if self.model_type == ModelType.EASY:
+            ddp = (L_1 / J_p) * V_d
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s
+
+        if self.model_type == ModelType.FRICTION:
+            ddp = (L_1 / J_p) * V_d - (mc.d_p / J_p) * dp
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s - (mc.d_e / J_e) * de
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s - (mc.d_l / J_l) * dlamb
+
+        if self.model_type == ModelType.CENTRIPETAL:
+            ddp = (L_1 / J_p) * V_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de**2 - np.cos(e)**2 * dlamb**2)
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb**2
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s - (mc.d_l / J_l) * dlamb
+
         return [dp, de, dlamb, ddp, dde, ddlamb]
 
     def calcStep(self, V_f, V_b):
@@ -48,3 +68,6 @@ class HeliSimulation(object):
     def setCurrentState(self, state):
         self.currentState = np.array(state)
         self.solver.set_initial_value(self.currentState, self.solver.t)
+
+    def setModelType(self, modelType):
+        self.model_type = modelType
