@@ -1,8 +1,3 @@
-import sys
-import vtk
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5 import Qt
-import numpy as np
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plot
@@ -10,240 +5,157 @@ from HelicopterModel import HelicopterModel
 from HeliSimulation import HeliSimulation
 from HeliControl import HeliControl, ControlMethod
 from HeliKalman import HeliKalmanFilter
-
-#from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from MyQVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
+import sys
+import vtk
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import Qt
+import numpy as np
+
+
 class mainWindow(Qt.QMainWindow):
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         Qt.QMainWindow.__init__(self, parent)
 
-        #Create Gui
-        self.frame = Qt.QFrame()
-        self.manualGridVL = Qt.QGridLayout()
-        self.vl = Qt.QVBoxLayout()
-        ##Other Widgets##
-        self.radioButton_man = QtWidgets.QRadioButton("Manual Mode", self)
-        self.radioButton_man.setChecked(True)
-        self.radioButton_man.toggled.connect(lambda : self.radioBtnState(self.radioButton_man))
-        self.radioButton_sim = QtWidgets.QRadioButton("Simulation (Manual) Mode", self)
-        self.radioButton_sim.toggled.connect(lambda: self.radioBtnState(self.radioButton_sim))
-        self.radioButton_auto = QtWidgets.QRadioButton("Simulation (Auto) Mode", self)
-        self.radioButton_auto.toggled.connect(lambda: self.radioBtnState(self.radioButton_auto))
+        # GUI Layout
+        frame = Qt.QFrame()
+        main_layout = Qt.QVBoxLayout()
+        frame.setLayout(main_layout)
+        self.setCentralWidget(frame)
 
-        def set_slider_value_without_signal(slider, value):
-            blocked = slider.blockSignals(True)
-            slider.setValue(value)
-            slider.blockSignals(blocked)
+        vtk_widget = QVTKRenderWindowInteractor(frame)
+        main_layout.addWidget(vtk_widget)
+        control_top_level_layout = Qt.QHBoxLayout()
+        main_layout.addLayout(control_top_level_layout)
+        main_simulation_controls = QtWidgets.QGroupBox("Simulation")
+        control_top_level_layout.addWidget(main_simulation_controls)
+        main_simulation_controls_layout = Qt.QVBoxLayout()
+        main_simulation_controls.setLayout(main_simulation_controls_layout)
+        initial_state_layout = QtWidgets.QFormLayout()
+        main_simulation_controls_layout.addLayout(initial_state_layout)
 
-        self.sliderTheta1 = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
-        self.sliderTheta1.setValue(50)
-        self.sliderTheta1edit = QtWidgets.QLineEdit("0.0")
-        self.sliderTheta1edit.setValidator(QtGui.QDoubleValidator())
-        self.sliderTheta1.valueChanged.connect(lambda: self.sliderTheta1edit.setText(f"{((self.sliderTheta1.value() - 49) / 50 * 180):.2f}"))
-        #ATTENTION: ValueErrors can easily happen here
-        self.sliderTheta1edit.editingFinished.connect(lambda: set_slider_value_without_signal(self.sliderTheta1, float(self.sliderTheta1edit.text()) / 180 * 50 + 49))
-        self.sliderTheta2 = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
-        self.sliderTheta2.setValue(50)
-        self.sliderTheta2edit = QtWidgets.QLineEdit("0.0")
-        self.sliderTheta2edit.setValidator(QtGui.QDoubleValidator())
-        self.sliderTheta2.valueChanged.connect(lambda: self.sliderTheta2edit.setText(f"{((self.sliderTheta2.value() - 49) / 50 * 90):.2f}"))
-        self.sliderTheta2edit.editingFinished.connect(lambda: set_slider_value_without_signal(self.sliderTheta2, float(self.sliderTheta2edit.text()) / 90 * 50 + 49))
-        self.sliderTheta3 = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
-        self.sliderTheta3.setValue(50)
-        self.sliderTheta3edit = QtWidgets.QLineEdit("0.0")
-        self.sliderTheta3edit.setValidator(QtGui.QDoubleValidator())
-        self.sliderTheta3.valueChanged.connect(lambda: self.sliderTheta3edit.setText(f"{((self.sliderTheta3.value() - 49) / 50 * 90):.2f}"))
-        self.sliderTheta3edit.editingFinished.connect(lambda: set_slider_value_without_signal(self.sliderTheta3, float(self.sliderTheta3edit.text()) / 90 * 50 + 49))
-        self.theta1OPedit = QtWidgets.QLineEdit("0.0")
-        self.theta1OPedit.setValidator(QtGui.QDoubleValidator())
-        self.theta2OPedit = QtWidgets.QLineEdit("0.0")
-        self.theta2OPedit.setValidator(QtGui.QDoubleValidator())
-        self.theta3OPedit = QtWidgets.QLineEdit("0.0")
-        self.theta3OPedit.setValidator(QtGui.QDoubleValidator())
-        self.btnSetSimState = QtWidgets.QPushButton("Set this state to simulation")
-        self.btnSetSimState.clicked.connect(self.btnSetSimState_clicked)
-        self.btnSetOP = QtWidgets.QPushButton("Set operational point")
-        self.btnSetOP.clicked.connect(self.btnSetOP_clicked)
-        self.inputVf = QtWidgets.QLineEdit("0")
-        self.inputVf.setValidator(QtGui.QDoubleValidator())
-        self.inputVb = QtWidgets.QLineEdit("0")
-        self.inputVb.setValidator(QtGui.QDoubleValidator())
-        self.labelLambda = QtWidgets.QLabel("Lambda")
-        self.labelElevation = QtWidgets.QLabel("Elevation")
-        self.labelPitch = QtWidgets.QLabel("Pitch")
-        ##vtkWidget##
-        self.vtkWidget = QVTKRenderWindowInteractor(self.frame)
+        def build_slider_textedit_combo(min_value, max_value, init_value, callback):
+            def slider_to_value(position):
+                return position / 99.0 * (max_value - min_value) + min_value
 
-        self.manualGridVL.addWidget(self.sliderTheta1, 0, 1)
-        self.manualGridVL.addWidget(self.sliderTheta1edit, 0, 2)
-        self.manualGridVL.addWidget(self.sliderTheta2, 1, 1)
-        self.manualGridVL.addWidget(self.sliderTheta2edit, 1, 2)
-        self.manualGridVL.addWidget(self.sliderTheta3, 2, 1)
-        self.manualGridVL.addWidget(self.sliderTheta3edit, 2, 2)
-        self.manualGridVL.addWidget(self.theta1OPedit, 0, 3)
-        self.manualGridVL.addWidget(self.theta2OPedit, 1, 3)
-        self.manualGridVL.addWidget(self.theta3OPedit, 2, 3)
-        self.manualGridVL.addWidget(self.labelLambda, 0, 0)
-        self.manualGridVL.addWidget(self.labelElevation, 1, 0)
-        self.manualGridVL.addWidget(self.labelPitch, 2, 0)
+            def value_to_slider(value):
+                return int((value - min_value) / (max_value - min_value) * 99)
 
-        self.vl.addWidget(self.vtkWidget)
-        self.vl.addWidget(self.radioButton_man)
-        self.vl.addLayout(self.manualGridVL)
-        self.vl.addWidget(self.btnSetSimState)
-        self.vl.addWidget(self.btnSetOP)
-        self.vl.addWidget(self.radioButton_sim)
-        self.vl.addWidget(self.inputVf)
-        self.vl.addWidget(self.inputVb)
-        self.vl.addWidget(self.radioButton_auto)
+            h_layout = Qt.QHBoxLayout()
+            slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+            h_layout.addWidget(slider)
+            slider.setValue(value_to_slider(init_value))
+            double_box = QtWidgets.QDoubleSpinBox()
+            h_layout.addWidget(double_box)
+            double_box.setRange(min_value, max_value)
+            double_box.setValue(init_value)
 
-        self.ren = vtk.vtkRenderer()
-        self.renWin = self.vtkWidget.GetRenderWindow()
-        self.renWin.AddRenderer(self.ren)
-        self.iren = self.vtkWidget.GetRenderWindow().GetInteractor()
+            def on_slider():
+                blocking = double_box.blockSignals(True)
+                double_box.setValue(slider_to_value(slider.value()))
+                double_box.blockSignals(blocking)
+                callback()
 
-        #Settings
-        self.ren.SetBackground(0.2, 0.2, 0.2)
-        self.timeStep = 1/60 * 1000 #ms
+            def on_box():
+                blocking = slider.blockSignals(True)
+                slider.setValue(value_to_slider(double_box.value()))
+                slider.blockSignals(blocking)
+                callback()
+
+            slider.valueChanged.connect(on_slider)
+            double_box.valueChanged.connect(on_box)
+
+            return h_layout, double_box
+
+        travel_layout, self.init_travel_edit = build_slider_textedit_combo(-170.0, 170.0, 0.0, self.on_init_value_change)
+        initial_state_layout.addRow(QtWidgets.QLabel("Travel"), travel_layout)
+        elevation_layout, self.init_elevation_edit = build_slider_textedit_combo(-70.0, 70.0, 0.0, self.on_init_value_change)
+        initial_state_layout.addRow(QtWidgets.QLabel("Elevation"), elevation_layout)
+        pitch_layout, self.init_pitch_edit = build_slider_textedit_combo(-80.0, 80.0, 0.0, self.on_init_value_change)
+        initial_state_layout.addRow(QtWidgets.QLabel("Pitch"), pitch_layout)
+        simulation_control_button_layout = QtWidgets.QHBoxLayout()
+        main_simulation_controls_layout.addLayout(simulation_control_button_layout)
+        self.start_button = QtWidgets.QPushButton("Start")
+        self.start_button.clicked.connect(self.on_start_button)
+        self.stop_button = QtWidgets.QPushButton("Stop")
+        self.stop_button.setEnabled(False)
+        self.stop_button.clicked.connect(self.on_stop_button)
+        simulation_control_button_layout.addWidget(self.start_button)
+        simulation_control_button_layout.addWidget(self.stop_button)
+        settings_tabs = QtWidgets.QTabWidget()
+        control_top_level_layout.addWidget(settings_tabs)
+        model_frame = QtWidgets.QFrame()
+        trajectory_frame = QtWidgets.QFrame()
+        controller_frame = QtWidgets.QFrame()
+        settings_tabs.addTab(model_frame, "Model")
+        settings_tabs.addTab(trajectory_frame, "Trajectory")
+        settings_tabs.addTab(controller_frame, "Controller")
+
+        # VTK setup
+        vtk_renderer = vtk.vtkRenderer()
+        vtk_render_window = vtk_widget.GetRenderWindow()
+        vtk_render_window.AddRenderer(vtk_renderer)
+        self.vtk_interactor = vtk_widget.GetRenderWindow().GetInteractor()
+        vtk_renderer.SetBackground(0.2, 0.2, 0.2)
+
+        # Simulation setup
+        self.timeStep = 1 / 60 * 1000  # ms
         self.total_t = 0
-        self.progMode = 'm'
+        self.sim_running = False
 
-        #Initialize helicopter model
+        # Initialize helicopter model
         self.heliModel = HelicopterModel()
-        self.heliModel.addAllActors(self.ren)
-        #Initialize helicopter simulation
-        self.heliSim = HeliSimulation(0, 0, 0, self.timeStep/1000)
-        #Initialize controller and kalman filter
+        self.heliModel.addAllActors(vtk_renderer)
+        # Initialize helicopter simulation
+        self.heliSim = HeliSimulation(0, 0, 0, self.timeStep / 1000)
+        # Initialize controller and kalman filter
         self.ctrlObj = HeliControl()
         self.kalmanObj = HeliKalmanFilter()
 
-        # TEMP logging
-        self.nr_log_entries = int(10 / (self.timeStep / 1000))  # First number is the time in seconds
-        self.log_ts = np.empty(self.nr_log_entries)
-        self.log_xs = np.empty((self.nr_log_entries, 6))
-        self.log_us = np.empty((self.nr_log_entries, 2))
-        self.log_index = 0
-        self.log_enabled = False
-        # TEMP logging
-
-        #Inititalize Window, Interactor, Renderer, Layout
-        self.frame.setLayout(self.vl)
-        self.setCentralWidget(self.frame)
+        # Show the window
         self.show()
-        self.iren.Initialize()
-        #send t-keypress to widget
-
+        self.vtk_interactor.Initialize()
 
         # Create Timer
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.timerCallback)
         self.timer.start(self.timeStep)
 
+    def on_init_value_change(self):
+        pass
+
+    def on_start_button(self):
+        self.sim_running = True
+        self.stop_button.setEnabled(True)
+        self.start_button.setEnabled(False)
+
+    def on_stop_button(self):
+        self.sim_running = False
+        self.stop_button.setEnabled(False)
+        self.start_button.setEnabled(True)
+
     def timerCallback(self, *args):
         self.total_t += self.timeStep / 1000
         theta1, theta2, theta3 = self.heliModel.getState()
 
-        if self.progMode == "m":
-            #!!!!ATTENTION!!! ValueError can easily happen here
-            try:
-                self.heliModel.setState(float(self.sliderTheta1edit.text()) / 180 * np.pi,
-                                        float(self.sliderTheta2edit.text()) / 180 * np.pi,
-                                        float(self.sliderTheta3edit.text()) / 180 * np.pi)
-            except:
-                pass
-        if self.progMode == "s_m":
-            #Calculate Simulation step
-            try:
-                Vf = float(self.inputVf.text())
-                Vb = float(self.inputVb.text())
-            except ValueError:
-                #print("[DEBUG]ValueError in main.py")
-                Vf = 0
-                Vb = 0
-            p, e, lamb, dp, de, dlamb = self.heliSim.calcStep(Vf, Vb)
-            self.heliModel.setState(lamb, e, p)
-
-        if self.progMode == "s_a":
+        if self.sim_running:
             t = self.heliSim.getCurrentTime()
             x = self.heliSim.getCurrentState()
-            #Get controller output
+            # Get controller output
             Vf, Vb = self.ctrlObj.control(t, x)
-            #Call kalman filter function
+            # Call kalman filter function
             self.kalmanObj.kalman_compute(t, x, [Vf, Vb])
-            #Calculate next simulation step
+            # Calculate next simulation step
             p, e, lamb, dp, de, dlamb = self.heliSim.calcStep(Vf, Vb)
             self.heliModel.setState(lamb, e, p)
+        else:
+            orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])
+            orientation = orientation / 180.0 * np.pi
+            self.heliModel.setState(orientation[2], orientation[1], orientation[0])
+            self.heliSim.setCurrentState([orientation[0], orientation[1], orientation[2], 0, 0, 0])
 
-            # TEMP logging
-            if self.log_enabled:
-                self.log_ts[self.log_index] = self.heliSim.getCurrentTime()
-                self.log_xs[self.log_index] = self.heliSim.getCurrentState()
-                self.log_us[self.log_index, 0] = Vf
-                self.log_us[self.log_index, 1] = Vb
-
-                self.log_index += 1
-
-                if self.log_index >= self.nr_log_entries:
-                    self.log_enabled = False
-                    print("Finished logging")
-                    self.log_ts -= self.log_ts[0]
-
-                    plot.close("all")
-
-                    plot.figure("System state")
-                    plot.subplot(311)
-                    plot.plot(self.log_ts, self.log_xs[:, 0])
-                    plot.axhline(self.ctrlObj.operatingPoint[0])
-                    plot.grid()
-                    plot.subplot(312)
-                    plot.plot(self.log_ts, self.log_xs[:, 1])
-                    plot.axhline(self.ctrlObj.operatingPoint[1])
-                    plot.grid()
-                    plot.subplot(313)
-                    plot.plot(self.log_ts, self.log_xs[:, 2])
-                    plot.axhline(self.ctrlObj.operatingPoint[2])
-                    plot.grid()
-                    plot.tight_layout()
-
-                    plot.figure("Controller output")
-                    plot.plot(self.log_ts, self.log_us[:, 0])
-                    plot.plot(self.log_ts, self.log_us[:, 1])
-                    plot.grid()
-                    plot.tight_layout()
-
-                    plot.show()
-            # TEMP logging
-
-        self.iren.Render()
-
-    def radioBtnState(self, b):
-        if b.text() == "Manual Mode" and b.isChecked(): #let's ignore the unchecking events and see what happens
-            self.progMode = 'm'
-            print("Manual Mode was selected")
-
-        if b.text() == "Simulation (Manual) Mode" and b.isChecked():
-            self.progMode = 's_m'
-            print("Simulation (Manual) Mode was selected")
-
-        if b.text() == "Simulation (Auto) Mode" and b.isChecked():
-            self.progMode = 's_a'
-            print("Simulation (Auto) Mode was selected")
-            # TEMP logging
-            self.log_index = 0
-            self.log_enabled = True
-            # TEMP logging
-
-    def btnSetSimState_clicked(self):
-        self.heliSim.setCurrentState([float(self.sliderTheta3edit.text()) / 180 * np.pi,
-                                      float(self.sliderTheta2edit.text()) / 180 * np.pi,
-                                      float(self.sliderTheta1edit.text()) / 180 * np.pi,
-                                      0, 0, 0])
-
-    def btnSetOP_clicked(self):
-        self.ctrlObj.setOperatingPoint([float(self.theta3OPedit.text()) / 180 * np.pi,
-                                        float(self.theta2OPedit.text()) / 180 * np.pi,
-                                        float(self.theta1OPedit.text()) / 180 * np.pi])
+        self.vtk_interactor.Render()
 
 
 class ControlWindow(Qt.QMainWindow):
@@ -279,8 +191,10 @@ class ControlWindow(Qt.QMainWindow):
             pole_edit.valueChanged.connect(self.on_pole_edit)
             self.layout.addWidget(pole_edit, 0, i + 2)
 
-        self.q_diagonal = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
-                           QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
+        self.q_diagonal = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
+                           QtWidgets.QDoubleSpinBox(self),
+                           QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
+                           QtWidgets.QDoubleSpinBox(self)]
 
         self.r_diagonal = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
 
@@ -303,10 +217,14 @@ class ControlWindow(Qt.QMainWindow):
         self.layout.addWidget(QtWidgets.QLabel("PID travel-pitch"), 5, 1)
         self.layout.addWidget(QtWidgets.QLabel("PID pitch-Vd"), 6, 1)
 
-        self.pid_e_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
-        self.pid_lambda_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
-        self.pid_travel_pitch_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
-        self.pid_pitch_vd_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self)]
+        self.pid_e_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
+                            QtWidgets.QDoubleSpinBox(self)]
+        self.pid_lambda_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
+                                 QtWidgets.QDoubleSpinBox(self)]
+        self.pid_travel_pitch_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
+                                       QtWidgets.QDoubleSpinBox(self)]
+        self.pid_pitch_vd_gains = [QtWidgets.QDoubleSpinBox(self), QtWidgets.QDoubleSpinBox(self),
+                                   QtWidgets.QDoubleSpinBox(self)]
 
         for i, pid_edit in enumerate(self.pid_e_gains):
             pid_edit.setRange(0, 100)
