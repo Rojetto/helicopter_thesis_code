@@ -1,4 +1,7 @@
 import matplotlib
+
+from ModelFrame import ModelFrame
+
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plot
 from HelicopterModel import HelicopterModel
@@ -18,13 +21,35 @@ class mainWindow(Qt.QMainWindow):
     def __init__(self, parent=None):
         Qt.QMainWindow.__init__(self, parent)
 
-        # GUI Layout
+        # GUI setup
         frame = Qt.QFrame()
         main_layout = Qt.QVBoxLayout()
         frame.setLayout(main_layout)
         self.setCentralWidget(frame)
 
+        # VTK setup
         vtk_widget = QVTKRenderWindowInteractor(frame)
+        vtk_renderer = vtk.vtkRenderer()
+        vtk_render_window = vtk_widget.GetRenderWindow()
+        vtk_render_window.AddRenderer(vtk_renderer)
+        self.vtk_interactor = vtk_widget.GetRenderWindow().GetInteractor()
+        vtk_renderer.SetBackground(0.2, 0.2, 0.2)
+
+        # Simulation setup
+        self.timeStep = 1 / 60 * 1000  # ms
+        self.total_t = 0
+        self.sim_running = False
+
+        # Initialize helicopter model
+        self.heliModel = HelicopterModel()
+        self.heliModel.addAllActors(vtk_renderer)
+        # Initialize helicopter simulation
+        self.heliSim = HeliSimulation(0, 0, 0, self.timeStep / 1000)
+        # Initialize controller and kalman filter
+        self.ctrlObj = HeliControl()
+        self.kalmanObj = HeliKalmanFilter()
+
+        # GUI layout
         main_layout.addWidget(vtk_widget)
         control_top_level_layout = Qt.QHBoxLayout()
         main_layout.addLayout(control_top_level_layout)
@@ -85,33 +110,12 @@ class mainWindow(Qt.QMainWindow):
         simulation_control_button_layout.addWidget(self.stop_button)
         settings_tabs = QtWidgets.QTabWidget()
         control_top_level_layout.addWidget(settings_tabs)
-        model_frame = QtWidgets.QFrame()
+        model_frame = ModelFrame(self.heliSim)
         trajectory_frame = QtWidgets.QFrame()
         controller_frame = QtWidgets.QFrame()
         settings_tabs.addTab(model_frame, "Model")
         settings_tabs.addTab(trajectory_frame, "Trajectory")
         settings_tabs.addTab(controller_frame, "Controller")
-
-        # VTK setup
-        vtk_renderer = vtk.vtkRenderer()
-        vtk_render_window = vtk_widget.GetRenderWindow()
-        vtk_render_window.AddRenderer(vtk_renderer)
-        self.vtk_interactor = vtk_widget.GetRenderWindow().GetInteractor()
-        vtk_renderer.SetBackground(0.2, 0.2, 0.2)
-
-        # Simulation setup
-        self.timeStep = 1 / 60 * 1000  # ms
-        self.total_t = 0
-        self.sim_running = False
-
-        # Initialize helicopter model
-        self.heliModel = HelicopterModel()
-        self.heliModel.addAllActors(vtk_renderer)
-        # Initialize helicopter simulation
-        self.heliSim = HeliSimulation(0, 0, 0, self.timeStep / 1000)
-        # Initialize controller and kalman filter
-        self.ctrlObj = HeliControl()
-        self.kalmanObj = HeliKalmanFilter()
 
         # Show the window
         self.show()
