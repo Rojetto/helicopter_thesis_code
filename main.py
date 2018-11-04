@@ -1,6 +1,7 @@
 import matplotlib
 
 from ModelFrame import ModelFrame
+from TrajectoryFrame import TrajectoryFrame
 
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plot
@@ -111,10 +112,10 @@ class mainWindow(Qt.QMainWindow):
         settings_tabs = QtWidgets.QTabWidget()
         control_top_level_layout.addWidget(settings_tabs)
         model_frame = ModelFrame(self.heliSim)
-        trajectory_frame = QtWidgets.QFrame()
+        self.trajectory_frame = TrajectoryFrame()
         controller_frame = QtWidgets.QFrame()
         settings_tabs.addTab(model_frame, "Model")
-        settings_tabs.addTab(trajectory_frame, "Trajectory")
+        settings_tabs.addTab(self.trajectory_frame, "Trajectory")
         settings_tabs.addTab(controller_frame, "Controller")
 
         # Show the window
@@ -130,6 +131,9 @@ class mainWindow(Qt.QMainWindow):
         pass
 
     def on_start_button(self):
+        op_travel, op_elevation = self.trajectory_frame.get_operating_point()
+        self.ctrlObj.setOperatingPoint([0, op_elevation, op_travel])
+
         self.sim_running = True
         self.stop_button.setEnabled(True)
         self.start_button.setEnabled(False)

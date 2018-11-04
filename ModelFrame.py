@@ -12,6 +12,7 @@ class ModelFrame(QtWidgets.QFrame):
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
+        # Maybe it would be more consistent if we read the model type on "Start" instead of changing it here
         self.model_1_button = QtWidgets.QRadioButton("Simple model", self)
         self.model_1_button.toggled.connect(self.on_model_toggle)
         self.model_2_button = QtWidgets.QRadioButton("+ friction", self)
