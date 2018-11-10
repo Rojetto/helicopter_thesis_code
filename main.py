@@ -7,7 +7,7 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plot
 from HelicopterModel import HelicopterModel
-from HeliSimulation import HeliSimulation
+from HeliSimulation import HeliSimulation, HeliSimulationWithLimits
 from HeliControl import HeliControl, ControlMethod
 from HeliKalman import HeliKalmanFilter
 
@@ -113,7 +113,7 @@ class mainWindow(Qt.QMainWindow):
         self.heliModel = HelicopterModel()
         self.heliModel.addAllActors(self.ren)
         #Initialize helicopter simulation
-        self.heliSim = HeliSimulation(0, 0, 0, self.timeStep/1000)
+        self.heliSim = HeliSimulationWithLimits(0, 0, 0, self.timeStep/1000)
         #Initialize controller and kalman filter
         self.ctrlObj = HeliControl()
         self.kalmanObj = HeliKalmanFilter()
