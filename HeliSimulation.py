@@ -65,9 +65,9 @@ class HeliSimulation(object):
     def getCurrentTime(self):
         return self.solver.t
 
-    def setCurrentState(self, state):
+    def setCurrentStateAndTime(self, state, time=0.0):
         self.currentState = np.array(state)
-        self.solver.set_initial_value(self.currentState, self.solver.t)
+        self.solver.set_initial_value(self.currentState, time)
 
     def setModelType(self, modelType):
         self.model_type = modelType
