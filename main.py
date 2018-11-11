@@ -1,4 +1,7 @@
 import matplotlib
+
+from helicontrollers.ManualController import ManualController
+
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plot
 
@@ -54,7 +57,7 @@ class mainWindow(Qt.QMainWindow):
         # Initialize controller and kalman filter
         self.current_controller = None
         self.kalmanObj = HeliKalmanFilter()
-        controller_list = [PolePlacementController(), LqrController(), DirectPidController(), CascadePidController()]
+        controller_list = [ManualController(), PolePlacementController(), LqrController(), DirectPidController(), CascadePidController()]
 
         # GUI layout
         main_layout.addWidget(vtk_widget, 1)  # Set a stretch factor > 0 so that this widget takes all remaining space
@@ -176,5 +179,4 @@ class mainWindow(Qt.QMainWindow):
 if __name__ == "__main__":
     app = Qt.QApplication(sys.argv)
     window = mainWindow()
-    #control_window = ControlWindow(window.ctrlObj)
     sys.exit(app.exec_())
