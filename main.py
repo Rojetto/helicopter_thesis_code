@@ -1,10 +1,8 @@
 import matplotlib
-
-from helicontrollers.ManualController import ManualController
-
 matplotlib.use('Qt5Agg')
-import matplotlib.pyplot as plot
 
+import logger
+from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
 from helicontrollers.LqrController import LqrController
 
@@ -45,15 +43,16 @@ class mainWindow(Qt.QMainWindow):
         vtk_renderer.SetBackground(0.2, 0.2, 0.2)
 
         # Simulation setup
-        self.timeStep = 1 / 60 * 1000  # ms
+        self.timeStep = 1.0 / 60.0  # s
         self.total_t = 0
         self.sim_running = False
+        self.log_enabled = False
 
         # Initialize helicopter model
         self.heliModel = HelicopterModel()
         self.heliModel.addAllActors(vtk_renderer)
         # Initialize helicopter simulation
-        self.heliSim = HeliSimulation(0, 0, 0, self.timeStep / 1000)
+        self.heliSim = HeliSimulation(0, 0, 0, self.timeStep)
         # Initialize controller and kalman filter
         self.current_controller = None
         self.kalmanObj = HeliKalmanFilter()
@@ -116,8 +115,10 @@ class mainWindow(Qt.QMainWindow):
         self.stop_button = QtWidgets.QPushButton("Stop")
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.on_stop_button)
+        self.log_checkbox = QtWidgets.QCheckBox("Log")
         simulation_control_button_layout.addWidget(self.start_button)
         simulation_control_button_layout.addWidget(self.stop_button)
+        simulation_control_button_layout.addWidget(self.log_checkbox)
         settings_tabs = QtWidgets.QTabWidget()
         control_top_level_layout.addWidget(settings_tabs)
         model_frame = ModelFrame(self.heliSim)
@@ -134,7 +135,7 @@ class mainWindow(Qt.QMainWindow):
         # Create Timer
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.timerCallback)
-        self.timer.start(self.timeStep)
+        self.timer.start(self.timeStep * 1000)
 
     def on_init_value_change(self):
         pass
@@ -145,16 +146,19 @@ class mainWindow(Qt.QMainWindow):
         self.current_controller.initialize([op_travel, op_elevation], param_values)
 
         self.sim_running = True
+        self.log_enabled = self.log_checkbox.checkState() == 2
         self.stop_button.setEnabled(True)
         self.start_button.setEnabled(False)
 
     def on_stop_button(self):
         self.sim_running = False
+        if self.log_enabled:
+            logger.finish()
         self.stop_button.setEnabled(False)
         self.start_button.setEnabled(True)
 
     def timerCallback(self, *args):
-        self.total_t += self.timeStep / 1000
+        self.total_t += self.timeStep
         theta1, theta2, theta3 = self.heliModel.getState()
 
         if self.sim_running:
@@ -164,6 +168,9 @@ class mainWindow(Qt.QMainWindow):
             Vf, Vb = self.current_controller.control(t, x)
             # Call kalman filter function
             self.kalmanObj.kalman_compute(t, x, [Vf, Vb])
+            # Log data
+            if self.log_enabled:
+                logger.add_frame(t, x, [Vf, Vb])
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb = self.heliSim.calcStep(Vf, Vb)
             self.heliModel.setState(lamb, e, p)
