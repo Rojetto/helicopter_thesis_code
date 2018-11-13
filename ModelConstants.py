@@ -8,9 +8,9 @@ m_p = 0.5 * 0.771 #kg
 m_c_max = 2 * l_h/l_c * m_p
 m_c = 0.9  # arbitrary, but has to be smaller than m_c_max
 
-d_p = 0.02  # dissipation coefficient in Nms
-d_e = 0.02
-d_l = 0.02
+d_p = 0.048  # dissipation coefficient in Nms
+d_e = 0.053
+d_l = 0.274
 
 g = 9.81  # m/s^2
 
