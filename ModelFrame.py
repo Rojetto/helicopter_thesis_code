@@ -21,9 +21,14 @@ class ModelFrame(QtWidgets.QFrame):
         self.model_3_button.toggled.connect(self.on_model_toggle)
         self.model_3_button.setChecked(True)
 
+        self.check_limits_box = QtWidgets.QCheckBox("Limit angles")
+        self.check_limits_box.setCheckState(2 if sim.should_check_limits else 0)
+        self.check_limits_box.toggled.connect(self.on_limit_check_toggle)
+
         layout.addWidget(self.model_1_button)
         layout.addWidget(self.model_2_button)
         layout.addWidget(self.model_3_button)
+        layout.addWidget(self.check_limits_box)
 
     def on_model_toggle(self):
         if self.model_1_button.isChecked():
@@ -32,3 +37,6 @@ class ModelFrame(QtWidgets.QFrame):
             self.sim.setModelType(ModelType.FRICTION)
         elif self.model_3_button.isChecked():
             self.sim.setModelType(ModelType.CENTRIPETAL)
+
+    def on_limit_check_toggle(self):
+        self.sim.should_check_limits = self.check_limits_box.checkState() == 2
