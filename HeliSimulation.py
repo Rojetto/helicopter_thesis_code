@@ -224,6 +224,20 @@ class HeliSimulation(object):
 
         return np.array([dp, de, dlamb, ddp, dde, ddlamb, ddp_event, dde_event, ddlamb_event])
 
+    def generateEventList(self):
+        event_list = []
+        if self.statLim.p == LimitType.UPPER_LIMIT or self.statLim.p == LimitType.LOWER_LIMIT:
+            event_list.append(event_pdt0)
+        elif self.statLim.p == LimitType.NO_LIMIT_REACHED:
+            event_list.append(event_pmin)
+            event_list.append(event_pmax)
+        if self.statLim.e == LimitType.UPPER_LIMIT or self.statLim.e == LimitType.LOWER_LIMIT:
+            event_list.append(event_edt0)
+        elif self.statLim.e == LimitType.NO_LIMIT_REACHED:
+            event_list.append(event_emin)
+            event_list.append(event_emax)
+        return event_list
+
     def calcStep(self, V_f, V_b):
         """Returns the state of the system after the next time step
         V_f: voltage of the propeller right at back (of Fig.7) / first endeffector
@@ -238,50 +252,95 @@ class HeliSimulation(object):
             self.checkLimits()
         #integrate one time step
         #for adjusting the performance the number of in-between-steps can be changed
-        tt = np.linspace(self.currentTime, self.currentTime + self.timeStep, 3)
-        sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
-                                        (self.currentTime, self.currentTime+self.timeStep), self.currentState,
-                                        method='RK45', t_eval=tt,  rtol=1e-6, atol=1e-9,
-                                        events=[event_pmin, event_pmax,
-                                                event_emin, event_emax, event_pdt0, event_edt0])
-        #check if there was an event in order to limit the angle states
-        ##TODO: Simulation Time must always stop at +timeStep !
-        if np.size(sol.t_events) != 0:
-            #1. Manage state machine
-            if np.size(sol.t_events[0]) != 0:
-                print("pmin")
-                self.currentState[0] = StateLimits.p_min
-                self.statLim.p = LimitType.LOWER_LIMIT
-            if np.size(sol.t_events[1]) != 0:
-                print("pmax")
-                self.currentState[0] = StateLimits.p_max
-                self.statLim.p = LimitType.UPPER_LIMIT
-            if np.size(sol.t_events[2]) != 0:
-                print("emin")
-                self.currentState[1] = StateLimits.e_min
-                self.statLim.e = LimitType.LOWER_LIMIT
-            if np.size(sol.t_events[3]) != 0:
-                print("emax")
-                self.currentState[1] = StateLimits.e_max
-                self.statLim.e = LimitType.UPPER_LIMIT
-            if np.size(sol.t_events[4]) != 0:
-                print("p  no limit")
-                self.statLim.p = LimitType.NO_LIMIT_REACHED
-            if np.size(sol.t_events[5]) != 0:
-                print("e  no limit")
-                self.statLim.e = LimitType.NO_LIMIT_REACHED
+        loopCondition = True
+        t0_g = self.currentTime
+        tf_g = self.currentTime + self.timeStep
+        x0_g = self.currentState
+        t0 = t0_g
+        tf = tf_g
+        x0 = x0_g
+        m = 0
+        while loopCondition:
+            event_list = self.generateEventList()
+            tt = np.linspace(t0, tf, 3)
+            sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
+                                            (t0, tf), x0,
+                                            method='RK45', t_eval=tt,  rtol=1e-6, atol=1e-9,
+                                            events=event_list)
+            # check if there was an event in order to limit the angle states
+            # TODO: Simulation Time must always stop at +timeStep !
+            if np.size(sol.t_events) != 0:
+                m += 1
+                # get time of event
+                for v in sol.t_events:
+                    if np.size(v) != 0:
+                        eventTime = v[0]
+                # 1. simulate until event time
+                t0 = sol.t[-1]
+                tf = eventTime
+                x0 = sol.y[:, -1]
+                tt = np.linspace(t0, tf, 2)
+                print(eventTime)
+                print(sol.t)
+                print(sol.y)
+                sol2 = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
+                                                 (t0, tf), x0,
+                                                 method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9,
+                                                 events=event_list)
+                print(sol2)
+                # there should not be an event in this simulation, but if there is probably it is the same event
+                # as before or something went terribly wrong (like e.g. pitch and elevation become bounded in
+                # the same microsecond AND the solver confuses the order of them)
+                # firstly i am not going to address the second problem, but for debugging purpose it will be printed
+                if np.size(sol2.t_events) != 0:
+                    print("[DEBUG] Event was triggered in second simulation part!")
+                # 2. Manage state machine
+                self.currentState = sol2.y[:, -1]
+                if np.size(sol.t_events[0]) != 0:
+                    print("pmin")
+                    self.currentState[0] = StateLimits.p_min - StateLimits.eps_p
+                    self.statLim.p = LimitType.LOWER_LIMIT
+                if np.size(sol.t_events[1]) != 0:
+                    print("pmax")
+                    self.currentState[0] = StateLimits.p_max + StateLimits.eps_p
+                    self.statLim.p = LimitType.UPPER_LIMIT
+                if np.size(sol.t_events[2]) != 0:
+                    print("emin")
+                    self.currentState[1] = StateLimits.e_min - StateLimits.eps_e
+                    self.statLim.e = LimitType.LOWER_LIMIT
+                if np.size(sol.t_events[3]) != 0:
+                    print("emax")
+                    self.currentState[1] = StateLimits.e_max + StateLimits.eps_e
+                    self.statLim.e = LimitType.UPPER_LIMIT
+                if np.size(sol.t_events[4]) != 0:
+                    print("p  no limit")
+                    if self.statLim.p == LimitType.UPPER_LIMIT:
+                        self.currentState[0] = StateLimits.p_max - StateLimits.eps_p
+                    elif self.statLim.p == LimitType.LOWER_LIMIT:
+                        self.currentState[0] = StateLimits.p_min + StateLimits.eps_p
+                    self.statLim.p = LimitType.NO_LIMIT_REACHED
+                if np.size(sol.t_events[5]) != 0:
+                    print("e  no limit")
+                    if self.statLim.e == LimitType.UPPER_LIMIT:
+                        self.currentState[1] = StateLimits.e_max - StateLimits.eps_e
+                    elif self.statLim.e == LimitType.LOWER_LIMIT:
+                        self.currentState[1] = StateLimits.e_min + StateLimits.eps_e
+                    self.statLim.e = LimitType.NO_LIMIT_REACHED
+                # 3. Set simulation parameters for next part of interval
+                t0 = eventTime
+                tf = tf_g
+                x0 = self.currentState
+            else:
+                # if there were no events, just leave the loop
+                loopCondition = False
 
-            # 2. Simulate until end of time interval
-            # Because of all events terminate the simulation it is clear that there only can be
-            # one event in the t_events array. Therefore we just have to look up this time value
-            self.currentTime = sol.t[-1]
-            sol2 = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
-                                            (self.currentTime, self.currentTime + self.timeStep), self.currentState,
-                                            method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9,
-                                            events=[event_pmin, event_pmax,
-                                                    event_emin, event_emax])
+        if m != 0:
+            print("t_g")
+            print(tf_g)
+            print(sol.t[-1])
         self.currentState = sol.y[:, -1]
         self.currentTime = sol.t[-1]
+
         #end = time.time()
         #print(end - start)
         return self.currentState[0:6]
@@ -299,6 +358,9 @@ class HeliSimulation(object):
         #print(state)
         self.currentTime = time
         self.currentState = state
+        # reset state machine
+        self.statLim.p = LimitType.NO_LIMIT_REACHED
+        self.statLim.e = LimitType.NO_LIMIT_REACHED
 
     def setModelType(self, modelType):
         self.model_type = modelType
