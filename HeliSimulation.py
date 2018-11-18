@@ -226,17 +226,33 @@ class HeliSimulation(object):
 
     def generateEventList(self):
         event_list = []
+        # event dic: eventNr -> eventName
+        # eventName can be used in if structure
+        event_dic = {}
+        m = 0
         if self.statLim.p == LimitType.UPPER_LIMIT or self.statLim.p == LimitType.LOWER_LIMIT:
             event_list.append(event_pdt0)
+            event_dic.update({m: "event_pdt0"})
+            m += 1
         elif self.statLim.p == LimitType.NO_LIMIT_REACHED:
             event_list.append(event_pmin)
+            event_dic.update({m: "event_pmin"})
+            m += 1
             event_list.append(event_pmax)
+            event_dic.update({m: "event_pmax"})
+            m += 1
         if self.statLim.e == LimitType.UPPER_LIMIT or self.statLim.e == LimitType.LOWER_LIMIT:
             event_list.append(event_edt0)
+            event_dic.update({m: "event_edt0"})
+            m += 1
         elif self.statLim.e == LimitType.NO_LIMIT_REACHED:
             event_list.append(event_emin)
+            event_dic.update({m: "event_emin"})
+            m += 1
             event_list.append(event_emax)
-        return event_list
+            event_dic.update({m: "event_emax"})
+            m += 1
+        return event_list, event_dic
 
     def calcStep(self, V_f, V_b):
         """Returns the state of the system after the next time step
@@ -250,8 +266,8 @@ class HeliSimulation(object):
         # will probably react unpredictable
         if self.should_check_limits and 1 == 2:
             self.checkLimits()
-        #integrate one time step
-        #for adjusting the performance the number of in-between-steps can be changed
+        # integrate one time step
+        # for adjusting the performance the number of in-between-steps can be changed
         loopCondition = True
         t0_g = self.currentTime
         tf_g = self.currentTime + self.timeStep
@@ -261,7 +277,7 @@ class HeliSimulation(object):
         x0 = x0_g
         m = 0
         while loopCondition:
-            event_list = self.generateEventList()
+            event_list, event_dic = self.generateEventList()
             tt = np.linspace(t0, tf, 3)
             sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
                                             (t0, tf), x0,
@@ -272,22 +288,23 @@ class HeliSimulation(object):
             if np.size(sol.t_events) != 0:
                 m += 1
                 # get time of event
-                for v in sol.t_events:
+                for idx, v in enumerate(sol.t_events):
                     if np.size(v) != 0:
                         eventTime = v[0]
+                        eventNr = idx
                 # 1. simulate until event time
                 t0 = sol.t[-1]
                 tf = eventTime
                 x0 = sol.y[:, -1]
                 tt = np.linspace(t0, tf, 2)
-                print(eventTime)
-                print(sol.t)
-                print(sol.y)
+                # print(eventTime)
+                # print(sol.t)
+                # print(sol.y)
                 sol2 = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
                                                  (t0, tf), x0,
                                                  method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9,
                                                  events=event_list)
-                print(sol2)
+                # print(sol2)
                 # there should not be an event in this simulation, but if there is probably it is the same event
                 # as before or something went terribly wrong (like e.g. pitch and elevation become bounded in
                 # the same microsecond AND the solver confuses the order of them)
@@ -295,31 +312,33 @@ class HeliSimulation(object):
                 if np.size(sol2.t_events) != 0:
                     print("[DEBUG] Event was triggered in second simulation part!")
                 # 2. Manage state machine
+                eventName = event_dic[eventNr]
+                print(str(eventNr) + " ==> " + eventName)
                 self.currentState = sol2.y[:, -1]
-                if np.size(sol.t_events[0]) != 0:
+                if eventName == "event_pmin":
                     print("pmin")
                     self.currentState[0] = StateLimits.p_min - StateLimits.eps_p
                     self.statLim.p = LimitType.LOWER_LIMIT
-                if np.size(sol.t_events[1]) != 0:
+                if eventName == "event_pmax":
                     print("pmax")
                     self.currentState[0] = StateLimits.p_max + StateLimits.eps_p
                     self.statLim.p = LimitType.UPPER_LIMIT
-                if np.size(sol.t_events[2]) != 0:
+                if eventName == "event_emin":
                     print("emin")
                     self.currentState[1] = StateLimits.e_min - StateLimits.eps_e
                     self.statLim.e = LimitType.LOWER_LIMIT
-                if np.size(sol.t_events[3]) != 0:
+                if eventName == "event_emax":
                     print("emax")
                     self.currentState[1] = StateLimits.e_max + StateLimits.eps_e
                     self.statLim.e = LimitType.UPPER_LIMIT
-                if np.size(sol.t_events[4]) != 0:
+                if eventName == "event_pdt0":
                     print("p  no limit")
                     if self.statLim.p == LimitType.UPPER_LIMIT:
                         self.currentState[0] = StateLimits.p_max - StateLimits.eps_p
                     elif self.statLim.p == LimitType.LOWER_LIMIT:
                         self.currentState[0] = StateLimits.p_min + StateLimits.eps_p
                     self.statLim.p = LimitType.NO_LIMIT_REACHED
-                if np.size(sol.t_events[5]) != 0:
+                if eventName == "event_edt0":
                     print("e  no limit")
                     if self.statLim.e == LimitType.UPPER_LIMIT:
                         self.currentState[1] = StateLimits.e_max - StateLimits.eps_e
@@ -335,9 +354,10 @@ class HeliSimulation(object):
                 loopCondition = False
 
         if m != 0:
-            print("t_g")
-            print(tf_g)
-            print(sol.t[-1])
+            # print("t_g")
+            # print(tf_g)
+            # print(sol.t[-1])
+            pass
         self.currentState = sol.y[:, -1]
         self.currentTime = sol.t[-1]
 

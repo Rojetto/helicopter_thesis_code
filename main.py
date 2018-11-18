@@ -108,6 +108,11 @@ class mainWindow(Qt.QMainWindow):
         initial_state_layout.addRow(QtWidgets.QLabel("Elevation"), elevation_layout)
         pitch_layout, self.init_pitch_edit = build_slider_textedit_combo(-80.0, 80.0, 0.0, self.on_init_value_change)
         initial_state_layout.addRow(QtWidgets.QLabel("Pitch"), pitch_layout)
+        simulation_update_controller_layout = QtWidgets.QHBoxLayout()
+        main_simulation_controls_layout.addLayout(simulation_update_controller_layout)
+        self.update_controller_button = QtWidgets.QPushButton("Update controller values")
+        self.update_controller_button.clicked.connect(self.on_controller_update_button)
+        simulation_update_controller_layout.addWidget(self.update_controller_button)
         simulation_control_button_layout = QtWidgets.QHBoxLayout()
         main_simulation_controls_layout.addLayout(simulation_control_button_layout)
         self.start_button = QtWidgets.QPushButton("Start")
@@ -139,6 +144,11 @@ class mainWindow(Qt.QMainWindow):
 
     def on_init_value_change(self):
         pass
+
+    def on_controller_update_button(self):
+        self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
+        op_travel, op_elevation = self.trajectory_frame.get_operating_point()
+        self.current_controller.initialize([op_travel, op_elevation], param_values)
 
     def on_start_button(self):
         self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
