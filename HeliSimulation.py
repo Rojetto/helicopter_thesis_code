@@ -245,20 +245,24 @@ class HeliSimulation(object):
                                         events=[event_pmin, event_pmax,
                                                 event_emin, event_emax, event_pdt0, event_edt0])
         #check if there was an event in order to limit the angle states
-        ##TODO: Simultion Time must always stop at +timeStep !
+        ##TODO: Simulation Time must always stop at +timeStep !
         if np.size(sol.t_events) != 0:
             #1. Manage state machine
             if np.size(sol.t_events[0]) != 0:
                 print("pmin")
+                self.currentState[0] = StateLimits.p_min
                 self.statLim.p = LimitType.LOWER_LIMIT
             if np.size(sol.t_events[1]) != 0:
                 print("pmax")
+                self.currentState[0] = StateLimits.p_max
                 self.statLim.p = LimitType.UPPER_LIMIT
             if np.size(sol.t_events[2]) != 0:
                 print("emin")
+                self.currentState[1] = StateLimits.e_min
                 self.statLim.e = LimitType.LOWER_LIMIT
             if np.size(sol.t_events[3]) != 0:
                 print("emax")
+                self.currentState[1] = StateLimits.e_max
                 self.statLim.e = LimitType.UPPER_LIMIT
             if np.size(sol.t_events[4]) != 0:
                 print("p  no limit")
@@ -267,10 +271,10 @@ class HeliSimulation(object):
                 print("e  no limit")
                 self.statLim.e = LimitType.NO_LIMIT_REACHED
 
-            #2. Simulate until end of time interval
-            #Because of all events terminate the simulation it is clear that there only can be
-            #one event in the t_events array. Therefore we just have to look up this time value
-            self.currentTime =
+            # 2. Simulate until end of time interval
+            # Because of all events terminate the simulation it is clear that there only can be
+            # one event in the t_events array. Therefore we just have to look up this time value
+            self.currentTime = sol.t[-1]
             sol2 = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
                                             (self.currentTime, self.currentTime + self.timeStep), self.currentState,
                                             method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9,
