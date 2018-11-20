@@ -309,8 +309,13 @@ class HeliSimulation(object):
                 # as before or something went terribly wrong (like e.g. pitch and elevation become bounded in
                 # the same microsecond AND the solver confuses the order of them)
                 # firstly i am not going to address the second problem, but for debugging purpose it will be printed
+                for idx, v in enumerate(sol2.t_events):
+                    if np.size(v) != 0:
+                        eventTime2 = v[0]
+                        eventNr2 = idx
+                        eventName2 = event_dic[eventNr2]
                 if np.size(sol2.t_events) != 0:
-                    print("[DEBUG] Event was triggered in second simulation part!")
+                    print("[DEBUG] Event was triggered in second simulation part! Event = " + eventName2)
                 # 2. Manage state machine
                 eventName = event_dic[eventNr]
                 print(str(eventNr) + " ==> " + eventName)
