@@ -254,6 +254,75 @@ class HeliSimulation(object):
             m += 1
         return event_list, event_dic
 
+    def switchState(self, event):
+        """Switches the discrete state dependent on which event was triggered.
+        :param event: function object, that returned 0 to the solver
+        :type event: Callable[[float, np.ndarray], float]"""
+        # if event.__name__ == "event_pmax":
+        if event.__name__ == "event_pmin":
+            print("pmin")
+            # self.currentState[0] = StateLimits.p_min - StateLimits.eps_p
+            self.statLim.p = LimitType.LOWER_LIMIT
+        if event.__name__ == "event_pmax":
+            print("pmax")
+            # self.currentState[0] = StateLimits.p_max + StateLimits.eps_p
+            self.statLim.p = LimitType.UPPER_LIMIT
+        if event.__name__ == "event_emin":
+            print("emin")
+            # self.currentState[1] = StateLimits.e_min - StateLimits.eps_e
+            self.statLim.e = LimitType.LOWER_LIMIT
+        if event.__name__ == "event_emax":
+            print("emax")
+            # self.currentState[1] = StateLimits.e_max + StateLimits.eps_e
+            self.statLim.e = LimitType.UPPER_LIMIT
+        if event.__name__ == "event_pdt0":
+            print("p  no limit")
+            # if self.statLim.p == LimitType.UPPER_LIMIT:
+            #     self.currentState[0] = StateLimits.p_max - StateLimits.eps_p
+            # elif self.statLim.p == LimitType.LOWER_LIMIT:
+            #     self.currentState[0] = StateLimits.p_min + StateLimits.eps_p
+            self.statLim.p = LimitType.NO_LIMIT_REACHED
+        if event.__name__ == "event_edt0":
+            print("e  no limit")
+            # if self.statLim.e == LimitType.UPPER_LIMIT:
+            #     self.currentState[1] = StateLimits.e_max - StateLimits.eps_e
+            # elif self.statLim.e == LimitType.LOWER_LIMIT:
+            #     self.currentState[1] = StateLimits.e_min + StateLimits.eps_e
+            self.statLim.e = LimitType.NO_LIMIT_REACHED
+
+
+    def simulateSegment(self, t0, tf, x0, V_s, V_d, event_list):
+        """Simulates one segment from t0 to tf and takes care of events that occur in that time interval.
+        Returns state vector at tf."""
+        tt = np.linspace(t0, tf, 2)
+        sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
+                                        (t0, tf), x0,
+                                        method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9,
+                                        events=event_list)
+        # check if events did occur
+        if np.size(sol.t_events) != 0:
+            # get information about event
+            for idx, v in enumerate(sol.t_events):
+                if np.size(v) != 0:
+                    event_time = v[0]
+                    event_nr = idx
+                    triggered_event = event_list[event_nr]
+            # remove occured event from event list
+            event_list.remove(triggered_event)
+            # integrate from t0 to eventTime
+            state_at_te = self.simulateSegment(t0, event_time, x0, V_s, V_d, event_list)
+            # switch discrete state
+            self.switchState(triggered_event)
+            # integrate from eventTime to tf
+            state_at_tf = self.simulateSegment(event_time, tf, state_at_te, V_s, V_d, event_list)
+        else:
+            state_at_tf = sol.y[:, -1]
+
+        return state_at_tf
+
+
+
+
     def calcStep(self, V_f, V_b):
         """Returns the state of the system after the next time step
         V_f: voltage of the propeller right at back (of Fig.7) / first endeffector
