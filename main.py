@@ -9,6 +9,7 @@ from helicontrollers.LqrController import LqrController
 from ControllerFrame import ControllerFrame
 from ModelFrame import ModelFrame
 from TrajectoryFrame import TrajectoryFrame
+from OperatingPointFrame import OperatingPointFrame
 from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
 
@@ -127,9 +128,11 @@ class mainWindow(Qt.QMainWindow):
         settings_tabs = QtWidgets.QTabWidget()
         control_top_level_layout.addWidget(settings_tabs)
         model_frame = ModelFrame(self.heliSim)
+        self.operating_point_frame = OperatingPointFrame()
         self.trajectory_frame = TrajectoryFrame()
         self.controller_frame = ControllerFrame(controller_list)
         settings_tabs.addTab(model_frame, "Model")
+        settings_tabs.addTab(self.operating_point_frame, "Operating Point")
         settings_tabs.addTab(self.trajectory_frame, "Trajectory")
         settings_tabs.addTab(self.controller_frame, "Controller")
 
@@ -147,14 +150,14 @@ class mainWindow(Qt.QMainWindow):
 
     def on_controller_update_button(self):
         self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
-        op_travel, op_elevation = self.trajectory_frame.get_operating_point()
+        op_travel, op_elevation = self.operating_point_frame.get_operating_point()
         planner_travel, planner_elevation = self.trajectory_frame.get_planner()
         logger.add_planner(planner_travel, planner_elevation)
         self.current_controller.initialize([op_travel, op_elevation], param_values, planner_travel, planner_elevation)
 
     def on_start_button(self):
         self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
-        op_travel, op_elevation = self.trajectory_frame.get_operating_point()
+        op_travel, op_elevation = self.operating_point_frame.get_operating_point()
         planner_travel, planner_elevation = self.trajectory_frame.get_planner()
         logger.add_planner(planner_travel, planner_elevation)
         self.current_controller.initialize([op_travel, op_elevation], param_values, planner_travel, planner_elevation)

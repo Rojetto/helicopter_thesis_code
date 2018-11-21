@@ -20,21 +20,21 @@ class TrajectoryFrame(QtWidgets.QFrame):
         # fill the QStackWidget manually with Frames. If this becomes too tedious and confusing
         # then maybe switch to doing something with more abstraction
         # Fixed Operating Point
-        self.trajectory_combo.insertItem(1, "Fixed Operating Point")
-        fixed_op_frame = QtWidgets.QFrame()
-        fixed_op_layout = QtWidgets.QGridLayout()
-        fixed_op_frame.setLayout(fixed_op_layout)
-        fixed_op_layout.addWidget(QtWidgets.QLabel("Static operating point:"), 0, 0)
-        self.fixed_op_travel = QtWidgets.QDoubleSpinBox()
-        self.fixed_op_elevation = QtWidgets.QDoubleSpinBox()
-        fixed_op_layout.addWidget(QtWidgets.QLabel("Travel (degree)"), 0, 1)
-        fixed_op_layout.addWidget(self.fixed_op_travel, 0, 2)
-        fixed_op_layout.addWidget(QtWidgets.QLabel("Elevation (degree)"), 0, 3)
-        fixed_op_layout.addWidget(self.fixed_op_elevation, 0, 4)
-        self.trajectory_frame_stack.addWidget(fixed_op_frame)
+        # self.trajectory_combo.insertItem(1, "Fixed Operating Point")
+        # fixed_op_frame = QtWidgets.QFrame()
+        # fixed_op_layout = QtWidgets.QGridLayout()
+        # fixed_op_frame.setLayout(fixed_op_layout)
+        # fixed_op_layout.addWidget(QtWidgets.QLabel("Static operating point:"), 0, 0)
+        # self.fixed_op_travel = QtWidgets.QDoubleSpinBox()
+        # self.fixed_op_elevation = QtWidgets.QDoubleSpinBox()
+        # fixed_op_layout.addWidget(QtWidgets.QLabel("Travel (degree)"), 0, 1)
+        # fixed_op_layout.addWidget(self.fixed_op_travel, 0, 2)
+        # fixed_op_layout.addWidget(QtWidgets.QLabel("Elevation (degree)"), 0, 3)
+        # fixed_op_layout.addWidget(self.fixed_op_elevation, 0, 4)
+        # self.trajectory_frame_stack.addWidget(fixed_op_frame)
 
         # Operating Point Transfer Polynomial
-        self.trajectory_combo.insertItem(2, "Operating Point Transfer (Polynomial)")
+        self.trajectory_combo.insertItem(1, "Operating Point Transfer (Polynomial)")
         op_transfer_polynomial_frame = QtWidgets.QFrame()
         op_transfer_polynomial_layout = QtWidgets.QFormLayout()
         op_transfer_polynomial_frame.setLayout(op_transfer_polynomial_layout)
@@ -75,7 +75,7 @@ class TrajectoryFrame(QtWidgets.QFrame):
         self.trajectory_frame_stack.addWidget(op_transfer_polynomial_frame)
 
         # Operating Point Transfer Gevrey
-        self.trajectory_combo.insertItem(3, "Operating Point Transfer (Gevrey)")
+        self.trajectory_combo.insertItem(2, "Operating Point Transfer (Gevrey)")
         op_transfer_gevrey_frame = QtWidgets.QFrame()
         op_transfer_gevrey_layout = QtWidgets.QFormLayout()
         op_transfer_gevrey_frame.setLayout(op_transfer_gevrey_layout)
@@ -120,18 +120,18 @@ class TrajectoryFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.trajectory_combo)
         self.trajectory_combo.currentIndexChanged.connect(self.on_trajectory_combo_select)
-        self.trajectory_combo.setCurrentIndex(1)
+        self.trajectory_combo.setCurrentIndex(0)
 
     def on_trajectory_combo_select(self):
         # print("combo select: " + str(self.trajectory_combo.currentIndex()))
         # print("count = " + str(self.trajectory_frame_stack.count()))
         self.trajectory_frame_stack.setCurrentIndex(self.trajectory_combo.currentIndex())
 
-    def get_operating_point(self):
-        """
-        :return: travel (rad), elevation (rad)
-        """
-        return self.fixed_op_travel.value() / 180.0 * np.pi, self.fixed_op_elevation.value() / 180.0 * np.pi
+    # def get_operating_point(self):
+    #     """
+    #     :return: travel (rad), elevation (rad)
+    #     """
+    #     return self.fixed_op_travel.value() / 180.0 * np.pi, self.fixed_op_elevation.value() / 180.0 * np.pi
 
     def get_planner(self):
         """
@@ -139,8 +139,7 @@ class TrajectoryFrame(QtWidgets.QFrame):
         """
         combo_idx = self.trajectory_combo.currentIndex()
         # the chosen combo entry defines the type of planner that is returned
-        # if "fixed operating point" is highlighted then the polynomial planner will be returned
-        if combo_idx == 1 or combo_idx == 0:
+        if combo_idx == 0:
             print("polynomial")
             # Polynomial Planner was selected
             t0 = self.op_transfer_polynomial_t0.value()
@@ -170,8 +169,9 @@ class TrajectoryFrame(QtWidgets.QFrame):
                 print("simple polynom")
                 planner_travel = Planner.PolynomialPlanner(YA_travel, YB_travel, t0, tf, d_travel)
                 planner_elevation = Planner.PolynomialPlanner(YA_elevation, YB_elevation, t0, tf, d_elevation)
-        elif combo_idx == 2:
+        elif combo_idx == 1:
             # Gevrey Planner is selected
+            print("gevrey")
             t0 = self.op_transfer_gevrey_t0.value()
             tf = self.op_transfer_gevrey_tf.value()
             travel_start = self.op_transfer_gevrey_start_travel.value()

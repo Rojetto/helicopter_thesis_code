@@ -76,7 +76,6 @@ class ControllerFrame(QtWidgets.QFrame):
         main_layout.addWidget(self.controller_combo)
 
     def on_controller_combo_select(self):
-        print("combo select: " + str(self.controller_combo.currentIndex()))
         self.controller_frame_stack.setCurrentIndex(self.controller_combo.currentIndex())
 
     def get_selected_controller_and_params(self):
