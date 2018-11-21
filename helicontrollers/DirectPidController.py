@@ -31,7 +31,7 @@ class DirectPidController(AbstractController):
 
         return [self.Vf_op + Vf_diff, self.Vb_op + Vb_diff]
 
-    def initialize(self, operating_point, param_value_dict):
+    def initialize(self, operating_point, param_value_dict, planner_travel, planner_elevation):
         # We only need the operating point voltages for the rotors
         _, _, self.Vf_op, self.Vb_op = compute_linear_ss_and_op_output(ModelType.EASY, operating_point[1])
         self.elevation_pid = PidAlgorithm(param_value_dict["Elevation PID"])

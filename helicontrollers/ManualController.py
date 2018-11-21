@@ -14,6 +14,6 @@ class ManualController(AbstractController):
     def control(self, t, x):
         return [self.Vf, self.Vb]
 
-    def initialize(self, operating_point, param_value_dict):
+    def initialize(self, operating_point, param_value_dict, planner_travel, planner_elevation):
         self.Vf = param_value_dict["Vf"][0]
         self.Vb = param_value_dict["Vb"][0]

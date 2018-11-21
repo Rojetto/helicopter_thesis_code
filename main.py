@@ -148,12 +148,16 @@ class mainWindow(Qt.QMainWindow):
     def on_controller_update_button(self):
         self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
         op_travel, op_elevation = self.trajectory_frame.get_operating_point()
-        self.current_controller.initialize([op_travel, op_elevation], param_values)
+        planner_travel, planner_elevation = self.trajectory_frame.get_planner()
+        logger.add_planner(planner_travel, planner_elevation)
+        self.current_controller.initialize([op_travel, op_elevation], param_values, planner_travel, planner_elevation)
 
     def on_start_button(self):
         self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
         op_travel, op_elevation = self.trajectory_frame.get_operating_point()
-        self.current_controller.initialize([op_travel, op_elevation], param_values)
+        planner_travel, planner_elevation = self.trajectory_frame.get_planner()
+        logger.add_planner(planner_travel, planner_elevation)
+        self.current_controller.initialize([op_travel, op_elevation], param_values, planner_travel, planner_elevation)
 
         self.sim_running = True
         self.log_enabled = self.log_checkbox.checkState() == 2

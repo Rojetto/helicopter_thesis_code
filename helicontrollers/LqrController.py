@@ -35,7 +35,7 @@ class LqrController(AbstractController):
         u = u_op - self.K @ (x - x_op)
         return u
 
-    def initialize(self, operating_point, param_value_dict):
+    def initialize(self, operating_point, param_value_dict, planner_travel, planner_elevation):
         self.operating_point = operating_point
         self.model_type = param_value_dict["Model type"]
         self.Q_diag = param_value_dict["diag(Q)"]

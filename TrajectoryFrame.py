@@ -1,5 +1,6 @@
 from PyQt5 import QtWidgets, QtGui
 import numpy as np
+import Planner
 
 
 class TrajectoryFrame(QtWidgets.QFrame):
@@ -11,7 +12,7 @@ class TrajectoryFrame(QtWidgets.QFrame):
         self.setLayout(main_layout)
 
         scroll_area = QtWidgets.QScrollArea()
-        scroll_area.setMinimumHeight(200)
+        scroll_area.setFixedHeight(200)
 
         self.trajectory_combo = QtWidgets.QComboBox()
         self.trajectory_frame_stack = QtWidgets.QStackedWidget()
@@ -32,18 +33,31 @@ class TrajectoryFrame(QtWidgets.QFrame):
         fixed_op_layout.addWidget(self.fixed_op_elevation, 0, 4)
         self.trajectory_frame_stack.addWidget(fixed_op_frame)
 
-        # Operating Point Transfer
+        # Operating Point Transfer Polynomial
         self.trajectory_combo.insertItem(2, "Operating Point Transfer (Polynomial)")
         op_transfer_polynomial_frame = QtWidgets.QFrame()
         op_transfer_polynomial_layout = QtWidgets.QFormLayout()
         op_transfer_polynomial_frame.setLayout(op_transfer_polynomial_layout)
 
+        self.op_transfer_polynomial_t0 = QtWidgets.QDoubleSpinBox()
+        self.op_transfer_polynomial_t0.setValue(0)
+        self.op_transfer_polynomial_tf = QtWidgets.QDoubleSpinBox()
+        self.op_transfer_polynomial_tf.setValue(2)
         self.op_transfer_polynomial_start_travel = QtWidgets.QDoubleSpinBox()
         self.op_transfer_polynomial_start_elevation = QtWidgets.QDoubleSpinBox()
         self.op_transfer_polynomial_end_travel = QtWidgets.QDoubleSpinBox()
+        self.op_transfer_polynomial_end_travel.setValue(45)
         self.op_transfer_polynomial_end_elevation = QtWidgets.QDoubleSpinBox()
-        self.op_transfer_polynomial_max_derivative_order = QtWidgets.QLineEdit("4")
-        self.op_transfer_polynomial_max_derivative_order.setValidator(QtGui.QIntValidator(0, 999999))
+        self.op_transfer_polynomial_end_elevation.setValue(10)
+        self.op_transfer_polynomial_max_derivative_order_travel = QtWidgets.QLineEdit("4")
+        self.op_transfer_polynomial_max_derivative_order_travel.setValidator(QtGui.QIntValidator(0, 999999))
+        self.op_transfer_polynomial_max_derivative_order_elevation = QtWidgets.QLineEdit("4")
+        self.op_transfer_polynomial_max_derivative_order_elevation.setValidator(QtGui.QIntValidator(0, 999999))
+        self.op_transfer_polynomial_prototype_checkbox = QtWidgets.QCheckBox()
+        op_transfer_polynomial_layout.addRow(QtWidgets.QLabel("Initial Time t0"),
+                                             self.op_transfer_polynomial_t0)
+        op_transfer_polynomial_layout.addRow(QtWidgets.QLabel("Final Time tf"),
+                                             self.op_transfer_polynomial_tf)
         op_transfer_polynomial_layout.addRow(QtWidgets.QLabel("Start Travel angle"),
                                              self.op_transfer_polynomial_start_travel)
         op_transfer_polynomial_layout.addRow(QtWidgets.QLabel("Start Elevation Angle"),
@@ -52,9 +66,55 @@ class TrajectoryFrame(QtWidgets.QFrame):
                                              self.op_transfer_polynomial_end_travel)
         op_transfer_polynomial_layout.addRow(QtWidgets.QLabel("End Elevation angle"),
                                              self.op_transfer_polynomial_end_elevation)
-        op_transfer_polynomial_layout.addRow(QtWidgets.QLabel("Max. derivative order d"),
-                                             self.op_transfer_polynomial_max_derivative_order)
+        op_transfer_polynomial_layout.addRow(QtWidgets.QLabel("Max. derivative order d of Travel angle"),
+                                             self.op_transfer_polynomial_max_derivative_order_travel)
+        op_transfer_polynomial_layout.addRow(QtWidgets.QLabel("Max. derivative order d of Elevation angle"),
+                                             self.op_transfer_polynomial_max_derivative_order_elevation)
+        op_transfer_polynomial_layout.addRow(QtWidgets.QLabel("Use Prototype Function"),
+                                             self.op_transfer_polynomial_prototype_checkbox)
         self.trajectory_frame_stack.addWidget(op_transfer_polynomial_frame)
+
+        # Operating Point Transfer Gevrey
+        self.trajectory_combo.insertItem(3, "Operating Point Transfer (Gevrey)")
+        op_transfer_gevrey_frame = QtWidgets.QFrame()
+        op_transfer_gevrey_layout = QtWidgets.QFormLayout()
+        op_transfer_gevrey_frame.setLayout(op_transfer_gevrey_layout)
+
+        self.op_transfer_gevrey_t0 = QtWidgets.QDoubleSpinBox()
+        self.op_transfer_gevrey_t0.setValue(0)
+        self.op_transfer_gevrey_tf = QtWidgets.QDoubleSpinBox()
+        self.op_transfer_gevrey_tf.setValue(2)
+        self.op_transfer_gevrey_start_travel = QtWidgets.QDoubleSpinBox()
+        self.op_transfer_gevrey_start_elevation = QtWidgets.QDoubleSpinBox()
+        self.op_transfer_gevrey_end_travel = QtWidgets.QDoubleSpinBox()
+        self.op_transfer_gevrey_end_travel.setValue(45)
+        self.op_transfer_gevrey_end_elevation = QtWidgets.QDoubleSpinBox()
+        self.op_transfer_gevrey_end_elevation.setValue(10)
+        self.op_transfer_gevrey_sigma = QtWidgets.QLineEdit("3")
+        self.op_transfer_gevrey_sigma.setValidator(QtGui.QDoubleValidator())
+        self.op_transfer_gevrey_max_derivative_order_travel = QtWidgets.QLineEdit("4")
+        self.op_transfer_gevrey_max_derivative_order_travel.setValidator(QtGui.QIntValidator(0, 999999))
+        self.op_transfer_gevrey_max_derivative_order_elevation = QtWidgets.QLineEdit("4")
+        self.op_transfer_gevrey_max_derivative_order_elevation.setValidator(QtGui.QIntValidator(0, 999999))
+        op_transfer_gevrey_layout.addRow(QtWidgets.QLabel("Initial Time t0"),
+                                         self.op_transfer_gevrey_t0)
+        op_transfer_gevrey_layout.addRow(QtWidgets.QLabel("Final Time tf"),
+                                         self.op_transfer_gevrey_tf)
+        op_transfer_gevrey_layout.addRow(QtWidgets.QLabel("Start Travel angle"),
+                                             self.op_transfer_gevrey_start_travel)
+        op_transfer_gevrey_layout.addRow(QtWidgets.QLabel("Start Elevation Angle"),
+                                             self.op_transfer_gevrey_start_elevation)
+        op_transfer_gevrey_layout.addRow(QtWidgets.QLabel("End Travel angle"),
+                                             self.op_transfer_gevrey_end_travel)
+        op_transfer_gevrey_layout.addRow(QtWidgets.QLabel("End Elevation angle"),
+                                             self.op_transfer_gevrey_end_elevation)
+        op_transfer_gevrey_layout.addRow(QtWidgets.QLabel("Sigma"),
+                                                    self.op_transfer_gevrey_sigma)
+        op_transfer_gevrey_layout.addRow(QtWidgets.QLabel("Max. derivative order d of Travel angle"),
+                                             self.op_transfer_gevrey_max_derivative_order_travel)
+        op_transfer_gevrey_layout.addRow(QtWidgets.QLabel("Max. derivative order d of Elevation angle"),
+                                             self.op_transfer_gevrey_max_derivative_order_elevation)
+        self.trajectory_frame_stack.addWidget(op_transfer_gevrey_frame)
 
         scroll_area.setWidget(self.trajectory_frame_stack)
         main_layout.addWidget(scroll_area, 1)
@@ -72,3 +132,68 @@ class TrajectoryFrame(QtWidgets.QFrame):
         :return: travel (rad), elevation (rad)
         """
         return self.fixed_op_travel.value() / 180.0 * np.pi, self.fixed_op_elevation.value() / 180.0 * np.pi
+
+    def get_planner(self):
+        """
+        :return: planner object for obtaining trajectories
+        """
+        combo_idx = self.trajectory_combo.currentIndex()
+        # the chosen combo entry defines the type of planner that is returned
+        # if "fixed operating point" is highlighted then the polynomial planner will be returned
+        if combo_idx == 1 or combo_idx == 0:
+            print("polynomial")
+            # Polynomial Planner was selected
+            t0 = self.op_transfer_polynomial_t0.value()
+            tf = self.op_transfer_polynomial_tf.value()
+            travel_start = self.op_transfer_polynomial_start_travel.value()
+            elevation_start = self.op_transfer_polynomial_start_elevation.value()
+            travel_end = self.op_transfer_polynomial_end_travel.value()
+            elevation_end = self.op_transfer_polynomial_end_elevation.value()
+            d_travel = int(self.op_transfer_polynomial_max_derivative_order_travel.text())
+            d_elevation = int(self.op_transfer_polynomial_max_derivative_order_elevation.text())
+            boolPrototype = self.op_transfer_polynomial_prototype_checkbox.checkState() == 2
+            # because it is an operation point transfer all derivatives are supposed to be zero in the ending
+            # and at the start
+            YA_travel = np.zeros(d_travel+1)
+            YB_travel = np.zeros(d_travel+1)
+            YA_travel[0] = travel_start
+            YB_travel[0] = travel_end
+            YA_elevation = np.zeros(d_elevation+1)
+            YB_elevation = np.zeros(d_elevation+1)
+            YA_elevation[0] = elevation_start
+            YB_elevation[0] = elevation_end
+            if boolPrototype:
+                print("prototype")
+                planner_travel = Planner.PrototypePlanner(YA_travel, YB_travel, t0, tf, d_travel)
+                planner_elevation = Planner.PrototypePlanner(YA_elevation, YB_elevation, t0, tf, d_elevation)
+            else:
+                print("simple polynom")
+                planner_travel = Planner.PolynomialPlanner(YA_travel, YB_travel, t0, tf, d_travel)
+                planner_elevation = Planner.PolynomialPlanner(YA_elevation, YB_elevation, t0, tf, d_elevation)
+        elif combo_idx == 2:
+            # Gevrey Planner is selected
+            t0 = self.op_transfer_gevrey_t0.value()
+            tf = self.op_transfer_gevrey_tf.value()
+            travel_start = self.op_transfer_gevrey_start_travel.value()
+            elevation_start = self.op_transfer_gevrey_start_elevation.value()
+            travel_end = self.op_transfer_gevrey_end_travel.value()
+            elevation_end = self.op_transfer_gevrey_end_elevation.value()
+            sigma = float(self.op_transfer_gevrey_sigma.text())
+            d_travel = int(self.op_transfer_gevrey_max_derivative_order_travel.text())
+            d_elevation = int(self.op_transfer_gevrey_max_derivative_order_elevation.text())
+            # because it is an operation point transfer all derivatives are supposed to be zero in the ending
+            # and at the start
+            YA_travel = np.zeros(d_travel + 1)
+            YB_travel = np.zeros(d_travel + 1)
+            YA_travel[0] = travel_start
+            YB_travel[0] = travel_end
+            YA_elevation = np.zeros(d_elevation + 1)
+            YB_elevation = np.zeros(d_elevation + 1)
+            YA_elevation[0] = elevation_start
+            YB_elevation[0] = elevation_end
+            planner_travel = Planner.GevreyPlanner(YA_travel, YB_travel, t0, tf, d_travel, sigma)
+            planner_elevation = Planner.GevreyPlanner(YA_elevation, YB_elevation, t0, tf, d_elevation, sigma)
+        else:
+            print("[ERROR] Combox index was not recognized at generating trajectories")
+
+        return planner_travel, planner_elevation

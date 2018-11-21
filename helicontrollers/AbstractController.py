@@ -25,5 +25,5 @@ class AbstractController:
     def control(self, t, x):
         raise NotImplementedError
 
-    def initialize(self, operating_point, param_value_dict):
+    def initialize(self, operating_point, param_value_dict, planner_travel, planner_elevation):
         raise NotImplementedError
