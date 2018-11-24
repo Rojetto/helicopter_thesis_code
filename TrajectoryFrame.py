@@ -116,6 +116,21 @@ class TrajectoryFrame(QtWidgets.QFrame):
                                              self.op_transfer_gevrey_max_derivative_order_elevation)
         self.trajectory_frame_stack.addWidget(op_transfer_gevrey_frame)
 
+        # Constant operating point
+        self.trajectory_combo.insertItem(3, "Constant Operating Point")
+        constant_op_frame = QtWidgets.QFrame()
+        constant_op_layout = QtWidgets.QFormLayout()
+        constant_op_frame.setLayout(constant_op_layout)
+
+        self.constant_op_travel = QtWidgets.QDoubleSpinBox()
+        self.constant_op_elevation = QtWidgets.QDoubleSpinBox()
+
+        constant_op_layout.addRow(QtWidgets.QLabel("OP Travel"), self.constant_op_travel)
+        constant_op_layout.addRow(QtWidgets.QLabel("OP Elevation"), self.constant_op_elevation)
+
+        self.trajectory_frame_stack.addWidget(constant_op_frame)
+
+        # Finishing touches
         scroll_area.setWidget(self.trajectory_frame_stack)
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.trajectory_combo)
@@ -193,6 +208,12 @@ class TrajectoryFrame(QtWidgets.QFrame):
             YB_elevation[0] = elevation_end
             planner_travel = Planner.GevreyPlanner(YA_travel, YB_travel, t0, tf, d_travel, sigma)
             planner_elevation = Planner.GevreyPlanner(YA_elevation, YB_elevation, t0, tf, d_elevation, sigma)
+        elif combo_idx == 2:
+            # Constant OP is selected
+            op_travel = self.constant_op_travel.value()
+            op_elevation = self.constant_op_elevation.value()
+            planner_travel = Planner.ConstantTrajectory(op_travel)
+            planner_elevation = Planner.ConstantTrajectory(op_elevation)
         else:
             print("[ERROR] Combox index was not recognized at generating trajectories")
 

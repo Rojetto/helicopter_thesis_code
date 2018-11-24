@@ -1,11 +1,22 @@
+from abc import ABC
+
 import numpy as np
 import abc # abstract base class
 import math
 import scipy as sp
 from scipy import special
 
+
 class Planner(object):
-    """ Base class for a trajectory planner.
+    """Base class for arbitrary trajectories"""
+
+    @abc.abstractmethod
+    def eval(self, t):
+        return
+
+
+class PointToPointPlanner(Planner, ABC):
+    """ Base class for a trajectory planner that moves from one setpoint to another.
 
     Attributes:
         YA (int, float, ndarray): start value (size = d+1)
@@ -22,12 +33,21 @@ class Planner(object):
         self.tf = tf
         self.d = d
 
-    @abc.abstractmethod
-    def eval(self):
-        return
+
+class ConstantTrajectory(Planner):
+    """Planner subclass that returns a constant value"""
+
+    def __init__(self, c):
+        """
+        :param c: The constant value to hold
+        """
+        self.constant_output = np.array([c, 0, 0, 0, 0])
+
+    def eval(self, t):
+        return self.constant_output
 
 
-class PolynomialPlanner(Planner):
+class PolynomialPlanner(PointToPointPlanner):
     """Planner subclass that uses a polynomial approach for trajectory generation
 
     Attributes:
@@ -119,7 +139,7 @@ class PolynomialPlanner(Planner):
         return c
 
 
-class PrototypePlanner(Planner):
+class PrototypePlanner(PointToPointPlanner):
     """Planner subclass that uses a polynomial approach for trajectory generation"""
 
     def __init__(self, YA, YB, t0, tf, d):
@@ -208,7 +228,7 @@ class PrototypePlanner(Planner):
         return result
 
 
-class GevreyPlanner(Planner):
+class GevreyPlanner(PointToPointPlanner):
     """Planner that uses a Gevrey function approach and plans trajectories that are infinitely differentiable.
                /   0                                        t < t0
     phi(t) =  |    1/2(1 + tanh( (2T-1) / (4T(1-T))^s ))    t in [t0, tf]
