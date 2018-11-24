@@ -85,21 +85,21 @@ def process(ts, xs, us):
     e_grav = (L_2 / J_e) * np.cos(e) / np.pi * 180.0
     dde = e_grav + e_input + e_fric + e_cor
 
-    plt.figure("Influence of centripetal forces at ddp (deg/s^2)")
-    plt.plot(ts, ddp)
-    plt.plot(ts, p_cor)
-    plt.plot(ts, p_input)
-    plt.plot(ts, p_fric)
-    plt.legend(['sum','centripetal','input','friction'])
-    plt.grid()
-
-    plt.figure("Influence of centripetal forces at dde (deg/s^2)")
-    plt.plot(ts, dde)
-    plt.plot(ts, e_cor)
-    plt.plot(ts, e_input)
-    plt.plot(ts, e_fric)
-    plt.plot(ts, e_grav)
-    plt.legend(['sum','centripetal','input','friction','gravitation'])
-    plt.grid()
+    # plt.figure("Influence of centripetal forces at ddp (deg/s^2)")
+    # plt.plot(ts, ddp)
+    # plt.plot(ts, p_cor)
+    # plt.plot(ts, p_input)
+    # plt.plot(ts, p_fric)
+    # plt.legend(['sum','centripetal','input','friction'])
+    # plt.grid()
+    #
+    # plt.figure("Influence of centripetal forces at dde (deg/s^2)")
+    # plt.plot(ts, dde)
+    # plt.plot(ts, e_cor)
+    # plt.plot(ts, e_input)
+    # plt.plot(ts, e_fric)
+    # plt.plot(ts, e_grav)
+    # plt.legend(['sum','centripetal','input','friction','gravitation'])
+    # plt.grid()
 
     plt.show()
