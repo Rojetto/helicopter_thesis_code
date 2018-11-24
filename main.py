@@ -42,6 +42,12 @@ class mainWindow(Qt.QMainWindow):
         vtk_render_window.AddRenderer(vtk_renderer)
         self.vtk_interactor = vtk_widget.GetRenderWindow().GetInteractor()
         vtk_renderer.SetBackground(0.2, 0.2, 0.2)
+        # Set VTK camera position
+        self.vtk_camera = vtk.vtkCamera()
+        self.vtk_camera.SetPosition(7.798348203139179, -14.627243436996828, 9.812118058259466)
+        self.vtk_camera.SetFocalPoint(0.5922143243356399, 0.8215172523568901, 0.7217881556358339)
+        self.vtk_camera.SetViewUp(-0.1623428949744522, 0.4430640903746749, 0.8816683028621229)
+        vtk_renderer.SetActiveCamera(self.vtk_camera)
 
         # Simulation setup
         self.timeStep = 1.0 / 60.0  # s
@@ -196,6 +202,14 @@ class mainWindow(Qt.QMainWindow):
             orientation = orientation / 180.0 * np.pi
             self.heliModel.setState(orientation[2], orientation[1], orientation[0])
             self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], 0, 0, 0])
+
+        # # handle vtk camera
+        # pos = self.vtk_camera.GetPosition()
+        # foc = self.vtk_camera.GetFocalPoint()
+        # view_up = self.vtk_camera.GetViewUp()
+        # print("pos = " + str(pos))
+        # print("foc = " + str(foc))
+        # print("view_up = " + str(view_up))
 
         self.vtk_interactor.Render()
 
