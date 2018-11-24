@@ -32,11 +32,11 @@ class ModelFrame(QtWidgets.QFrame):
 
     def on_model_toggle(self):
         if self.model_1_button.isChecked():
-            self.sim.setModelType(ModelType.EASY)
+            self.sim.set_model_type(ModelType.EASY)
         elif self.model_2_button.isChecked():
-            self.sim.setModelType(ModelType.FRICTION)
+            self.sim.set_model_type(ModelType.FRICTION)
         elif self.model_3_button.isChecked():
-            self.sim.setModelType(ModelType.CENTRIPETAL)
+            self.sim.set_model_type(ModelType.CENTRIPETAL)
 
     def on_limit_check_toggle(self):
         self.sim.should_check_limits = self.check_limits_box.checkState() == 2
