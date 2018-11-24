@@ -66,7 +66,7 @@ event_pmax.terminal = True
 
 def event_pdt0(t, x):
     """Checks if the second derivative has crossed zero."""
-    p, e, lamb, dp, de, dlamb, dp_event, de_event, dlamb_event = x
+    p, e, lamb, dp, de, dlamb = x
     if EventParams.model_type == ModelType.EASY:
         ddp = (L_1 / J_p) * EventParams.V_d
     elif EventParams.model_type == ModelType.FRICTION:
@@ -89,7 +89,7 @@ event_emax.terminal = True
 
 
 def event_edt0(t, x):
-    p, e, lamb, dp, de, dlamb, dp_event, de_event, dlamb_event = x
+    p, e, lamb, dp, de, dlamb = x
     if EventParams.model_type == ModelType.EASY:
         dde = (L_2 / J_e) * np.cos(e) + (L_3 / J_e) * np.cos(p) * EventParams.V_s
     elif EventParams.model_type == ModelType.FRICTION:
@@ -111,7 +111,7 @@ event_lambmax.terminal = True
 
 
 def event_lambdt0(t, x):
-    p, e, lamb, dp, de, dlamb, dp_event, de_event, dlamb_event = x
+    p, e, lamb, dp, de, dlamb = x
     if EventParams.model_type == ModelType.EASY:
         ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * EventParams.V_s
 
@@ -125,61 +125,58 @@ event_lambdt0.terminal = True
 
 
 class HeliSimulation(object):
-    def __init__(self, theta1_0, theta2_0, theta3_0, timeStep):
+    def __init__(self, theta1_0, theta2_0, theta3_0, time_step):
         """Initializes the simulation"""
-        self.currentState = np.array([theta1_0, theta2_0, theta3_0, 0, 0, 0, 0, 0, 0])
+        self.currentState = np.array([theta1_0, theta2_0, theta3_0, 0, 0, 0])
         self.should_check_limits = True
         self.statLim = StateLimits()
-        self.timeStep = timeStep
+        self.timeStep = time_step
         self.model_type = ModelType.CENTRIPETAL
         self.currentTime = 0
 
-
-    def rhs_old(self, t, x, V_s, V_d):
-        """Right hand side of the differential equation being integrated"""
+    def rhs_no_limits(self, t, x, v_s, v_d):
+        """Right hand side of the differential equation being integrated. This function does simply calculate the
+        state derivative, not dependend on the discrete limit state."""
         p, e, lamb, dp, de, dlamb = x
 
         # calculate dp, de and dlamb
         if self.model_type == ModelType.EASY:
-            ddp = (L_1 / J_p) * V_d
-            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s
-            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s
+            ddp = (L_1 / J_p) * v_d
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s
 
         if self.model_type == ModelType.FRICTION:
-            ddp = (L_1 / J_p) * V_d - (mc.d_p / J_p) * dp
-            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s - (mc.d_e / J_e) * de
-            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s - (mc.d_l / J_l) * dlamb
+            ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
 
         if self.model_type == ModelType.CENTRIPETAL:
-            ddp = (L_1 / J_p) * V_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de**2 - np.cos(e)**2 * dlamb**2)
-            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb**2
-            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s - (mc.d_l / J_l) * dlamb
+            ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
 
         return np.array([dp, de, dlamb, ddp, dde, ddlamb])
 
-    def rhs(self, t, x, V_s, V_d):
-        """Right hand side of the differential equation being integrated"""
-        p, e, lamb, dp, de, dlamb, ddp_event, dde_event, ddlamb_event = x
+    def rhs(self, t, x, v_s, v_d):
+        """Right hand side of the differential equation being integrated. Behaves according to the
+        state limit machine."""
+        p, e, lamb, dp, de, dlamb = x
 
         # calculate dp, de and dlamb
         if self.model_type == ModelType.EASY:
-            ddp = (L_1 / J_p) * V_d
-            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s
-            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s
+            ddp = (L_1 / J_p) * v_d
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s
 
         if self.model_type == ModelType.FRICTION:
-            ddp = (L_1 / J_p) * V_d - (mc.d_p / J_p) * dp
-            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s - (mc.d_e / J_e) * de
-            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s - (mc.d_l / J_l) * dlamb
+            ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
 
         if self.model_type == ModelType.CENTRIPETAL:
-            ddp = (L_1 / J_p) * V_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de**2 - np.cos(e)**2 * dlamb**2)
-            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * V_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb**2
-            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * V_s - (mc.d_l / J_l) * dlamb
-
-        ddp_event = ddp*0
-        dde_event = dde *0
-        ddlamb_event = ddlamb *0
+            ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
 
         if self.statLim.p == LimitType.UPPER_LIMIT or self.statLim.p == LimitType.LOWER_LIMIT:
             dp = 0
@@ -193,54 +190,36 @@ class HeliSimulation(object):
             dlamb = 0
             ddlamb = 0
 
-        return np.array([dp, de, dlamb, ddp, dde, ddlamb, ddp_event, dde_event, ddlamb_event])
+        return np.array([dp, de, dlamb, ddp, dde, ddlamb])
 
-    def generateEventList(self):
+    def generate_event_list(self):
+        """Generates the event_list for the next integration interval depening on the limitation state.
+        :return event_list: list of function objects for solve_ivp"""
         event_list = []
-        # event dic: eventNr -> eventName
         # eventName can be used in if structure
-        event_dic = {}
-        m = 0
         if self.statLim.p == LimitType.UPPER_LIMIT or self.statLim.p == LimitType.LOWER_LIMIT:
             event_list.append(event_pdt0)
-            event_dic.update({m: "event_pdt0"})
-            m += 1
         elif self.statLim.p == LimitType.NO_LIMIT_REACHED:
             event_list.append(event_pmin)
-            event_dic.update({m: "event_pmin"})
-            m += 1
             event_list.append(event_pmax)
-            event_dic.update({m: "event_pmax"})
-            m += 1
         if self.statLim.e == LimitType.UPPER_LIMIT or self.statLim.e == LimitType.LOWER_LIMIT:
             event_list.append(event_edt0)
-            event_dic.update({m: "event_edt0"})
-            m += 1
         elif self.statLim.e == LimitType.NO_LIMIT_REACHED:
             event_list.append(event_emin)
-            event_dic.update({m: "event_emin"})
-            m += 1
             event_list.append(event_emax)
-            event_dic.update({m: "event_emax"})
-            m += 1
         if self.statLim.lamb == LimitType.UPPER_LIMIT or self.statLim.lamb == LimitType.LOWER_LIMIT:
             event_list.append(event_lambdt0)
-            event_dic.update({m: "event_lambdt0"})
-            m += 1
         elif self.statLim.lamb == LimitType.NO_LIMIT_REACHED:
             event_list.append(event_lambmin)
-            event_dic.update({m: "event_lambmin"})
-            m += 1
             event_list.append(event_lambmax)
-            event_dic.update({m: "event_lambmax"})
-            m += 1
-        return event_list, event_dic
+        return event_list
 
-    def switchState(self, event, former_state):
+    def switch_state(self, event, state):
         """Switches the discrete state dependent on which event was triggered.
         :param event: function object, that returned 0 to the solver
+        :param state: current state, needed in order to alter the state
         :type event: Callable[[float, np.ndarray], float]"""
-        p, e, lamb, dp, de, dlamb, _1, _2, _3 = former_state
+        p, e, lamb, dp, de, dlamb = state
         if event.__name__ == "event_pmin":
             p = self.statLim.p_min
             dp = 0
@@ -271,10 +250,9 @@ class HeliSimulation(object):
             self.statLim.e = LimitType.NO_LIMIT_REACHED
         if event.__name__ == "event_lambdt0":
             self.statLim.lamb = LimitType.NO_LIMIT_REACHED
-        return [p, e, lamb, dp, de, dlamb, _1, _2, _3]
+        return [p, e, lamb, dp, de, dlamb]
 
-
-    def simulateSegment(self, t0, tf, x0, V_s, V_d, event_list):
+    def simulate_segment(self, t0, tf, x0, v_s, v_d, event_list):
         """Simulates one segment from t0 to tf and takes care of events that occur in that time interval.
         Returns state vector at tf."""
         if t0 == tf:
@@ -286,7 +264,7 @@ class HeliSimulation(object):
         # print("x0 = " + str(x0))
         # print("event_list = " + str(event_list))
         # print("tt = " + str(tt))
-        sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
+        sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, v_s, v_d),
                                         (t0, tf), x0,
                                         method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9,
                                         events=event_list)
@@ -302,23 +280,23 @@ class HeliSimulation(object):
             # remove occured event from event list
             event_list.remove(triggered_event)
             # integrate from t0 to eventTime
-            state_at_te = self.simulateSegment(t0, event_time, x0, V_s, V_d, event_list)
+            state_at_te = self.simulate_segment(t0, event_time, x0, v_s, v_d, event_list)
             # switch discrete state and also set the state vector according to the new state
             # e.g. set velocity in boundaries to zero
-            switched_state = self.switchState(triggered_event, state_at_te)
+            switched_state = self.switch_state(triggered_event, state_at_te)
             # integrate from eventTime to tf
-            state_at_tf = self.simulateSegment(event_time, tf, switched_state, V_s, V_d, event_list)
+            state_at_tf = self.simulate_segment(event_time, tf, switched_state, v_s, v_d, event_list)
         else:
             state_at_tf = sol.y[:, -1]
 
         return state_at_tf
 
-    def processLimitStateMachine(self, V_s, V_d):
+    def process_limit_state_machine(self, V_s, V_d):
         """This function is called at the beginning of every call of calcStep() for checking if
         the discontinuous second derivative has skipped the 0-value.
         It only switches from limit to non-limit, switching from non-limit to limit is only done by the events.
         :return event_blacklist: events that are not to be cared of in the next integration interval"""
-        pdt, edt, lambdt, pddt, eddt, lambddt = self.rhs_old(self.currentTime, self.currentState[0:6], V_s, V_d)
+        pdt, edt, lambdt, pddt, eddt, lambddt = self.rhs_no_limits(self.currentTime, self.currentState[0:6], V_s, V_d)
         event_blacklist = []
         if self.statLim.p == LimitType.UPPER_LIMIT:
             if pddt <= 0:
@@ -340,7 +318,7 @@ class HeliSimulation(object):
             if lambddt <= 0:
                 # print("leave lambmax @ processLimitStateMachine()")
                 # print(self.currentState)
-                # print(self.rhs_old(self.currentTime, self.currentState[0:6], V_s, V_d))
+                # print(self.rhs_no_limits(self.currentTime, self.currentState[0:6], V_s, V_d))
                 event_blacklist.append(event_lambmax)
                 self.statLim.lamb = LimitType.NO_LIMIT_REACHED
         if self.statLim.lamb == LimitType.LOWER_LIMIT:
@@ -349,152 +327,38 @@ class HeliSimulation(object):
                 self.statLim.lamb = LimitType.NO_LIMIT_REACHED
         return event_blacklist
 
-
-
-    def calcStep(self, V_f, V_b):
+    def calc_step(self, v_f, v_b):
         """Returns the state of the system after the next time step
         V_f: voltage of the propeller right at back (of Fig.7) / first endeffector
         V_b: voltage of the propeller right at front (of Fig. 7) / second endeffector"""
-        #start = time.time()
+        # start = time.time()
         # print("====> calcStep() t = " + str(self.currentTime))
-        V_s = V_f + V_b
-        V_d = V_f - V_b
-        EventParams.V_s = V_s
-        EventParams.V_d = V_d
+        v_s = v_f + v_b
+        v_d = v_f - v_b
+        EventParams.V_s = v_s
+        EventParams.V_d = v_d
         EventParams.model_type = self.model_type
-        event_blacklist = self.processLimitStateMachine(V_s, V_d)
-        event_list, event_dic = self.generateEventList()
+        event_blacklist = self.process_limit_state_machine(v_s, v_d)
+        event_list = self.generate_event_list()
         for _ in event_blacklist:
             event_list.remove(_)
-        self.currentState = self.simulateSegment(self.currentTime, self.currentTime + self.timeStep,
-                                                 self.currentState, V_s, V_d, event_list)
+        self.currentState = self.simulate_segment(self.currentTime, self.currentTime + self.timeStep,
+                                                  self.currentState, v_s, v_d, event_list)
         self.currentTime += self.timeStep
-        return self.currentState[0:6]
-        # checkLimits is called before integrate because the solver calls the rhs function several times
-        # between two discrete steps. if there are state transitions between two steps, the solver
-        # will probably react unpredictable
-        # if self.should_check_limits and 1 == 2:
-        #     self.checkLimits()
-        # # integrate one time step
-        # # for adjusting the performance the number of in-between-steps can be changed
-        # loopCondition = True
-        # t0_g = self.currentTime
-        # tf_g = self.currentTime + self.timeStep
-        # x0_g = self.currentState
-        # t0 = t0_g
-        # tf = tf_g
-        # x0 = x0_g
-        # m = 0
-        # while loopCondition:
-        #     event_list, event_dic = self.generateEventList()
-        #     tt = np.linspace(t0, tf, 3)
-        #     sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
-        #                                     (t0, tf), x0,
-        #                                     method='RK45', t_eval=tt,  rtol=1e-6, atol=1e-9,
-        #                                     events=event_list)
-        #     # check if there was an event in order to limit the angle states
-        #     # TODO: Simulation Time must always stop at +timeStep !
-        #     if np.size(sol.t_events) != 0:
-        #         m += 1
-        #         # get time of event
-        #         for idx, v in enumerate(sol.t_events):
-        #             if np.size(v) != 0:
-        #                 eventTime = v[0]
-        #                 eventNr = idx
-        #         # 1. simulate until event time
-        #         t0 = sol.t[-1]
-        #         tf = eventTime
-        #         x0 = sol.y[:, -1]
-        #         tt = np.linspace(t0, tf, 2)
-        #         # print(eventTime)
-        #         # print(sol.t)
-        #         # print(sol.y)
-        #         sol2 = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, V_s, V_d),
-        #                                          (t0, tf), x0,
-        #                                          method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9,
-        #                                          events=event_list)
-        #         # print(sol2)
-        #         # there should not be an event in this simulation, but if there is probably it is the same event
-        #         # as before or something went terribly wrong (like e.g. pitch and elevation become bounded in
-        #         # the same microsecond AND the solver confuses the order of them)
-        #         # firstly i am not going to address the second problem, but for debugging purpose it will be printed
-        #         for idx, v in enumerate(sol2.t_events):
-        #             if np.size(v) != 0:
-        #                 eventTime2 = v[0]
-        #                 eventNr2 = idx
-        #                 eventName2 = event_dic[eventNr2]
-        #         if np.size(sol2.t_events) != 0:
-        #             print("[DEBUG] Event was triggered in second simulation part! Event = " + eventName2)
-        #         # 2. Manage state machine
-        #         eventName = event_dic[eventNr]
-        #         print(str(eventNr) + " ==> " + eventName)
-        #         self.currentState = sol2.y[:, -1]
-        #         if eventName == "event_pmin":
-        #             print("pmin")
-        #             self.currentState[0] = StateLimits.p_min - StateLimits.eps_p
-        #             self.statLim.p = LimitType.LOWER_LIMIT
-        #         if eventName == "event_pmax":
-        #             print("pmax")
-        #             self.currentState[0] = StateLimits.p_max + StateLimits.eps_p
-        #             self.statLim.p = LimitType.UPPER_LIMIT
-        #         if eventName == "event_emin":
-        #             print("emin")
-        #             self.currentState[1] = StateLimits.e_min - StateLimits.eps_e
-        #             self.statLim.e = LimitType.LOWER_LIMIT
-        #         if eventName == "event_emax":
-        #             print("emax")
-        #             self.currentState[1] = StateLimits.e_max + StateLimits.eps_e
-        #             self.statLim.e = LimitType.UPPER_LIMIT
-        #         if eventName == "event_pdt0":
-        #             print("p  no limit")
-        #             if self.statLim.p == LimitType.UPPER_LIMIT:
-        #                 self.currentState[0] = StateLimits.p_max - StateLimits.eps_p
-        #             elif self.statLim.p == LimitType.LOWER_LIMIT:
-        #                 self.currentState[0] = StateLimits.p_min + StateLimits.eps_p
-        #             self.statLim.p = LimitType.NO_LIMIT_REACHED
-        #         if eventName == "event_edt0":
-        #             print("e  no limit")
-        #             if self.statLim.e == LimitType.UPPER_LIMIT:
-        #                 self.currentState[1] = StateLimits.e_max - StateLimits.eps_e
-        #             elif self.statLim.e == LimitType.LOWER_LIMIT:
-        #                 self.currentState[1] = StateLimits.e_min + StateLimits.eps_e
-        #             self.statLim.e = LimitType.NO_LIMIT_REACHED
-        #         # 3. Set simulation parameters for next part of interval
-        #         t0 = eventTime
-        #         tf = tf_g
-        #         x0 = self.currentState
-        #     else:
-        #         # if there were no events, just leave the loop
-        #         loopCondition = False
-        #
-        # if m != 0:
-        #     # print("t_g")
-        #     # print(tf_g)
-        #     # print(sol.t[-1])
-        #     pass
-        # self.currentState = sol.y[:, -1]
-        # self.currentTime = sol.t[-1]
+        return self.currentState
 
-        # end = time.time()
-        # print(end - start)
-        # return self.currentState[0:6]
+    def get_current_state(self):
+        return self.currentState
 
-    def getCurrentState(self):
-        return self.currentState[0:6]
-
-    def getCurrentTime(self):
+    def get_current_time(self):
         return self.currentTime
 
-    def setCurrentStateAndTime(self, state, time=0.0):
-        state = np.array(state)
-        state = np.append(state, state[3:]) #convert outside state to inside state
-        #print("setCurrentStateandTime")
-        #print(state)
-        self.currentTime = time
-        self.currentState = state
+    def set_current_state_and_time(self, state, sim_time=0.0):
+        self.currentTime = sim_time
+        self.currentState = np.array(state)
         # reset state machine
         self.statLim.p = LimitType.NO_LIMIT_REACHED
         self.statLim.e = LimitType.NO_LIMIT_REACHED
 
-    def setModelType(self, modelType):
+    def set_model_type(self, modelType):
         self.model_type = modelType

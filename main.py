@@ -172,8 +172,8 @@ class mainWindow(Qt.QMainWindow):
         theta1, theta2, theta3 = self.heliModel.getState()
 
         if self.sim_running:
-            t = self.heliSim.getCurrentTime()
-            x = self.heliSim.getCurrentState()
+            t = self.heliSim.get_current_time()
+            x = self.heliSim.get_current_state()
             # Get controller output
             Vf, Vb = self.current_controller.control(t, x)
             # Call kalman filter function
@@ -182,13 +182,13 @@ class mainWindow(Qt.QMainWindow):
             if self.log_enabled:
                 logger.add_frame(t, x, [Vf, Vb])
             # Calculate next simulation step
-            p, e, lamb, dp, de, dlamb = self.heliSim.calcStep(Vf, Vb)
+            p, e, lamb, dp, de, dlamb = self.heliSim.calc_step(Vf, Vb)
             self.heliModel.setState(lamb, e, p)
         else:
             orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])
             orientation = orientation / 180.0 * np.pi
             self.heliModel.setState(orientation[2], orientation[1], orientation[0])
-            self.heliSim.setCurrentStateAndTime([orientation[0], orientation[1], orientation[2], 0, 0, 0])
+            self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], 0, 0, 0])
 
         self.vtk_interactor.Render()
 
