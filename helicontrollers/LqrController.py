@@ -3,50 +3,57 @@ from scipy.linalg import solve_continuous_are
 from helicontrollers.AbstractController import *
 import numpy as np
 
-from helicontrollers.util import ModelType, compute_linear_ss_and_op_output
+from helicontrollers.util import ModelType, compute_linear_ss
 
 
 class LqrController(AbstractController):
     def __init__(self):
-        self.Q_diag = [1, 1, 1, 1, 1, 1]  # diagonal of weighting matrix Q
-        self.R_diag = [1, 1]  # diagonal of weighting matrix R
+        self.Q = np.diag([1, 1, 1, 1, 1, 1])  # diagonal weighting matrix Q
+        self.R = np.diag([1, 1])  # diagonal weighting matrix R
         self.K = np.zeros((2, 6))
-        self.Vf_op = 0  # front rotor voltage to stay in equilibrium at the operating point
-        self.Vb_op = 0  # back rotor voltage to stay in equilibrium at the operating point
-        self.operating_point = [0, 0]
         self.model_type = ModelType.CENTRIPETAL
+        self.feedback_computed = False
+        self.time_variant_feedback = False
 
         super().__init__("LQR", {
             "Model type": ParamEnum(["Simple", "Friction", "Centripetal"],
                                     [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL],
                                     self.model_type),
+            "Time variant feedback": ParamBool(self.time_variant_feedback),
             "diag(Q)": ParamFloatArray([0, 0, 0, 0, 0, 0],
                                        [100, 100, 100, 100, 100, 100],
-                                       self.Q_diag),
+                                       np.diag(self.Q)),
             "diag(R)": ParamFloatArray([0, 0],
                                        [100, 100],
-                                       self.R_diag)
+                                       np.diag(self.R))
         })
 
-    def control(self, t, x):
-        u_op = np.array([self.Vf_op, self.Vb_op])
-        x_op = np.array([0, self.operating_point[1], self.operating_point[0], 0, 0, 0])
+    def control(self, t, x, e_traj, lambda_traj):
+        if self.time_variant_feedback or not self.feedback_computed:
+            self.K = self.compute_feedback_matrix(e_traj[0])
+            self.feedback_computed = True
 
-        u = u_op - self.K @ (x - x_op)
+        # TODO: We could potentially also compute the trajectory for the pitch, should we do that? This would make the
+        #       linearization a whole lot more complex though. Same for the derivatives of all states.
+        x_op = np.array([0, e_traj[0], lambda_traj[0], 0, 0, 0])
+
+        u = - self.K @ (x - x_op)
         return u
 
-    def initialize(self, operating_point, param_value_dict, planner_travel, planner_elevation):
-        self.operating_point = operating_point
+    def initialize(self, param_value_dict):
         self.model_type = param_value_dict["Model type"]
-        self.Q_diag = param_value_dict["diag(Q)"]
-        self.R_diag = param_value_dict["diag(R)"]
-        Q = np.diag(self.Q_diag)
-        R = np.diag(self.R_diag)
+        self.Q = np.diag(param_value_dict["diag(Q)"])
+        self.R = np.diag(param_value_dict["diag(R)"])
+        self.time_variant_feedback = param_value_dict["Time variant feedback"]
+        self.feedback_computed = False
 
-        A, B, self.Vf_op, self.Vb_op = compute_linear_ss_and_op_output(self.model_type, self.operating_point[1])
+    def compute_feedback_matrix(self, e_op):
+        A, B = compute_linear_ss(self.model_type, e_op)
 
         try:
-            X = solve_continuous_are(A, B, Q, R)
-            self.K = np.linalg.inv(R) @ B.T @ X
+            X = solve_continuous_are(A, B, self.Q, self.R)
+            K = np.linalg.inv(self.R) @ B.T @ X
+
+            return K
         except Exception as e:
             print("Error during LQR computation: " + str(e))

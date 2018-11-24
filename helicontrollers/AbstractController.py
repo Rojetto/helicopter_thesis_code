@@ -22,8 +22,8 @@ class AbstractController:
         self.name = name
         self.param_definition_dict = param_definition_dict
 
-    def control(self, t, x):
+    def control(self, t, x, e_traj, lambda_traj):
         raise NotImplementedError
 
-    def initialize(self, operating_point, param_value_dict, planner_travel, planner_elevation):
+    def initialize(self, param_value_dict):
         raise NotImplementedError

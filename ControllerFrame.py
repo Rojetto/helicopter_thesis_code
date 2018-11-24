@@ -17,6 +17,7 @@ class ControllerFrame(QtWidgets.QFrame):
 
         scroll_area = QtWidgets.QScrollArea()
         scroll_area.setMinimumHeight(200)
+        scroll_area.setMinimumWidth(950)
 
         combos_layout = QtWidgets.QHBoxLayout()
 

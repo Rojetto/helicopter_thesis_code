@@ -42,14 +42,14 @@ class PidAlgorithm:
         return out
 
 
-def compute_linear_ss_and_op_output(model_type: ModelType, e_op):
+def compute_linear_ss(model_type: ModelType, e_op):
     """
     Computes the A and B matrices of the linear state space model at the specified operating point for all control
-    algorithms that require it. Also returns the front and back rotor voltages to stay in equilibrium.
+    algorithms that require it.
 
     :param model_type: the type that should be linearized
     :param e_op: elevation angle (rad) of the desired operating point
-    :return: A, B, Vf_op, Vb_op
+    :return: A, B
     """
     Vf_op, Vb_op = compute_feed_forward_static([e_op, 0, 0, 0, 0], [0, 0, 0, 0, 0])
     Vs_op = Vf_op + Vb_op
@@ -77,7 +77,7 @@ def compute_linear_ss_and_op_output(model_type: ModelType, e_op):
                   [L3 / Je, L3 / Je],
                   [0, 0]])
 
-    return A, B, Vf_op, Vb_op
+    return A, B
 
 
 def compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives):

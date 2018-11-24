@@ -11,9 +11,9 @@ class ManualController(AbstractController):
             "Vb": ParamFloatArray([-10], [10], [self.Vb])
         })
 
-    def control(self, t, x):
+    def control(self, t, x, e_traj, lambda_traj):
         return [self.Vf, self.Vb]
 
-    def initialize(self, operating_point, param_value_dict, planner_travel, planner_elevation):
+    def initialize(self, param_value_dict):
         self.Vf = param_value_dict["Vf"][0]
         self.Vb = param_value_dict["Vb"][0]

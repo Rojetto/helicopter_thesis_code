@@ -12,7 +12,6 @@ from helicontrollers.LqrController import LqrController
 from ControllerFrame import ControllerFrame
 from ModelFrame import ModelFrame
 from TrajectoryFrame import TrajectoryFrame
-from OperatingPointFrame import OperatingPointFrame
 from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
 
@@ -137,11 +136,9 @@ class mainWindow(Qt.QMainWindow):
         settings_tabs = QtWidgets.QTabWidget()
         control_top_level_layout.addWidget(settings_tabs)
         model_frame = ModelFrame(self.heliSim)
-        self.operating_point_frame = OperatingPointFrame()
         self.trajectory_frame = TrajectoryFrame()
         self.controller_frame = ControllerFrame(controller_list)
         settings_tabs.addTab(model_frame, "Model")
-        settings_tabs.addTab(self.operating_point_frame, "Operating Point")
         settings_tabs.addTab(self.trajectory_frame, "Trajectory")
         settings_tabs.addTab(self.controller_frame, "Controller")
 
@@ -162,17 +159,15 @@ class mainWindow(Qt.QMainWindow):
 
     def on_controller_update_button(self):
         self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
-        op_travel, op_elevation = self.operating_point_frame.get_operating_point()
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
         logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
-        self.current_controller.initialize([op_travel, op_elevation], param_values, self.current_planner_travel, self.current_planner_elevation)
+        self.current_controller.initialize(param_values)
 
     def on_start_button(self):
         self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
-        op_travel, op_elevation = self.operating_point_frame.get_operating_point()
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
         logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
-        self.current_controller.initialize([op_travel, op_elevation], param_values, self.current_planner_travel, self.current_planner_elevation)
+        self.current_controller.initialize(param_values)
 
         self.sim_running = True
         self.log_enabled = self.log_checkbox.checkState() == 2
@@ -209,7 +204,7 @@ class mainWindow(Qt.QMainWindow):
                 Vf_ff = 0
                 Vb_ff = 0
             # Get controller output
-            Vf_controller, Vb_controller = self.current_controller.control(t, x)
+            Vf_controller, Vb_controller = self.current_controller.control(t, x, e_and_derivatives, lambda_and_derivatives)
             # Add feed-forward and controller
             Vf = Vf_ff + Vf_controller
             Vb = Vb_ff + Vb_controller
