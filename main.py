@@ -1,7 +1,10 @@
 import matplotlib
+
+
 matplotlib.use('Qt5Agg')
 
 import logger
+from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static, compute_feed_forward_flatness
 from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
 from helicontrollers.LqrController import LqrController
@@ -142,6 +145,9 @@ class mainWindow(Qt.QMainWindow):
         settings_tabs.addTab(self.trajectory_frame, "Trajectory")
         settings_tabs.addTab(self.controller_frame, "Controller")
 
+        # Get the current trajectory planner
+        self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
+
         # Show the window
         self.show()
         self.vtk_interactor.Initialize()
@@ -157,16 +163,16 @@ class mainWindow(Qt.QMainWindow):
     def on_controller_update_button(self):
         self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
         op_travel, op_elevation = self.operating_point_frame.get_operating_point()
-        planner_travel, planner_elevation = self.trajectory_frame.get_planner()
-        logger.add_planner(planner_travel, planner_elevation)
-        self.current_controller.initialize([op_travel, op_elevation], param_values, planner_travel, planner_elevation)
+        self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
+        logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
+        self.current_controller.initialize([op_travel, op_elevation], param_values, self.current_planner_travel, self.current_planner_elevation)
 
     def on_start_button(self):
         self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
         op_travel, op_elevation = self.operating_point_frame.get_operating_point()
-        planner_travel, planner_elevation = self.trajectory_frame.get_planner()
-        logger.add_planner(planner_travel, planner_elevation)
-        self.current_controller.initialize([op_travel, op_elevation], param_values, planner_travel, planner_elevation)
+        self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
+        logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
+        self.current_controller.initialize([op_travel, op_elevation], param_values, self.current_planner_travel, self.current_planner_elevation)
 
         self.sim_running = True
         self.log_enabled = self.log_checkbox.checkState() == 2
@@ -187,13 +193,31 @@ class mainWindow(Qt.QMainWindow):
         if self.sim_running:
             t = self.heliSim.get_current_time()
             x = self.heliSim.get_current_state()
+            # Get feed-forward output
+            feed_forward_method = self.controller_frame.get_selected_feed_forward_method()
+            e_and_derivatives = self.current_planner_elevation.eval(t)
+            lambda_and_derivatives = self.current_planner_travel.eval(t)
+            # The trajectory planners emit degrees, so we need to convert to rad
+            e_and_derivatives = e_and_derivatives / 180 * np.pi
+            lambda_and_derivatives = lambda_and_derivatives / 180 * np.pi
+
+            if feed_forward_method == FeedForwardMethod.STATIC:
+                Vf_ff, Vb_ff = compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives)
+            elif feed_forward_method == FeedForwardMethod.FLATNESS:
+                Vf_ff, Vb_ff = compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives)
+            else:
+                Vf_ff = 0
+                Vb_ff = 0
             # Get controller output
-            Vf, Vb = self.current_controller.control(t, x)
+            Vf_controller, Vb_controller = self.current_controller.control(t, x)
+            # Add feed-forward and controller
+            Vf = Vf_ff + Vf_controller
+            Vb = Vb_ff + Vb_controller
             # Call kalman filter function
             self.kalmanObj.kalman_compute(t, x, [Vf, Vb])
             # Log data
             if self.log_enabled:
-                logger.add_frame(t, x, [Vf, Vb])
+                logger.add_frame(t, x, [Vf, Vb], e_and_derivatives, lambda_and_derivatives)
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb = self.heliSim.calc_step(Vf, Vb)
             self.heliModel.setState(lamb, e, p)

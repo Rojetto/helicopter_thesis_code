@@ -3,6 +3,7 @@ from typing import List
 from PyQt5 import QtWidgets
 
 from helicontrollers.AbstractController import *
+from helicontrollers.util import FeedForwardMethod
 
 
 class ControllerFrame(QtWidgets.QFrame):
@@ -17,8 +18,16 @@ class ControllerFrame(QtWidgets.QFrame):
         scroll_area = QtWidgets.QScrollArea()
         scroll_area.setMinimumHeight(200)
 
+        combos_layout = QtWidgets.QHBoxLayout()
+
         self.controller_combo = QtWidgets.QComboBox()
         self.controller_combo.currentIndexChanged.connect(self.on_controller_combo_select)
+        self.feed_forward_combo = QtWidgets.QComboBox()
+        self.feed_forward_combo.insertItem(0, "No feed-forward", FeedForwardMethod.NONE)
+        self.feed_forward_combo.insertItem(1, "Static feed-forward", FeedForwardMethod.STATIC)
+        self.feed_forward_combo.insertItem(2, "Flatness based feed-forward", FeedForwardMethod.FLATNESS)
+        combos_layout.addWidget(self.controller_combo)
+        combos_layout.addWidget(self.feed_forward_combo)
         self.controller_frame_stack = QtWidgets.QStackedWidget()
 
         # This is a list. Each element is a dictionary that holds parameter specifications for a specific controller.
@@ -73,7 +82,7 @@ class ControllerFrame(QtWidgets.QFrame):
         scroll_area.setWidget(self.controller_frame_stack)
 
         main_layout.addWidget(scroll_area, 1)
-        main_layout.addWidget(self.controller_combo)
+        main_layout.addLayout(combos_layout)
 
     def on_controller_combo_select(self):
         self.controller_frame_stack.setCurrentIndex(self.controller_combo.currentIndex())
@@ -98,3 +107,6 @@ class ControllerFrame(QtWidgets.QFrame):
             param_values[param_name] = value
 
         return selected_controller, param_values
+
+    def get_selected_feed_forward_method(self):
+        return self.feed_forward_combo.currentData()

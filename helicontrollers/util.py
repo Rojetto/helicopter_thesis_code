@@ -19,6 +19,12 @@ class ModelType(Enum):
     CENTRIPETAL = 3
 
 
+class FeedForwardMethod(Enum):
+    NONE = 1
+    STATIC = 2
+    FLATNESS = 3
+
+
 class PidAlgorithm:
     def __init__(self, gains):
         self.gains = gains
@@ -122,7 +128,7 @@ def compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives):
     p = arctan(a)
     dp2 = (da2 * (1 + a ** 2) - 2 * a * da1 ** 2) / (1 + a**2)**2
 
-    Vs = Jl * dl2 / (L4 * cos(e) * sin(p))
+    Vs = (Je * de2 - L2 * cos(e)) / (L3 * cos(p))
     Vd = Jp * dp2 / L1
 
     Vf = (Vs + Vd) / 2
