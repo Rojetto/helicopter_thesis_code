@@ -128,7 +128,7 @@ def compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives):
     p = arctan(a)
     dp2 = (da2 * (1 + a ** 2) - 2 * a * da1 ** 2) / (1 + a**2)**2
 
-    Vs = (Je * de2 - L2 * cos(e)) / (L3 * cos(p))
+    Vs = ((Jl * dl2 / (L4 * cos(e)))**2 + ((Je * de2 - L2 * cos(e)) / L3)**2)**(1/2)
     Vd = Jp * dp2 / L1
 
     Vf = (Vs + Vd) / 2
