@@ -134,6 +134,20 @@ class HeliSimulation(object):
         self.model_type = ModelType.CENTRIPETAL
         self.currentTime = 0
 
+        # variable determines if test mode is activated
+        self.test_mode = True
+        self.test_nr = 0
+        if self.test_mode:
+            if self.test_nr == 0:
+                # de = const, lambda = 0, observe p
+                self.currentState = np.array([0, 0, 0, 0, 0.5, 0])
+            if self.test_nr == 1:
+                # dlamb = const, e = 0, observe p
+                self.currentState = np.array([0, 0, 0, 0, 0, 0.5])
+            if self.test_nr == 2:
+                # dlamb = const, p = const, observe e
+                self.currentState = np.array([0, 0, 0, 0, 0, 0.5])
+
     def rhs_no_limits(self, t, x, v_s, v_d):
         """Right hand side of the differential equation being integrated. This function does simply calculate the
         state derivative, not dependend on the discrete limit state."""
@@ -191,6 +205,7 @@ class HeliSimulation(object):
             ddlamb = 0
 
         return np.array([dp, de, dlamb, ddp, dde, ddlamb])
+
 
     def generate_event_list(self):
         """Generates the event_list for the next integration interval depening on the limitation state.
@@ -327,12 +342,64 @@ class HeliSimulation(object):
                 self.statLim.lamb = LimitType.NO_LIMIT_REACHED
         return event_blacklist
 
+    def rhs_test(self, t, x):
+        """Just for testing the new model."""
+        p, e, lamb, dp, de, dlamb = x
+
+        v_s = 0
+        v_d = 0
+
+        # calculate dp, de and dlamb
+        if self.model_type == ModelType.EASY:
+            ddp = (L_1 / J_p) * v_d
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s
+
+        if self.model_type == ModelType.FRICTION:
+            ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
+
+        if self.model_type == ModelType.CENTRIPETAL:
+            ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
+            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
+            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
+
+        if self.test_nr == 0:
+            # de = const, lambda = 0, observe p
+            dde = 0
+            ddlamb = 0
+        if self.test_nr == 1:
+            # dlamb = const, e = 0, observe p
+            ddlamb = 0
+            dde = 0
+        if self.test_nr == 2:
+            # dlamb = const, p = const, observe e
+            ddlamb = 0
+            ddp = 0
+
+        return np.array([dp, de, dlamb, ddp, dde, ddlamb])
+
+    def calc_step_test(self):
+        t0 = self.currentTime
+        tf = self.currentTime + self.timeStep
+        x0 = self.currentState
+        tt = np.linspace(self.currentTime, self.currentTime + self.timeStep, 2)
+        sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs_test(t, x),
+                                        (t0, tf), x0,
+                                        method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9)
+        self.currentState = sol.y[:, -1]
+        self.currentTime += self.timeStep
+        return self.currentState
+
     def calc_step(self, v_f, v_b):
         """Returns the state of the system after the next time step
         V_f: voltage of the propeller right at back (of Fig.7) / first endeffector
         V_b: voltage of the propeller right at front (of Fig. 7) / second endeffector"""
         # start = time.time()
         # print("====> calcStep() t = " + str(self.currentTime))
+        if self.test_mode:
+            return self.calc_step_test()
         v_s = v_f + v_b
         v_d = v_f - v_b
         EventParams.V_s = v_s
@@ -359,6 +426,8 @@ class HeliSimulation(object):
         return self.currentTime
 
     def set_current_state_and_time(self, state, sim_time=0.0):
+        if self.test_mode:
+            return
         self.currentTime = sim_time
         self.currentState = np.array(state)
         # reset state machine
