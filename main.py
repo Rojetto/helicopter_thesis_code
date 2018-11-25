@@ -30,6 +30,7 @@ import numpy as np
 class mainWindow(Qt.QMainWindow):
     def __init__(self, parent=None):
         Qt.QMainWindow.__init__(self, parent)
+        self.setWindowTitle("Helicopter Simulation")
 
         # GUI setup
         frame = Qt.QFrame()
@@ -212,7 +213,8 @@ class mainWindow(Qt.QMainWindow):
             self.kalmanObj.kalman_compute(t, x, [Vf, Vb])
             # Log data
             if self.log_enabled:
-                logger.add_frame(t, x, [Vf, Vb], e_and_derivatives, lambda_and_derivatives)
+                logger.add_frame(t, x, [Vf_ff, Vb_ff], [Vf_controller, Vb_controller],
+                                 e_and_derivatives, lambda_and_derivatives)
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb = self.heliSim.calc_step(Vf, Vb)
             self.heliModel.setState(lamb, e, p)
