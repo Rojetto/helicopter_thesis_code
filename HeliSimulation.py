@@ -339,7 +339,12 @@ class HeliSimulation(object):
         EventParams.V_d = v_d
         EventParams.model_type = self.model_type
         event_blacklist = self.process_limit_state_machine(v_s, v_d)
-        event_list = self.generate_event_list()
+        # if the event_list is empty, no events can be triggered that limit the angles
+        # because process_limit_state_machine() does not limit anything it can still be called
+        if self.should_check_limits:
+            event_list = self.generate_event_list()
+        else:
+            event_list = []
         for _ in event_blacklist:
             event_list.remove(_)
         self.currentState = self.simulate_segment(self.currentTime, self.currentTime + self.timeStep,
@@ -362,3 +367,7 @@ class HeliSimulation(object):
 
     def set_model_type(self, modelType):
         self.model_type = modelType
+
+    def set_should_limit(self, should_check_limits):
+        self.should_check_limits = should_check_limits
+

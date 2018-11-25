@@ -39,4 +39,4 @@ class ModelFrame(QtWidgets.QFrame):
             self.sim.set_model_type(ModelType.CENTRIPETAL)
 
     def on_limit_check_toggle(self):
-        self.sim.should_check_limits = self.check_limits_box.checkState() == 2
+        self.sim.set_should_limit(self.check_limits_box.checkState() == 2)
