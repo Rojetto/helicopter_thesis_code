@@ -9,6 +9,7 @@ class ModelType(Enum):
     EASY = 1
     FRICTION = 2
     CENTRIPETAL = 3
+    ROTORSPEED = 4
 
 
 class LimitType(Enum):
