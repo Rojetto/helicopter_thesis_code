@@ -14,6 +14,7 @@ from ModelFrame import ModelFrame
 from TrajectoryFrame import TrajectoryFrame
 from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
+from helicontrollers.TimeVariantController import TimeVariantController
 
 from HelicopterModel import HelicopterModel
 from HeliSimulation import HeliSimulation
@@ -66,7 +67,8 @@ class mainWindow(Qt.QMainWindow):
         # Initialize controller and kalman filter
         self.current_controller = None
         self.kalmanObj = HeliKalmanFilter()
-        controller_list = [ManualController(), PolePlacementController(), LqrController(), DirectPidController(), CascadePidController()]
+        controller_list = [ManualController(), PolePlacementController(), LqrController(), DirectPidController(),
+                           CascadePidController(), TimeVariantController()]
 
         # GUI layout
         main_layout.addWidget(vtk_widget, 1)  # Set a stretch factor > 0 so that this widget takes all remaining space
