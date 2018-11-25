@@ -136,7 +136,7 @@ class HeliSimulation(object):
 
         # variable determines if test mode is activated
         self.test_mode = True
-        self.test_nr = 0
+        self.test_nr = 2
         if self.test_mode:
             if self.test_nr == 0:
                 # de = const, lambda = 0, observe p
@@ -376,6 +376,7 @@ class HeliSimulation(object):
         if self.test_nr == 2:
             # dlamb = const, p = const, observe e
             ddlamb = 0
+            dp = 0
             ddp = 0
 
         return np.array([dp, de, dlamb, ddp, dde, ddlamb])
