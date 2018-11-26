@@ -128,8 +128,8 @@ class TimeVariantController(AbstractController):
         self.feedback_computed = False
 
         super().__init__("TimeVariantController", {
-            "Model type": ParamEnum(["Simple", "Friction", "Centripetal"],
-                                    [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL],
+            "Model type": ParamEnum(["Simple", "Friction", "Centripetal", "Rotorspeed"],
+                                    [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL, ModelType.ROTORSPEED],
                                     self.model_type),
             "Poles": ParamFloatArray([-100, -100, -100, -100, -100, -100],
                                      [-0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
