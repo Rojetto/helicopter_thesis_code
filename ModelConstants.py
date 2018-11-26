@@ -12,6 +12,13 @@ d_p = 0.048  # dissipation coefficient in Nms
 d_e = 0.053
 d_l = 0.274
 
+# PT1 charakteristics for ROTOR SPEED
+T_f = 0.1
+T_b = 0.1
+K_f = 1
+K_b = 1
+K = 1
+
 g = 9.81  # m/s^2
 
 vtk_l_a = 10*l_h

@@ -119,7 +119,7 @@ def get_current_operating_point(model_type: ModelType, e_and_derivatives, lambda
 class TimeVariantController(AbstractController):
     def __init__(self):
         self.operating_point = [0, 0]  # travel, elevation
-        self.model_type = ModelType.EASY
+        self.model_type = ModelType.CENTRIPETAL
         self.poles = [-1, -2, -3, -4, -5, -6]
         self.Vf_op = 0
         self.Vb_op = 0
@@ -128,8 +128,8 @@ class TimeVariantController(AbstractController):
         self.feedback_computed = False
 
         super().__init__("TimeVariantController", {
-            "Model type": ParamEnum(["Simple", "Friction", "Centripetal"],
-                                    [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL],
+            "Model type": ParamEnum(["Simple", "Friction", "Centripetal", "Rotorspeed"],
+                                    [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL, ModelType.ROTORSPEED],
                                     self.model_type),
             "Poles": ParamFloatArray([-100, -100, -100, -100, -100, -100],
                                      [-0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
@@ -137,6 +137,8 @@ class TimeVariantController(AbstractController):
         })
 
     def control(self, t, x, e_traj, lambda_traj):
+        # delete front and back speed because we dont need it here
+        x = x[:6]
         # p, e, lamb, dp, de, dlamb = x
         # u_op = np.array([self.Vf_op, self.Vb_op])
         # x_op = np.array([0, self.operating_point[1], self.operating_point[0], 0, 0, 0])

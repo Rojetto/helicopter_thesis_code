@@ -1,14 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import ModelConstants as mc
-from helicontrollers.TimeVariantController import get_p_and_first_derivative
-from helicontrollers.util import ModelType
 
 index = 0
 chunk_size = 600  # 10 s with 60 FPS
 current_size = chunk_size
 ts_store = np.empty(current_size)
-xs_store = np.empty((current_size, 6))
+xs_store = np.empty((current_size, 8))
 us_ff_store = np.empty((current_size, 2))
 us_controller_store = np.empty((current_size, 2))
 e_traj_store = np.empty((current_size, 5))
@@ -81,14 +79,12 @@ def process(ts, xs, us_ff, us_controller, e_traj_and_derivatives, lambda_traj_an
     plt.grid()
 
     plt.figure("Joint angles (deg)")
-    p_traj = np.array([get_p_and_first_derivative(ModelType.EASY, e, l)[0] for (e, l) in zip(e_traj_and_derivatives, lambda_traj_and_derivatives)])
-    plt.plot(ts, xs[:, 0] / np.pi * 180.0, label="p")
-    plt.plot(ts, p_traj / np.pi * 180.0, label="p_traj")
-    plt.plot(ts, xs[:, 1] / np.pi * 180.0, label="e")
-    plt.plot(ts, e_traj_and_derivatives[:, 0] / np.pi * 180.0, label="e_traj")
-    plt.plot(ts, xs[:, 2] / np.pi * 180.0, label="lambda")
-    plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0, label="lambda_traj")
-    plt.legend()
+    plt.plot(ts, xs[:, 0] / np.pi * 180.0)
+    plt.plot(ts, xs[:, 1] / np.pi * 180.0)
+    plt.plot(ts, e_traj_and_derivatives[:, 0] / np.pi * 180.0)
+    plt.plot(ts, xs[:, 2] / np.pi * 180.0)
+    plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0)
+    plt.legend(['p', 'e', 'e_traj', 'lambda', 'lambda_traj'])
     plt.grid()
     #
     # plt.figure("Joint velocity (deg/s)")
