@@ -19,7 +19,9 @@ class ModelFrame(QtWidgets.QFrame):
         self.model_2_button.toggled.connect(self.on_model_toggle)
         self.model_3_button = QtWidgets.QRadioButton("+ centripetal forces", self)
         self.model_3_button.toggled.connect(self.on_model_toggle)
-        self.model_3_button.setChecked(True)
+        self.model_4_button = QtWidgets.QRadioButton("+ rotor speed", self)
+        self.model_4_button.toggled.connect(self.on_model_toggle)
+        self.model_4_button.setChecked(True)
 
         self.check_limits_box = QtWidgets.QCheckBox("Limit angles")
         self.check_limits_box.setCheckState(2 if sim.should_check_limits else 0)
@@ -28,6 +30,7 @@ class ModelFrame(QtWidgets.QFrame):
         layout.addWidget(self.model_1_button)
         layout.addWidget(self.model_2_button)
         layout.addWidget(self.model_3_button)
+        layout.addWidget(self.model_4_button)
         layout.addWidget(self.check_limits_box)
 
     def on_model_toggle(self):
@@ -37,6 +40,8 @@ class ModelFrame(QtWidgets.QFrame):
             self.sim.set_model_type(ModelType.FRICTION)
         elif self.model_3_button.isChecked():
             self.sim.set_model_type(ModelType.CENTRIPETAL)
+        elif self.model_4_button.isChecked():
+            self.sim.set_model_type(ModelType.ROTORSPEED)
 
     def on_limit_check_toggle(self):
         self.sim.set_should_limit(self.check_limits_box.checkState() == 2)

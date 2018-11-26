@@ -218,13 +218,13 @@ class mainWindow(Qt.QMainWindow):
                 logger.add_frame(t, x, [Vf_ff, Vb_ff], [Vf_controller, Vb_controller],
                                  e_and_derivatives, lambda_and_derivatives)
             # Calculate next simulation step
-            p, e, lamb, dp, de, dlamb = self.heliSim.calc_step(Vf, Vb)
+            p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb)
             self.heliModel.setState(lamb, e, p)
         else:
             orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])
             orientation = orientation / 180.0 * np.pi
             self.heliModel.setState(orientation[2], orientation[1], orientation[0])
-            self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], 0, 0, 0])
+            self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], 0, 0, 0, 0, 0])
 
         # # handle vtk camera
         # pos = self.vtk_camera.GetPosition()

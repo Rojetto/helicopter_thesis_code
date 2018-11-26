@@ -29,12 +29,12 @@ class LqrController(AbstractController):
         })
 
     def control(self, t, x, e_traj, lambda_traj):
+        # delete front and back speed because we dont need it here
+        x = x[:6]
         if self.time_variant_feedback or not self.feedback_computed:
             self.K = self.compute_feedback_matrix(e_traj[0])
             self.feedback_computed = True
 
-        # TODO: We could potentially also compute the trajectory for the pitch, should we do that? This would make the
-        #       linearization a whole lot more complex though. Same for the derivatives of all states.
         x_op = np.array([0, e_traj[0], lambda_traj[0], 0, 0, 0])
 
         u = - self.K @ (x - x_op)

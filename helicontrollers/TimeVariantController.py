@@ -137,6 +137,8 @@ class TimeVariantController(AbstractController):
         })
 
     def control(self, t, x, e_traj, lambda_traj):
+        # delete front and back speed because we dont need it here
+        x = x[:6]
         # p, e, lamb, dp, de, dlamb = x
         # u_op = np.array([self.Vf_op, self.Vb_op])
         # x_op = np.array([0, self.operating_point[1], self.operating_point[0], 0, 0, 0])
