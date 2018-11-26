@@ -9,6 +9,7 @@ class ModelType(Enum):
     EASY = 1
     FRICTION = 2
     CENTRIPETAL = 3
+    ROTORSPEED = 4
 
 
 class LimitType(Enum):
@@ -66,7 +67,7 @@ event_pmax.terminal = True
 
 def event_pdt0(t, x):
     """Checks if the second derivative has crossed zero."""
-    p, e, lamb, dp, de, dlamb = x
+    p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
     if EventParams.model_type == ModelType.EASY:
         ddp = (L_1 / J_p) * EventParams.V_d
     elif EventParams.model_type == ModelType.FRICTION:
@@ -74,6 +75,10 @@ def event_pdt0(t, x):
     elif EventParams.model_type == ModelType.CENTRIPETAL:
         ddp = ((L_1 / J_p) * EventParams.V_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) *
                (de ** 2 - np.cos(e) ** 2 * dlamb ** 2))
+    elif EventParams.model_type == ModelType.ROTORSPEED:
+        ddp = (L_1 * mc.K / J_p) * (f_speed - b_speed) - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (
+                    de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
+
     return ddp
 event_pdt0.terminal = True
 
@@ -89,7 +94,7 @@ event_emax.terminal = True
 
 
 def event_edt0(t, x):
-    p, e, lamb, dp, de, dlamb = x
+    p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
     if EventParams.model_type == ModelType.EASY:
         dde = (L_2 / J_e) * np.cos(e) + (L_3 / J_e) * np.cos(p) * EventParams.V_s
     elif EventParams.model_type == ModelType.FRICTION:
@@ -97,6 +102,10 @@ def event_edt0(t, x):
     elif EventParams.model_type == ModelType.CENTRIPETAL:
         dde = ((L_2 / J_e) * np.cos(e) + (L_3 / J_e) * np.cos(p) * EventParams.V_s - (mc.d_e / J_e) * de -
                np.cos(e) * np.sin(e) * dlamb ** 2)
+    elif EventParams.model_type == ModelType.ROTORSPEED:
+        dde = (L_2 / J_e) * np.cos(e) + (L_3 * mc.K / J_e) * np.cos(p) * (f_speed + b_speed) - (
+                    mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
+
     return dde
 event_edt0.terminal = True
 
@@ -111,15 +120,16 @@ event_lambmax.terminal = True
 
 
 def event_lambdt0(t, x):
-    p, e, lamb, dp, de, dlamb = x
+    p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
     if EventParams.model_type == ModelType.EASY:
         ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * EventParams.V_s
-
-    if EventParams.model_type == ModelType.FRICTION:
+    elif EventParams.model_type == ModelType.FRICTION:
         ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * EventParams.V_s - (mc.d_l / J_l) * dlamb
-
-    if EventParams.model_type == ModelType.CENTRIPETAL:
+    elif EventParams.model_type == ModelType.CENTRIPETAL:
         ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * EventParams.V_s - (mc.d_l / J_l) * dlamb
+    elif EventParams.model_type == ModelType.ROTORSPEED:
+        ddlamb = (L_4 * mc.K / J_l) * np.cos(e) * np.sin(p) * (f_speed + b_speed) - (mc.d_l / J_l) * dlamb
+
     return ddlamb
 event_lambdt0.terminal = True
 
@@ -127,7 +137,7 @@ event_lambdt0.terminal = True
 class HeliSimulation(object):
     def __init__(self, theta1_0, theta2_0, theta3_0, time_step):
         """Initializes the simulation"""
-        self.currentState = np.array([theta1_0, theta2_0, theta3_0, 0, 0, 0])
+        self.currentState = np.array([theta1_0, theta2_0, theta3_0, 0, 0, 0, 0, 0])
         self.should_check_limits = True
         self.statLim = StateLimits()
         self.timeStep = time_step
@@ -137,7 +147,10 @@ class HeliSimulation(object):
     def rhs_no_limits(self, t, x, v_s, v_d):
         """Right hand side of the differential equation being integrated. This function does simply calculate the
         state derivative, not dependend on the discrete limit state."""
-        p, e, lamb, dp, de, dlamb = x
+        p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+
+        v_f = (v_s + v_d) / 2
+        v_b = (v_s - v_d) / 2
 
         # calculate dp, de and dlamb
         if self.model_type == ModelType.EASY:
@@ -155,28 +168,23 @@ class HeliSimulation(object):
             dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
             ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
 
-        return np.array([dp, de, dlamb, ddp, dde, ddlamb])
+        if self.model_type == ModelType.ROTORSPEED:
+            df_speed = - f_speed / mc.T_f + mc.K_f / mc.T_f * v_f
+            db_speed = - b_speed / mc.T_b + mc.K_b/mc.T_b * v_b
+            ddp = (L_1*mc.K/J_p) * (f_speed - b_speed) - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
+            dde = (L_2/J_e) * np.cos(e) + (L_3*mc.K/J_e) * np.cos(p) * (f_speed + b_speed) - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
+            ddlamb = (L_4*mc.K/J_l) * np.cos(e) * np.sin(p) * (f_speed + b_speed) - (mc.d_l / J_l) * dlamb
+        else:
+            df_speed, db_speed = 0, 0
+
+        return np.array([dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed])
 
     def rhs(self, t, x, v_s, v_d):
         """Right hand side of the differential equation being integrated. Behaves according to the
         state limit machine."""
-        p, e, lamb, dp, de, dlamb = x
+        p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
 
-        # calculate dp, de and dlamb
-        if self.model_type == ModelType.EASY:
-            ddp = (L_1 / J_p) * v_d
-            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s
-            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s
-
-        if self.model_type == ModelType.FRICTION:
-            ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp
-            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de
-            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
-
-        if self.model_type == ModelType.CENTRIPETAL:
-            ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
-            dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
-            ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
+        dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed = self.rhs_no_limits(t, x, v_s, v_d)
 
         if self.statLim.p == LimitType.UPPER_LIMIT or self.statLim.p == LimitType.LOWER_LIMIT:
             dp = 0
@@ -190,7 +198,7 @@ class HeliSimulation(object):
             dlamb = 0
             ddlamb = 0
 
-        return np.array([dp, de, dlamb, ddp, dde, ddlamb])
+        return np.array([dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed])
 
 
     def generate_event_list(self):
@@ -220,7 +228,7 @@ class HeliSimulation(object):
         :param event: function object, that returned 0 to the solver
         :param state: current state, needed in order to alter the state
         :type event: Callable[[float, np.ndarray], float]"""
-        p, e, lamb, dp, de, dlamb = state
+        p, e, lamb, dp, de, dlamb, f_speed, b_speed = state
         if event.__name__ == "event_pmin":
             p = self.statLim.p_min
             dp = 0
@@ -251,7 +259,7 @@ class HeliSimulation(object):
             self.statLim.e = LimitType.NO_LIMIT_REACHED
         if event.__name__ == "event_lambdt0":
             self.statLim.lamb = LimitType.NO_LIMIT_REACHED
-        return [p, e, lamb, dp, de, dlamb]
+        return [p, e, lamb, dp, de, dlamb, f_speed, b_speed]
 
     def simulate_segment(self, t0, tf, x0, v_s, v_d, event_list):
         """Simulates one segment from t0 to tf and takes care of events that occur in that time interval.
@@ -297,7 +305,7 @@ class HeliSimulation(object):
         the discontinuous second derivative has skipped the 0-value.
         It only switches from limit to non-limit, switching from non-limit to limit is only done by the events.
         :return event_blacklist: events that are not to be cared of in the next integration interval"""
-        pdt, edt, lambdt, pddt, eddt, lambddt = self.rhs_no_limits(self.currentTime, self.currentState[0:6], V_s, V_d)
+        pdt, edt, lambdt, pddt, eddt, lambddt, df_speed, db_speed = self.rhs_no_limits(self.currentTime, self.currentState, V_s, V_d)
         event_blacklist = []
         if self.statLim.p == LimitType.UPPER_LIMIT:
             if pddt <= 0:
@@ -366,6 +374,7 @@ class HeliSimulation(object):
         # reset state machine
         self.statLim.p = LimitType.NO_LIMIT_REACHED
         self.statLim.e = LimitType.NO_LIMIT_REACHED
+        self.statLim.lamb = LimitType.NO_LIMIT_REACHED
 
     def set_model_type(self, modelType):
         self.model_type = modelType
