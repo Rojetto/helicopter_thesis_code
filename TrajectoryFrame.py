@@ -130,6 +130,25 @@ class TrajectoryFrame(QtWidgets.QFrame):
 
         self.trajectory_frame_stack.addWidget(constant_op_frame)
 
+        # Wave
+        self.trajectory_combo.insertItem(4, "Wave")
+        wave_frame = QtWidgets.QFrame()
+        wave_layout = QtWidgets.QFormLayout()
+        wave_frame.setLayout(wave_layout)
+
+        self.wave_amplitude = QtWidgets.QDoubleSpinBox()
+        self.wave_amplitude.setValue(20)
+        self.wave_period_t = QtWidgets.QDoubleSpinBox()
+        self.wave_period_t.setValue(8)
+        self.wave_period_lambda = QtWidgets.QDoubleSpinBox()
+        self.wave_period_lambda.setValue(40)
+
+        wave_layout.addRow(QtWidgets.QLabel("Amplitude"), self.wave_amplitude)
+        wave_layout.addRow(QtWidgets.QLabel("Time period"), self.wave_period_t)
+        wave_layout.addRow(QtWidgets.QLabel("Travel period"), self.wave_period_lambda)
+
+        self.trajectory_frame_stack.addWidget(wave_frame)
+
         # Finishing touches
         scroll_area.setWidget(self.trajectory_frame_stack)
         main_layout.addWidget(scroll_area, 1)
@@ -214,6 +233,16 @@ class TrajectoryFrame(QtWidgets.QFrame):
             op_elevation = self.constant_op_elevation.value()
             planner_travel = Planner.ConstantTrajectory(op_travel)
             planner_elevation = Planner.ConstantTrajectory(op_elevation)
+        elif combo_idx == 3:
+            # Wave trajectory is selected
+            wave_amplitude = self.wave_amplitude.value()
+            wave_period_t = self.wave_period_t.value()
+            wave_period_lambda = self.wave_period_lambda.value()
+
+            planner_travel = Planner.WaveTrajectory(Planner.WaveTrajectory.TrajectoryComponent.TRAVEL,
+                                                    wave_amplitude, wave_period_t, wave_period_lambda)
+            planner_elevation = Planner.WaveTrajectory(Planner.WaveTrajectory.TrajectoryComponent.ELEVATION,
+                                                    wave_amplitude, wave_period_t, wave_period_lambda)
         else:
             print("[ERROR] Combox index was not recognized at generating trajectories")
 

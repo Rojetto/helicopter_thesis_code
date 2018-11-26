@@ -1,4 +1,5 @@
 from abc import ABC
+from enum import Enum
 
 import numpy as np
 import abc # abstract base class
@@ -45,6 +46,36 @@ class ConstantTrajectory(Planner):
 
     def eval(self, t):
         return self.constant_output
+
+
+class WaveTrajectory(Planner):
+    class TrajectoryComponent(Enum):
+        ELEVATION = 1
+        TRAVEL = 2
+
+    def __init__(self, component, amplitude, period_t, period_lambda):
+        self.component = component
+        self.amplitude = amplitude
+        self.period_t = period_t
+        self.period_lambda = period_lambda
+
+    def eval(self, t):
+        e = self.amplitude * np.sin(2 * np.pi / self.period_t * t)
+        de1 = self.amplitude * (2 * np.pi / self.period_t) * np.cos(2 * np.pi / self.period_t * t)
+        de2 = - self.amplitude * (2 * np.pi / self.period_t)**2 * np.sin(2 * np.pi / self.period_t * t)
+        de3 = - self.amplitude * (2 * np.pi / self.period_t)**3 * np.cos(2 * np.pi / self.period_t * t)
+        de4 = self.amplitude * (2 * np.pi / self.period_t)**4 * np.sin(2 * np.pi / self.period_t * t)
+
+        l = self.period_lambda / self.period_t * t
+        dl1 = self.period_lambda / self.period_t
+        dl2 = 0
+        dl3 = 0
+        dl4 = 0
+
+        if self.component == WaveTrajectory.TrajectoryComponent.ELEVATION:
+            return np.array([e, de1, de2, de3, de4])
+        else:
+            return np.array([l, dl1, dl2, dl3, dl4])
 
 
 class PolynomialPlanner(PointToPointPlanner):

@@ -1,6 +1,4 @@
 import matplotlib
-
-
 matplotlib.use('Qt5Agg')
 
 import logger
@@ -8,12 +6,14 @@ from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static,
 from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
 from helicontrollers.LqrController import LqrController
+from helicontrollers.QuasistaticFlatnessController import QuasistaticFlatnessController
 
 from ControllerFrame import ControllerFrame
 from ModelFrame import ModelFrame
 from TrajectoryFrame import TrajectoryFrame
 from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
+from helicontrollers.TimeVariantController import TimeVariantController
 
 from HelicopterModel import HelicopterModel
 from HeliSimulation import HeliSimulation
@@ -30,6 +30,7 @@ import numpy as np
 class mainWindow(Qt.QMainWindow):
     def __init__(self, parent=None):
         Qt.QMainWindow.__init__(self, parent)
+        self.setWindowTitle("Helicopter Simulation")
 
         # GUI setup
         frame = Qt.QFrame()
@@ -65,7 +66,8 @@ class mainWindow(Qt.QMainWindow):
         # Initialize controller and kalman filter
         self.current_controller = None
         self.kalmanObj = HeliKalmanFilter()
-        controller_list = [ManualController(), PolePlacementController(), LqrController(), DirectPidController(), CascadePidController()]
+        controller_list = [ManualController(), PolePlacementController(), LqrController(), DirectPidController(),
+                           CascadePidController(), TimeVariantController(), QuasistaticFlatnessController()]
 
         # GUI layout
         main_layout.addWidget(vtk_widget, 1)  # Set a stretch factor > 0 so that this widget takes all remaining space
@@ -212,7 +214,8 @@ class mainWindow(Qt.QMainWindow):
             self.kalmanObj.kalman_compute(t, x, [Vf, Vb])
             # Log data
             if self.log_enabled:
-                logger.add_frame(t, x, [Vf, Vb], e_and_derivatives, lambda_and_derivatives)
+                logger.add_frame(t, x, [Vf_ff, Vb_ff], [Vf_controller, Vb_controller],
+                                 e_and_derivatives, lambda_and_derivatives)
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb = self.heliSim.calc_step(Vf, Vb)
             self.heliModel.setState(lamb, e, p)
