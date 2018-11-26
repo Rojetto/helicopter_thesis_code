@@ -121,7 +121,7 @@ def compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives):
     da1 = (f - b * g) / h
 
     df1 = db2 * c * d + db1 * g
-    dg1 = dc2 * d + 2 * dc1 * dd1 + c * dd2
+    dg1 = dc2 * d + 2 * dc2 * d + c * dd2
     dh1 = 2 * c * dc1 * d**2 + 2 * c**2 * d * dd1
     da2 = ((df1 - (db1 * g + b * dg1)) * h - (f - b * g) * dh1) / h**2
 

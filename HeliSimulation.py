@@ -192,6 +192,7 @@ class HeliSimulation(object):
 
         return np.array([dp, de, dlamb, ddp, dde, ddlamb])
 
+
     def generate_event_list(self):
         """Generates the event_list for the next integration interval depening on the limitation state.
         :return event_list: list of function objects for solve_ivp"""
@@ -326,6 +327,7 @@ class HeliSimulation(object):
                 event_blacklist.append(event_lambmin)
                 self.statLim.lamb = LimitType.NO_LIMIT_REACHED
         return event_blacklist
+
 
     def calc_step(self, v_f, v_b):
         """Returns the state of the system after the next time step

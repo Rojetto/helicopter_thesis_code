@@ -1,4 +1,6 @@
 import matplotlib
+
+
 matplotlib.use('Qt5Agg')
 
 import logger
@@ -6,7 +8,6 @@ from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static,
 from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
 from helicontrollers.LqrController import LqrController
-from helicontrollers.QuasistaticFlatnessController import QuasistaticFlatnessController
 
 from ControllerFrame import ControllerFrame
 from ModelFrame import ModelFrame
@@ -67,7 +68,7 @@ class mainWindow(Qt.QMainWindow):
         self.current_controller = None
         self.kalmanObj = HeliKalmanFilter()
         controller_list = [ManualController(), PolePlacementController(), LqrController(), DirectPidController(),
-                           CascadePidController(), TimeVariantController(), QuasistaticFlatnessController()]
+                           CascadePidController(), TimeVariantController()]
 
         # GUI layout
         main_layout.addWidget(vtk_widget, 1)  # Set a stretch factor > 0 so that this widget takes all remaining space
