@@ -26,7 +26,7 @@ def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_
     if index == current_size:
         current_size += chunk_size
         ts_store.resize(current_size, refcheck=False)
-        xs_store.resize((current_size, 6), refcheck=False)
+        xs_store.resize((current_size, 8), refcheck=False)
         us_ff_store.resize((current_size, 2), refcheck=False)
         us_controller_store.resize((current_size, 2), refcheck=False)
         e_traj_store.resize((current_size, 5), refcheck=False)
@@ -64,6 +64,8 @@ def process(ts, xs, us_ff, us_controller, e_traj_and_derivatives, lambda_traj_an
     # ax1.grid()
     # plt.show()
 
+
+
     plt.figure("Total front and back rotor voltages")
     plt.plot(ts, us_ff[:, 0] + us_controller[:, 0])
     plt.plot(ts, us_ff[:, 1] + us_controller[:, 1])
@@ -85,6 +87,12 @@ def process(ts, xs, us_ff, us_controller, e_traj_and_derivatives, lambda_traj_an
     plt.plot(ts, xs[:, 2] / np.pi * 180.0)
     plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0)
     plt.legend(['p', 'e', 'e_traj', 'lambda', 'lambda_traj'])
+    plt.grid()
+
+    plt.figure("Rotorspeed")
+    plt.plot(ts, xs[:, 6])
+    plt.plot(ts, xs[:, 7])
+    plt.legend(['f','b'])
     plt.grid()
     #
     # plt.figure("Joint velocity (deg/s)")
