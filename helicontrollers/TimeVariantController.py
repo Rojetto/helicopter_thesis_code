@@ -121,7 +121,7 @@ def get_current_operating_point(model_type: ModelType, e_and_derivatives, lambda
 class TimeVariantController(AbstractController):
     def __init__(self):
         self.operating_point = [0, 0]  # travel, elevation
-        self.model_type = ModelType.CENTRIPETAL
+        self.model_type = ModelType.EASY
         self.poles = [-1, -2, -3, -4, -5, -6]
         self.Vf_op = 0
         self.Vb_op = 0
