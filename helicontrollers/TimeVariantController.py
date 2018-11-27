@@ -112,7 +112,9 @@ def get_current_operating_point(model_type: ModelType, e_and_derivatives, lambda
     lamb_op = lambda_and_derivatives[0]
     dlamb_op = lambda_and_derivatives[1]
     Vf_op, Vb_op = compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives)
-    p_op, dp_op = get_p_and_first_derivative(model_type, e_and_derivatives, lambda_and_derivatives)
+    # ATTENTION: the trajectory for p can only be calculated when using the simple model
+    # therefore it is called with the simple model although other models might be used
+    p_op, dp_op = get_p_and_first_derivative(ModelType.EASY, e_and_derivatives, lambda_and_derivatives)
     operating_point = [p_op, e_op, lamb_op, dp_op, de_op, dlamb_op]
     return operating_point, Vf_op, Vb_op
 
