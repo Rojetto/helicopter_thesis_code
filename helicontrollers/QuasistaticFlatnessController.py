@@ -6,8 +6,8 @@ import numpy as np
 
 class QuasistaticFlatnessController(AbstractController):
     def __init__(self):
-        self.k1 = [1, 1, 1, 1]
-        self.k2 = [1, 1]
+        self.k1 = [1, 4, 6, 4]
+        self.k2 = [1, 2]
         self.luenberger_poles = [-6, -5, -4, -3, -2, -1]
         self.L = np.zeros((6, 4))
         self.luenberger_Ad = np.zeros((6, 6))
@@ -16,8 +16,8 @@ class QuasistaticFlatnessController(AbstractController):
         self.run_once = False
 
         super().__init__("Quasistatic Flatness Controller", {
-            "k1": ParamFloatArray([0.01, 0.01, 0.01, 0.01], [100, 100, 100, 100], self.k1),
-            "k2": ParamFloatArray([0.01, 0.01], [100, 100], self.k2),
+            "k1": ParamFloatArray([-100, -100, -100, -100], [100, 100, 100, 100], self.k1),
+            "k2": ParamFloatArray([-100, -100], [100, 100], self.k2),
             "Luenberger poles": ParamFloatArray([-100, -100, -100, -100, -100, -100],
                                                 [-0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
                                                 self.luenberger_poles)
