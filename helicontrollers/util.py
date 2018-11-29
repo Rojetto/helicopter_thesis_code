@@ -93,6 +93,18 @@ def compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives):
 
 
 def compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives):
+    pitch, system_in = compute_pitch_and_inputs_flatness(e_and_derivatives, lambda_and_derivatives)
+
+    return system_in
+
+
+def compute_pitch_flatness(e_and_derivatives, lambda_and_derivatives):
+    pitch, system_in = compute_pitch_and_inputs_flatness(e_and_derivatives, lambda_and_derivatives)
+
+    return pitch
+
+
+def compute_pitch_and_inputs_flatness(e_and_derivatives, lambda_and_derivatives):
     e = e_and_derivatives[0]
     de1 = e_and_derivatives[1]
     de2 = e_and_derivatives[2]
@@ -112,10 +124,10 @@ def compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives):
 
     db1 = L3 * Jl * dl3
     db2 = L3 * Jl * dl4
-    dc1 = - L4*sin(e)*de1
-    dc2 = - L4 * (cos(e) * de1**2 + sin(e) * de2)
+    dc1 = - L4 * sin(e) * de1
+    dc2 = - L4 * (cos(e) * de1 ** 2 + sin(e) * de2)
     dd1 = Je * de3 + L2 * sin(e) * de1
-    dd2 = Je * de4 + L2 * (cos(e) * de1**2 + sin(e) * de2)
+    dd2 = Je * de4 + L2 * (cos(e) * de1 ** 2 + sin(e) * de2)
     f = db1 * c * d
     g = dc1 * d + c * dd1
     h = c * c * d * d
@@ -123,16 +135,17 @@ def compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives):
 
     df1 = db2 * c * d + db1 * g
     dg1 = dc2 * d + 2 * dc1 * dd1 + c * dd2
-    dh1 = 2 * c * dc1 * d**2 + 2 * c**2 * d * dd1
-    da2 = ((df1 - (db1 * g + b * dg1)) * h - (f - b * g) * dh1) / h**2
+    dh1 = 2 * c * dc1 * d ** 2 + 2 * c ** 2 * d * dd1
+    da2 = ((df1 - (db1 * g + b * dg1)) * h - (f - b * g) * dh1) / h ** 2
 
     p = arctan(a)
-    dp2 = (da2 * (1 + a ** 2) - 2 * a * da1 ** 2) / (1 + a**2)**2
+    dp1 = da1 / (1 + a**2)
+    dp2 = (da2 * (1 + a ** 2) - 2 * a * da1 ** 2) / (1 + a ** 2) ** 2
 
-    Vs = ((Jl * dl2 / (L4 * cos(e)))**2 + ((Je * de2 - L2 * cos(e)) / L3)**2)**(1/2)
+    Vs = ((Jl * dl2 / (L4 * cos(e))) ** 2 + ((Je * de2 - L2 * cos(e)) / L3) ** 2) ** (1 / 2)
     Vd = Jp * dp2 / L1
 
     Vf = (Vs + Vd) / 2
     Vb = (Vs - Vd) / 2
 
-    return Vf, Vb
+    return np.array([p, dp1, dp2]), np.array([Vf, Vb])
