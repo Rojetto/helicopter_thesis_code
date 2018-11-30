@@ -1,20 +1,20 @@
 from helicontrollers.AbstractController import AbstractController, ParamBool, ParamFloatArray
 from helicontrollers.util import L1, L2, L3, L4, Je, Jl, Jp, compute_pitch_flatness
-from numpy import cos, arctan, sqrt
+from numpy import cos, arctan, sqrt, sign
 
 
 class FeedbackLinearizationController(AbstractController):
     def __init__(self):
         self.pitch_derivative_feed_forward = False
-        self.ke = [2, 3]
-        self.kl = [2, 3]
-        self.kp = [100, 20]
+        self.ke = [20, 6]
+        self.kl = [4, 3]
+        self.kp = [150, 20]
 
         super().__init__("Feedback linearization", {
             "Pitch derivative feed-forward": ParamBool(self.pitch_derivative_feed_forward),
-            "k Elevation": ParamFloatArray([0, 0], [100, 100], self.ke),
-            "k Travel": ParamFloatArray([0, 0], [100, 100], self.kl),
-            "k Pitch": ParamFloatArray([0, 0], [100, 100], self.kp)
+            "k Elevation": ParamFloatArray([0, 0], [1000, 1000], self.ke),
+            "k Travel": ParamFloatArray([0, 0], [1000, 1000], self.kl),
+            "k Pitch": ParamFloatArray([0, 0], [1000, 1000], self.kp)
         })
 
     def control(self, t, x, e_traj, lambda_traj):
@@ -26,7 +26,7 @@ class FeedbackLinearizationController(AbstractController):
         u1v = 1/L3 * (- L2 * cos(e) + Je * v1)
         u2v = Jl / (L4 * cos(e)) * v2
 
-        Vs = sqrt(u1v**2 + u2v**2)
+        Vs = sqrt(u1v**2 + u2v**2)*sign(u1v)
 
         pd = arctan(u2v / u1v)
 
