@@ -3,7 +3,11 @@ import matplotlib.pyplot as plt
 import ModelConstants as mc
 from helicontrollers.TimeVariantController import get_p_and_first_derivative
 from helicontrollers.util import ModelType
+from PyQt5 import QtWidgets
+import os.path
+import pickle
 
+last_storage_directory = None
 index = 0
 chunk_size = 600  # 10 s with 60 FPS
 current_size = chunk_size
@@ -15,6 +19,43 @@ e_traj_store = np.empty((current_size, 5))
 lambda_traj_store = np.empty((current_size, 5))
 planner_travel_g = 0
 planner_elevation_g = 0
+
+
+class LoggingDataV1:
+    def __init__(self, ts, xs, us_ff, us_controller, e_traj_and_derivatives, lambda_traj_and_derivatives):
+        self.ts = ts
+        self.xs = xs
+        self.us_ff = us_ff
+        self.us_controller = us_controller
+        self.e_traj_and_derivatives = e_traj_and_derivatives
+        self.lambda_traj_and_derivatives = lambda_traj_and_derivatives
+
+
+def bundle_data():
+    global index
+
+    bundle = LoggingDataV1(ts_store[:index], xs_store[:index], us_ff_store[:index], us_controller_store[:index],
+                           e_traj_store[:index], lambda_traj_store[:index])
+
+    return bundle
+
+
+def open_dialog_and_store():
+    global last_storage_directory
+    path, _ = QtWidgets.QFileDialog.getSaveFileName(None, directory=last_storage_directory,
+                                                    filter="HeliControl data (*.hc1)")
+
+    # User might have pressed "Cancel"
+    if not path:
+        return
+
+    selected_dir = os.path.dirname(path)
+    last_storage_directory = selected_dir
+    bundle = bundle_data()
+
+    with open(path, "wb") as file:
+        pickle.dump(bundle, file)
+
 
 def add_planner(planner_travel, planner_elevation):
     global planner_travel_g, planner_elevation_g
@@ -44,16 +85,25 @@ def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_
     index += 1
 
 
-def finish():
+def reset():
     global index
-
-    process(ts_store[:index], xs_store[:index], us_ff_store[:index], us_controller_store[:index],
-            e_traj_store[:index], lambda_traj_store[:index])
 
     index = 0
 
 
-def process(ts, xs, us_ff, us_controller, e_traj_and_derivatives, lambda_traj_and_derivatives):
+def show_plots():
+    bundle = bundle_data()
+    process(bundle)
+
+
+def process(bundle: LoggingDataV1):
+    ts = bundle.ts
+    xs = bundle.xs
+    us_ff = bundle.us_ff
+    us_controller = bundle.us_controller
+    e_traj_and_derivatives = bundle.e_traj_and_derivatives
+    lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
+
     # Your data processing code goes here
 
     # fig = plt.figure()

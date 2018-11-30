@@ -121,11 +121,24 @@ class mainWindow(Qt.QMainWindow):
         initial_state_layout.addRow(QtWidgets.QLabel("Elevation"), elevation_layout)
         pitch_layout, self.init_pitch_edit = build_slider_textedit_combo(-80.0, 80.0, 0.0, self.on_init_value_change)
         initial_state_layout.addRow(QtWidgets.QLabel("Pitch"), pitch_layout)
+
         simulation_update_controller_layout = QtWidgets.QHBoxLayout()
         main_simulation_controls_layout.addLayout(simulation_update_controller_layout)
         self.update_controller_button = QtWidgets.QPushButton("Update controller values")
         self.update_controller_button.clicked.connect(self.on_controller_update_button)
         simulation_update_controller_layout.addWidget(self.update_controller_button)
+
+        logger_layout = QtWidgets.QHBoxLayout()
+        main_simulation_controls_layout.addLayout(logger_layout)
+        self.log_checkbox = QtWidgets.QCheckBox("Log")
+        log_show_button = QtWidgets.QPushButton("Show")
+        log_show_button.clicked.connect(self.on_log_show_button)
+        log_store_button = QtWidgets.QPushButton("Store")
+        log_store_button.clicked.connect(self.on_log_store_button)
+        logger_layout.addWidget(self.log_checkbox)
+        logger_layout.addWidget(log_show_button)
+        logger_layout.addWidget(log_store_button)
+
         simulation_control_button_layout = QtWidgets.QHBoxLayout()
         main_simulation_controls_layout.addLayout(simulation_control_button_layout)
         self.start_button = QtWidgets.QPushButton("Start")
@@ -133,10 +146,9 @@ class mainWindow(Qt.QMainWindow):
         self.stop_button = QtWidgets.QPushButton("Stop")
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.on_stop_button)
-        self.log_checkbox = QtWidgets.QCheckBox("Log")
         simulation_control_button_layout.addWidget(self.start_button)
         simulation_control_button_layout.addWidget(self.stop_button)
-        simulation_control_button_layout.addWidget(self.log_checkbox)
+
         settings_tabs = QtWidgets.QTabWidget()
         control_top_level_layout.addWidget(settings_tabs)
         model_frame = ModelFrame(self.heliSim)
@@ -175,15 +187,21 @@ class mainWindow(Qt.QMainWindow):
 
         self.sim_running = True
         self.log_enabled = self.log_checkbox.checkState() == 2
+        if self.log_enabled:
+            logger.reset()
         self.stop_button.setEnabled(True)
         self.start_button.setEnabled(False)
 
     def on_stop_button(self):
         self.sim_running = False
-        if self.log_enabled:
-            logger.finish()
         self.stop_button.setEnabled(False)
         self.start_button.setEnabled(True)
+
+    def on_log_show_button(self):
+        logger.show_plots()
+
+    def on_log_store_button(self):
+        logger.open_dialog_and_store()
 
     def timerCallback(self, *args):
         self.total_t += self.timeStep
