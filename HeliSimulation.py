@@ -68,6 +68,8 @@ event_pmax.terminal = True
 def event_pdt0(t, x):
     """Checks if the second derivative has crossed zero."""
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+    J_p, J_e, J_l = getInertia(x, EventParams.model_type)
+
     if EventParams.model_type == ModelType.EASY:
         ddp = (L_1 / J_p) * EventParams.V_d
     elif EventParams.model_type == ModelType.FRICTION:
@@ -95,6 +97,8 @@ event_emax.terminal = True
 
 def event_edt0(t, x):
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+    J_p, J_e, J_l = getInertia(x, EventParams.model_type)
+
     if EventParams.model_type == ModelType.EASY:
         dde = (L_2 / J_e) * np.cos(e) + (L_3 / J_e) * np.cos(p) * EventParams.V_s
     elif EventParams.model_type == ModelType.FRICTION:
@@ -121,6 +125,8 @@ event_lambmax.terminal = True
 
 def event_lambdt0(t, x):
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+    J_p, J_e, J_l = getInertia(x, EventParams.model_type)
+
     if EventParams.model_type == ModelType.EASY:
         ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * EventParams.V_s
     elif EventParams.model_type == ModelType.FRICTION:
@@ -132,6 +138,20 @@ def event_lambdt0(t, x):
 
     return ddlamb
 event_lambdt0.terminal = True
+
+def getInertia(x,model):
+    p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+
+    if (model == ModelType.EASY) or (model == ModelType.FRICTION):
+        J_p = 2 * mc.m_p * mc.l_p ** 2
+        J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
+        J_l = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
+    else:
+        J_p = 2 * mc.m_p * mc.l_p ** 2
+        J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p **2 * np.sin(p)**2 )
+        J_l = mc.m_c * mc.l_c ** 2 * np.cos(e)**2 + 2 * mc.m_p * ((mc.l_h* np.cos(e))**2 + (mc.l_p * np.sin(p) * np.cos(e)) ** 2 + (mc.l_p * np.cos(p))**2)
+
+    return np.array([J_p, J_e, J_l])
 
 
 class HeliSimulation(object):
@@ -148,6 +168,8 @@ class HeliSimulation(object):
         """Right hand side of the differential equation being integrated. This function does simply calculate the
         state derivative, not dependend on the discrete limit state."""
         p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+
+        J_p, J_e, J_l = getInertia(x, self.model_type)
 
         v_f = (v_s + v_d) / 2
         v_b = (v_s - v_d) / 2
