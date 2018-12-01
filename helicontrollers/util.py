@@ -1,5 +1,6 @@
-from enum import Enum
 import ModelConstants as mc
+from ModelConstants import ModelType
+from enum import Enum
 from numpy.ma import cos, sin, arctan
 import numpy as np
 
@@ -11,13 +12,6 @@ L4 = mc.l_h
 Jp = 2 * mc.m_p * mc.l_p ** 2
 Je = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
 Jl = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
-
-
-class ModelType(Enum):
-    EASY = 1
-    FRICTION = 2
-    CENTRIPETAL = 3
-    ROTORSPEED = 4
 
 
 class FeedForwardMethod(Enum):
@@ -91,6 +85,17 @@ def compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives):
 
     return Vf, Vb
 
+def compute_feed_forward_flatness(model_type : ModelType, e_and_derivatives, lambda_and_derivatives):
+    if model_type == ModelType.EASY:
+        # print("simple model is used")
+        pitch, system_in = compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_derivatives)
+    elif model_type == ModelType.CENTRIPETAL:
+        # print("centripetal model is used")
+        pitch, system_in = compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_derivatives)
+    else:
+        print("Model type is not supported for flatness control. Model Type EASY will be used for calculations.")
+        pitch, system_in = compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_derivatives)
+    return system_in
 
 def compute_feed_forward_flatness_simple(e_and_derivatives, lambda_and_derivatives):
     pitch, system_in = compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_derivatives)
@@ -144,6 +149,80 @@ def compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_deriv
 
     Vs = ((Jl * dl2 / (L4 * cos(e))) ** 2 + ((Je * de2 - L2 * cos(e)) / L3) ** 2) ** (1 / 2)
     Vd = Jp * dp2 / L1
+
+    Vf = (Vs + Vd) / 2
+    Vb = (Vs - Vd) / 2
+
+    return np.array([p, dp1, dp2]), np.array([Vf, Vb])
+
+def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_derivatives):
+    e = e_and_derivatives[0]
+    de1 = e_and_derivatives[1]
+    de2 = e_and_derivatives[2]
+    de3 = e_and_derivatives[3]
+    de4 = e_and_derivatives[4]
+
+    l = lambda_and_derivatives[0]
+    dl1 = lambda_and_derivatives[1]
+    dl2 = lambda_and_derivatives[2]
+    dl3 = lambda_and_derivatives[3]
+    dl4 = lambda_and_derivatives[4]
+
+    a = Jl * dl2
+    b = mc.d_l * dl1
+    c = cos(e)
+    d = Je * de2
+    e_ = mc.d_e * de1
+    f = Je * cos(e) * sin(e) * dl1**2
+    g = -L2 * cos(e)
+
+    da1 = Jl * dl3
+    db1 = mc.d_l * dl2
+    dc1 = -sin(e) * de1
+    dd1 = Je * de3
+    de_1 = mc.d_e *de2
+    # f
+    k = cos(e) * sin(e)
+    l_ = dl1**2
+    dk1 = de1 * (cos(e)**2 - sin(e)**2)
+    dl_1 = 2 * dl1 * dl2
+    df1 = Je * (dk1 * l_ + k * dl_1)
+    dg1 = L2 * sin(e) * de1
+
+    da2 = Jl * dl4
+    db2 = mc.d_l * dl3
+    dc2 = -cos(e) * de1 ** 2 - sin(e) * de2
+    dd2 = Je * de4
+    de_2 = mc.d_e * de3
+    # f
+    dk2 = de2 * (cos(e)**2 - sin(e)**2) - 4 * sin(e) * cos(e) * de1 **2
+    dl2 = 2 * (dl2**2 + dl1 * dl3)
+    df2 = Je * (dk2 * l + 2*dk1 *dl1 + k * dl2)
+    dg2 = L2 * (cos(e) * de1**2 + sin(e) * de2)
+
+    h = a+b
+    i = d + e_ + f + g
+    j = c * i
+
+    dh1 = da1 + db1
+    di1 = dd1 + de_1 + df1 + dg1
+    dj1 = dc1 * i + c * di1
+
+    dh2 = da2 + db2
+    di2 = dd2 + de_2 + df2 + dg2
+    dj2 = dc2 * i + 2*dc1*di1 + c * di2
+
+    A =  h / j
+    dA1 = (dh1 * j - h * dj1) / (j ** 2)
+    dA2 = ((dh2 * j - h * dj2) * j - (dh1 *j -h * dj1) * 2 * dj1) / (j**3)
+
+    p = arctan((L3/L4) * A)
+    dp1 = (L3 / L4) * 1/(1+((L3/L4) * A)**2) * dA1
+    dp2 = (L3 / L4) * (dA2 * (1+((L3/L4) * A)**2) - (L3/L4) * dA1**2) / ((1+((L3/L4) * A)**2)**2)
+
+    Vs = (Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e) * sin(p))
+    Vd = (1/L1) * (Jp * dp2 + mc.d_p * dp1 - Jp * cos(p) * sin(p) * (de1**2 - cos(e)**2 * dl1**2))
+
 
     Vf = (Vs + Vd) / 2
     Vb = (Vs - Vd) / 2

@@ -3,13 +3,7 @@ import scipy.integrate
 import ModelConstants as mc
 from enum import Enum
 import time
-
-
-class ModelType(Enum):
-    EASY = 1
-    FRICTION = 2
-    CENTRIPETAL = 3
-    ROTORSPEED = 4
+from ModelConstants import ModelType
 
 
 class LimitType(Enum):

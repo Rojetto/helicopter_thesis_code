@@ -31,7 +31,7 @@ class FeedbackLinearizationController(AbstractController):
         pd = arctan(u2v / u1v)
 
         if self.pitch_derivative_feed_forward:
-            _, dpd, ddpd = compute_pitch_flatness(e_traj, lambda_traj)
+            _, dpd, ddpd = compute_pitch_flatness_simple(e_traj, lambda_traj)
         else:
             dpd = 0
             ddpd = 0

@@ -1,5 +1,13 @@
 import numpy as np
 
+from enum import Enum
+
+class ModelType(Enum):
+    EASY = 1
+    FRICTION = 2
+    CENTRIPETAL = 3
+    ROTORSPEED = 4
+
 # l_a = ? (not given in Fig. 7)
 l_p = 0.18 #m
 l_h = 0.65
