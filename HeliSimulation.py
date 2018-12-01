@@ -53,6 +53,7 @@ class EventParams(object):
     V_s = -1
     V_d = -1
     model_type = -1
+    current_disturbance = [0, 0, 0, 0, 0]
 
 
 def event_pmin(t, x):
@@ -68,6 +69,7 @@ event_pmax.terminal = True
 def event_pdt0(t, x):
     """Checks if the second derivative has crossed zero."""
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+    z_p, z_e, z_lamb, z_f, z_b = EventParams.current_disturbance
     J_p, J_e, J_l = getInertia(x, EventParams.model_type)
 
     if EventParams.model_type == ModelType.EASY:
@@ -80,6 +82,9 @@ def event_pdt0(t, x):
     elif EventParams.model_type == ModelType.ROTORSPEED:
         ddp = (L_1 * mc.K / J_p) * (f_speed - b_speed) - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (
                     de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
+
+    # Apply disturbance
+    ddp += z_p / J_p
 
     return ddp
 event_pdt0.terminal = True
@@ -97,6 +102,7 @@ event_emax.terminal = True
 
 def event_edt0(t, x):
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+    z_p, z_e, z_lamb, z_f, z_b = EventParams.current_disturbance
     J_p, J_e, J_l = getInertia(x, EventParams.model_type)
 
     if EventParams.model_type == ModelType.EASY:
@@ -109,6 +115,9 @@ def event_edt0(t, x):
     elif EventParams.model_type == ModelType.ROTORSPEED:
         dde = (L_2 / J_e) * np.cos(e) + (L_3 * mc.K / J_e) * np.cos(p) * (f_speed + b_speed) - (
                     mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
+
+    # Apply disturbance
+    dde += z_e / J_e
 
     return dde
 event_edt0.terminal = True
@@ -125,6 +134,7 @@ event_lambmax.terminal = True
 
 def event_lambdt0(t, x):
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+    z_p, z_e, z_lamb, z_f, z_b = EventParams.current_disturbance
     J_p, J_e, J_l = getInertia(x, EventParams.model_type)
 
     if EventParams.model_type == ModelType.EASY:
@@ -135,6 +145,9 @@ def event_lambdt0(t, x):
         ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * EventParams.V_s - (mc.d_l / J_l) * dlamb
     elif EventParams.model_type == ModelType.ROTORSPEED:
         ddlamb = (L_4 * mc.K / J_l) * np.cos(e) * np.sin(p) * (f_speed + b_speed) - (mc.d_l / J_l) * dlamb
+
+    # Apply disturbance
+    ddlamb += z_lamb / J_l
 
     return ddlamb
 event_lambdt0.terminal = True
@@ -164,10 +177,11 @@ class HeliSimulation(object):
         self.model_type = ModelType.CENTRIPETAL
         self.currentTime = 0
 
-    def rhs_no_limits(self, t, x, v_s, v_d):
+    def rhs_no_limits(self, t, x, v_s, v_d, current_disturbance):
         """Right hand side of the differential equation being integrated. This function does simply calculate the
         state derivative, not dependend on the discrete limit state."""
         p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+        z_p, z_e, z_lamb, z_f, z_b = current_disturbance
 
         J_p, J_e, J_l = getInertia(x, self.model_type)
 
@@ -199,14 +213,22 @@ class HeliSimulation(object):
         else:
             df_speed, db_speed = 0, 0
 
+        # Apply disturbance
+        ddp += z_p / J_p
+        dde += z_e / J_e
+        ddlamb += z_lamb / J_l
+        # ToDo: make sure that df and db are handled correctly in these formulas
+        df_speed += z_f
+        db_speed += z_b
+
         return np.array([dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed])
 
-    def rhs(self, t, x, v_s, v_d):
+    def rhs(self, t, x, v_s, v_d, current_disturbance):
         """Right hand side of the differential equation being integrated. Behaves according to the
         state limit machine."""
         p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
 
-        dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed = self.rhs_no_limits(t, x, v_s, v_d)
+        dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed = self.rhs_no_limits(t, x, v_s, v_d, current_disturbance)
 
         if self.statLim.p == LimitType.UPPER_LIMIT or self.statLim.p == LimitType.LOWER_LIMIT:
             dp = 0
@@ -283,7 +305,7 @@ class HeliSimulation(object):
             self.statLim.lamb = LimitType.NO_LIMIT_REACHED
         return [p, e, lamb, dp, de, dlamb, f_speed, b_speed]
 
-    def simulate_segment(self, t0, tf, x0, v_s, v_d, event_list):
+    def simulate_segment(self, t0, tf, x0, v_s, v_d, current_disturbance, event_list):
         """Simulates one segment from t0 to tf and takes care of events that occur in that time interval.
         Returns state vector at tf."""
         if t0 == tf:
@@ -295,7 +317,7 @@ class HeliSimulation(object):
         # print("x0 = " + str(x0))
         # print("event_list = " + str(event_list))
         # print("tt = " + str(tt))
-        sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, v_s, v_d),
+        sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs(t, x, v_s, v_d, current_disturbance),
                                         (t0, tf), x0,
                                         method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9,
                                         events=event_list)
@@ -311,23 +333,26 @@ class HeliSimulation(object):
             # remove occured event from event list
             event_list.remove(triggered_event)
             # integrate from t0 to eventTime
-            state_at_te = self.simulate_segment(t0, event_time, x0, v_s, v_d, event_list)
+            state_at_te = self.simulate_segment(t0, event_time, x0, v_s, v_d, current_disturbance, event_list)
             # switch discrete state and also set the state vector according to the new state
             # e.g. set velocity in boundaries to zero
             switched_state = self.switch_state(triggered_event, state_at_te)
             # integrate from eventTime to tf
-            state_at_tf = self.simulate_segment(event_time, tf, switched_state, v_s, v_d, event_list)
+            state_at_tf = self.simulate_segment(event_time, tf, switched_state, v_s, v_d, current_disturbance,
+                                                event_list)
         else:
             state_at_tf = sol.y[:, -1]
 
         return state_at_tf
 
-    def process_limit_state_machine(self, V_s, V_d):
+    def process_limit_state_machine(self, V_s, V_d, current_disturbance):
         """This function is called at the beginning of every call of calcStep() for checking if
         the discontinuous second derivative has skipped the 0-value.
         It only switches from limit to non-limit, switching from non-limit to limit is only done by the events.
         :return event_blacklist: events that are not to be cared of in the next integration interval"""
-        pdt, edt, lambdt, pddt, eddt, lambddt, df_speed, db_speed = self.rhs_no_limits(self.currentTime, self.currentState, V_s, V_d)
+        pdt, edt, lambdt, pddt, eddt, lambddt, df_speed, db_speed = self.rhs_no_limits(self.currentTime,
+                                                                                       self.currentState, V_s, V_d,
+                                                                                       current_disturbance)
         event_blacklist = []
         if self.statLim.p == LimitType.UPPER_LIMIT:
             if pddt <= 0:
@@ -359,10 +384,13 @@ class HeliSimulation(object):
         return event_blacklist
 
 
-    def calc_step(self, v_f, v_b):
+    def calc_step(self, v_f, v_b, current_disturbance):
         """Returns the state of the system after the next time step
-        V_f: voltage of the propeller right at back (of Fig.7) / first endeffector
-        V_b: voltage of the propeller right at front (of Fig. 7) / second endeffector"""
+        :param v_f: voltage of the propeller right at back (of Fig.7) / first endeffector
+        :param v_b: voltage of the propeller right at front (of Fig. 7) / second endeffector
+        :param current_disturbance: np-array with current disturbance for p, e, lambda, f and b
+        [0] ==> p, [1] ==> e, [2] ==> lambda, [3] ==> f, [4] ==> b
+        """
         # start = time.time()
         # print("====> calcStep() t = " + str(self.currentTime))
         v_s = v_f + v_b
@@ -370,7 +398,8 @@ class HeliSimulation(object):
         EventParams.V_s = v_s
         EventParams.V_d = v_d
         EventParams.model_type = self.model_type
-        event_blacklist = self.process_limit_state_machine(v_s, v_d)
+        EventParams.current_disturbance = current_disturbance
+        event_blacklist = self.process_limit_state_machine(v_s, v_d, current_disturbance)
         # if the event_list is empty, no events can be triggered that limit the angles
         # because process_limit_state_machine() does not limit anything it can still be called
         if self.should_check_limits:
@@ -380,7 +409,7 @@ class HeliSimulation(object):
         for _ in event_blacklist:
             event_list.remove(_)
         self.currentState = self.simulate_segment(self.currentTime, self.currentTime + self.timeStep,
-                                                  self.currentState, v_s, v_d, event_list)
+                                                  self.currentState, v_s, v_d, current_disturbance, event_list)
         self.currentTime += self.timeStep
         return self.currentState
 

@@ -12,6 +12,7 @@ from helicontrollers.FeedbackLinearizationController import FeedbackLinearizatio
 from ControllerFrame import ControllerFrame
 from ModelFrame import ModelFrame
 from TrajectoryFrame import TrajectoryFrame
+from DisturbanceFrame import DisturbanceFrame
 from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
 from helicontrollers.TimeVariantController import TimeVariantController
@@ -64,6 +65,7 @@ class mainWindow(Qt.QMainWindow):
         self.heliModel.addAllActors(vtk_renderer)
         # Initialize helicopter simulation
         self.heliSim = HeliSimulation(0, 0, 0, self.timeStep)
+        self.disturbance = None
         # Initialize controller and kalman filter
         self.current_controller = None
         self.kalmanObj = HeliKalmanFilter()
@@ -154,9 +156,11 @@ class mainWindow(Qt.QMainWindow):
         model_frame = ModelFrame(self.heliSim)
         self.trajectory_frame = TrajectoryFrame()
         self.controller_frame = ControllerFrame(controller_list)
+        self.disturbance_frame = DisturbanceFrame()
         settings_tabs.addTab(model_frame, "Model")
         settings_tabs.addTab(self.trajectory_frame, "Trajectory")
         settings_tabs.addTab(self.controller_frame, "Controller")
+        settings_tabs.addTab(self.disturbance_frame, "Disturbance")
 
         # Get the current trajectory planner
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
@@ -184,6 +188,7 @@ class mainWindow(Qt.QMainWindow):
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
         logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
         self.current_controller.initialize(param_values)
+        self.disturbance = self.disturbance_frame.get_disturbance()
 
         self.sim_running = True
         self.log_enabled = self.log_checkbox.checkState() == 2
@@ -217,6 +222,8 @@ class mainWindow(Qt.QMainWindow):
             # The trajectory planners emit degrees, so we need to convert to rad
             e_and_derivatives = e_and_derivatives / 180 * np.pi
             lambda_and_derivatives = lambda_and_derivatives / 180 * np.pi
+            # get current disturbance
+            current_disturbance = self.disturbance.eval(t)
 
             if feed_forward_method == FeedForwardMethod.STATIC:
                 Vf_ff, Vb_ff = compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives)
@@ -237,7 +244,7 @@ class mainWindow(Qt.QMainWindow):
                 logger.add_frame(t, x, [Vf_ff, Vb_ff], [Vf_controller, Vb_controller],
                                  e_and_derivatives, lambda_and_derivatives)
             # Calculate next simulation step
-            p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb)
+            p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb, current_disturbance)
             self.heliModel.setState(lamb, e, p)
         else:
             orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])
