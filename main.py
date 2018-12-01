@@ -2,7 +2,7 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 
 import logger
-from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static, compute_feed_forward_flatness
+from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static, compute_feed_forward_flatness_simple
 from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
 from helicontrollers.LqrController import LqrController
@@ -228,7 +228,7 @@ class mainWindow(Qt.QMainWindow):
             if feed_forward_method == FeedForwardMethod.STATIC:
                 Vf_ff, Vb_ff = compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives)
             elif feed_forward_method == FeedForwardMethod.FLATNESS:
-                Vf_ff, Vb_ff = compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives)
+                Vf_ff, Vb_ff = compute_feed_forward_flatness_simple(e_and_derivatives, lambda_and_derivatives)
             else:
                 Vf_ff = 0
                 Vb_ff = 0

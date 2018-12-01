@@ -1,5 +1,5 @@
 from helicontrollers.AbstractController import AbstractController, ParamEnum, ParamFloatArray
-from helicontrollers.util import ModelType, compute_feed_forward_flatness
+from helicontrollers.util import ModelType, compute_feed_forward_flatness_simple
 import control as ctr
 import numpy as np
 
@@ -111,7 +111,7 @@ def get_current_operating_point(model_type: ModelType, e_and_derivatives, lambda
     de_op = e_and_derivatives[1]
     lamb_op = lambda_and_derivatives[0]
     dlamb_op = lambda_and_derivatives[1]
-    Vf_op, Vb_op = compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives)
+    Vf_op, Vb_op = compute_feed_forward_flatness_simple(e_and_derivatives, lambda_and_derivatives)
     # ATTENTION: the trajectory for p can only be calculated when using the simple model
     # therefore it is called with the simple model although other models might be used
     p_op, dp_op = get_p_and_first_derivative(ModelType.EASY, e_and_derivatives, lambda_and_derivatives)

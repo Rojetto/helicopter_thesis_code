@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets, QtGui
 import numpy as np
 import Planner
-from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus
+from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus, NoDisturbance
 
 
 class DisturbanceFrame(QtWidgets.QFrame):
@@ -78,12 +78,24 @@ class DisturbanceFrame(QtWidgets.QFrame):
 
         self.disturbance_frame_stack.addWidget(disturbance_sin_frame)
 
+        # Add "No Disturbance"
+
+        self.disturbance_combo.insertItem(3, "No Disturbance")
+        no_disturbance_frame = QtWidgets.QFrame()
+        no_disturbance_layout = QtWidgets.QFormLayout()
+        no_disturbance_frame.setLayout(no_disturbance_layout)
+
+        disturbance_sin_layout.addRow(QtWidgets.QLabel("No Disturbance"),
+                                      QtWidgets.QLabel(""))
+
+        self.disturbance_frame_stack.addWidget(no_disturbance_frame)
+
         # Finishing touches
         scroll_area.setWidget(self.disturbance_frame_stack)
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.disturbance_combo)
         self.disturbance_combo.currentIndexChanged.connect(self.on_disturbance_combo_select)
-        self.disturbance_combo.setCurrentIndex(0)
+        self.disturbance_combo.setCurrentIndex(2)
 
     def on_disturbance_combo_select(self):
         # print("combo select: " + str(self.trajectory_combo.currentIndex()))
@@ -109,4 +121,7 @@ class DisturbanceFrame(QtWidgets.QFrame):
             z_frequency = self.disturbance_sin_z_frequency.value()
             point_of_application = self.disturbance_sin_type.currentText()
             disturbance = DisturbanceSinus(t_start, z_offset, z_amplitude, z_frequency, point_of_application)
+        elif combo_idx == 2:
+            print("No Disturbance")
+            disturbance = NoDisturbance()
         return disturbance

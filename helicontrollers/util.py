@@ -92,19 +92,19 @@ def compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives):
     return Vf, Vb
 
 
-def compute_feed_forward_flatness(e_and_derivatives, lambda_and_derivatives):
-    pitch, system_in = compute_pitch_and_inputs_flatness(e_and_derivatives, lambda_and_derivatives)
+def compute_feed_forward_flatness_simple(e_and_derivatives, lambda_and_derivatives):
+    pitch, system_in = compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_derivatives)
 
     return system_in
 
 
-def compute_pitch_flatness(e_and_derivatives, lambda_and_derivatives):
-    pitch, system_in = compute_pitch_and_inputs_flatness(e_and_derivatives, lambda_and_derivatives)
+def compute_pitch_flatness_simple(e_and_derivatives, lambda_and_derivatives):
+    pitch, system_in = compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_derivatives)
 
     return pitch
 
 
-def compute_pitch_and_inputs_flatness(e_and_derivatives, lambda_and_derivatives):
+def compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_derivatives):
     e = e_and_derivatives[0]
     de1 = e_and_derivatives[1]
     de2 = e_and_derivatives[2]

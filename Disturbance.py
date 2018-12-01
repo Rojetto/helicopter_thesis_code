@@ -44,3 +44,12 @@ class DisturbanceSinus(Disturbance):
                                                            self.z_amplitude * np.sin(2*np.pi*self.z_frequency * t)))
         return ret
 
+
+class NoDisturbance(Disturbance):
+    def __init__(self):
+        super().__init__()
+
+    def eval(self, t):
+        return np.zeros(5)
+
+

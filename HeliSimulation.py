@@ -430,6 +430,9 @@ class HeliSimulation(object):
     def set_model_type(self, modelType):
         self.model_type = modelType
 
+    def get_model_type(self):
+        return self.model_type
+
     def set_should_limit(self, should_check_limits):
         self.should_check_limits = should_check_limits
 

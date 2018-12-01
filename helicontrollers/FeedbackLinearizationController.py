@@ -1,5 +1,5 @@
 from helicontrollers.AbstractController import AbstractController, ParamBool, ParamFloatArray
-from helicontrollers.util import L1, L2, L3, L4, Je, Jl, Jp, compute_pitch_flatness
+from helicontrollers.util import L1, L2, L3, L4, Je, Jl, Jp, compute_pitch_flatness_simple
 from numpy import cos, arctan, sqrt, sign
 
 

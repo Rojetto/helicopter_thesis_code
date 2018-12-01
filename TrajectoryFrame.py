@@ -42,7 +42,7 @@ class TrajectoryFrame(QtWidgets.QFrame):
         self.op_transfer_polynomial_t0 = QtWidgets.QDoubleSpinBox()
         self.op_transfer_polynomial_t0.setValue(0)
         self.op_transfer_polynomial_tf = QtWidgets.QDoubleSpinBox()
-        self.op_transfer_polynomial_tf.setValue(2)
+        self.op_transfer_polynomial_tf.setValue(8)
         self.op_transfer_polynomial_start_travel = QtWidgets.QDoubleSpinBox()
         self.op_transfer_polynomial_start_elevation = QtWidgets.QDoubleSpinBox()
         self.op_transfer_polynomial_end_travel = QtWidgets.QDoubleSpinBox()

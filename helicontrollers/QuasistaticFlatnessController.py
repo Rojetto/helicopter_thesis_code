@@ -1,5 +1,5 @@
 from helicontrollers.AbstractController import *
-from helicontrollers.util import compute_feed_forward_flatness
+from helicontrollers.util import compute_feed_forward_flatness_simple
 from control import sample_system, place, ss, ssdata
 import numpy as np
 
@@ -47,7 +47,7 @@ class QuasistaticFlatnessController(AbstractController):
 
         y1_and_derivatives = np.array([e, de1, self.luenberger_state[2], self.luenberger_state[3], v1])
         y2_and_derivatives = np.array([l, dl1, v2, dv21, dv22])
-        Vf, Vb = compute_feed_forward_flatness(y1_and_derivatives, y2_and_derivatives)
+        Vf, Vb = compute_feed_forward_flatness_simple(y1_and_derivatives, y2_and_derivatives)
 
         self.luenberger_state = self.luenberger_Ad @ self.luenberger_state + self.luenberger_Bd @ np.concatenate((v, m))
         # The previous matrix multiplications resulted in a matrix object, so we need to flatten to a vector
