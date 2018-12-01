@@ -85,7 +85,7 @@ class DisturbanceFrame(QtWidgets.QFrame):
         no_disturbance_layout = QtWidgets.QFormLayout()
         no_disturbance_frame.setLayout(no_disturbance_layout)
 
-        disturbance_sin_layout.addRow(QtWidgets.QLabel("No Disturbance"),
+        no_disturbance_layout.addRow(QtWidgets.QLabel("No Disturbance"),
                                       QtWidgets.QLabel(""))
 
         self.disturbance_frame_stack.addWidget(no_disturbance_frame)
