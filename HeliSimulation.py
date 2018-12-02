@@ -108,7 +108,7 @@ def event_edt0(t, x):
                np.cos(e) * np.sin(e) * dlamb ** 2)
     elif EventParams.model_type == ModelType.ROTORSPEED:
         dde = (L_2 / J_e) * np.cos(e) + (L_3 * mc.K / J_e) * np.cos(p) * (f_speed + b_speed) - (
-                    mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
+                    mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed)
 
     # Apply disturbance
     dde += z_e / J_e
@@ -138,7 +138,7 @@ def event_lambdt0(t, x):
     elif EventParams.model_type == ModelType.CENTRIPETAL:
         ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * EventParams.V_s - (mc.d_l / J_l) * dlamb
     elif EventParams.model_type == ModelType.ROTORSPEED:
-        ddlamb = (L_4 * mc.K / J_l) * np.cos(e) * np.sin(p) * (f_speed + b_speed) - (mc.d_l / J_l) * dlamb
+        ddlamb = (L_4 * mc.K / J_l) * np.cos(e) * np.sin(p) * (f_speed + b_speed) - (mc.d_l / J_l) * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)
 
     # Apply disturbance
     ddlamb += z_lamb / J_l
@@ -202,8 +202,8 @@ class HeliSimulation(object):
             df_speed = - f_speed / mc.T_f + mc.K_f / mc.T_f * v_f
             db_speed = - b_speed / mc.T_b + mc.K_b/mc.T_b * v_b
             ddp = (L_1*mc.K/J_p) * (f_speed - b_speed) - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
-            dde = (L_2/J_e) * np.cos(e) + (L_3*mc.K/J_e) * np.cos(p) * (f_speed + b_speed) - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
-            ddlamb = (L_4*mc.K/J_l) * np.cos(e) * np.sin(p) * (f_speed + b_speed) - (mc.d_l / J_l) * dlamb
+            dde = (L_2/J_e) * np.cos(e) + (L_3*mc.K/J_e) * np.cos(p) * (f_speed + b_speed) - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed)
+            ddlamb = (L_4*mc.K/J_l) * np.cos(e) * np.sin(p) * (f_speed + b_speed) - (mc.d_l / J_l) * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)
         else:
             df_speed, db_speed = 0, 0
 
