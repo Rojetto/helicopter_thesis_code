@@ -23,12 +23,12 @@ class ControllerFrame(QtWidgets.QFrame):
 
         self.controller_combo = QtWidgets.QComboBox()
         self.controller_combo.currentIndexChanged.connect(self.on_controller_combo_select)
-        self.feed_forward_combo = QtWidgets.QComboBox()
-        self.feed_forward_combo.insertItem(0, "No feed-forward", FeedForwardMethod.NONE)
-        self.feed_forward_combo.insertItem(1, "Static feed-forward", FeedForwardMethod.STATIC)
-        self.feed_forward_combo.insertItem(2, "Flatness based feed-forward", FeedForwardMethod.FLATNESS)
+        # self.feed_forward_combo = QtWidgets.QComboBox()
+        # self.feed_forward_combo.insertItem(0, "No feed-forward", FeedForwardMethod.NONE)
+        # self.feed_forward_combo.insertItem(1, "Static feed-forward", FeedForwardMethod.STATIC)
+        # self.feed_forward_combo.insertItem(2, "Flatness based feed-forward", FeedForwardMethod.FLATNESS)
         combos_layout.addWidget(self.controller_combo)
-        combos_layout.addWidget(self.feed_forward_combo)
+        # combos_layout.addWidget(self.feed_forward_combo)
         self.controller_frame_stack = QtWidgets.QStackedWidget()
 
         # This is a list. Each element is a dictionary that holds parameter specifications for a specific controller.

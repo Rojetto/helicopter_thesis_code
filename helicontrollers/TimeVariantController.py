@@ -15,6 +15,8 @@ Jp = 2 * mc.m_p * mc.l_p ** 2
 Je = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
 Jl = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
 
+#ToDo Unite these calculations for the controller with the other flatness-based formulas
+
 
 def getLinearizedMatrices(model_type: ModelType, operating_point, Vf_op, Vb_op):
     """Computes the matrices of the linearized model at the given operating point.
@@ -201,7 +203,8 @@ def get_current_operating_point(model_type: ModelType, e_and_derivatives, lambda
 class TimeVariantController(AbstractController):
     def __init__(self):
         self.operating_point = [0, 0]  # travel, elevation
-        self.model_type = ModelType.EASY
+        self.linearization_model_type = ModelType.EASY
+        self.flatness_model_type =  ModelType.EASY
         self.poles = [-1, -2, -3, -4, -5, -6]
         self.Vf_op = 0
         self.Vb_op = 0
@@ -210,9 +213,12 @@ class TimeVariantController(AbstractController):
         self.feedback_computed = False
 
         super().__init__("TimeVariantController", {
-            "Model type": ParamEnum(["Simple", "Friction", "Centripetal", "Rotorspeed"],
-                                    [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL, ModelType.ROTORSPEED],
-                                    self.model_type),
+            "Linearization Model type": ParamEnum(["Simple", "Friction", "Centripetal", "Rotorspeed"],
+                                                  [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL, ModelType.ROTORSPEED],
+                                                  self.linearization_model_type),
+            "Flatness-calculation model type": ParamEnum(["Simple", "Centripetal"],
+                                                         [ModelType.EASY, ModelType.CENTRIPETAL],
+                                                         self.flatness_model_type),
             "Poles": ParamFloatArray([-100, -100, -100, -100, -100, -100],
                                      [-0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
                                      self.poles)
@@ -225,8 +231,8 @@ class TimeVariantController(AbstractController):
         # u_op = np.array([self.Vf_op, self.Vb_op])
         # x_op = np.array([0, self.operating_point[1], self.operating_point[0], 0, 0, 0])
 
-        operating_point, Vf_op, Vb_op = get_current_operating_point(self.model_type, e_traj, lambda_traj)
-        A, B, Vf_op, Vb_op = getLinearizedMatrices(self.model_type, operating_point, Vf_op, Vb_op)
+        operating_point, Vf_op, Vb_op = get_current_operating_point(self.flatness_model_type, e_traj, lambda_traj)
+        A, B, Vf_op, Vb_op = getLinearizedMatrices(self.linearization_model_type, operating_point, Vf_op, Vb_op)
 
         linearized_state = x - operating_point
 
@@ -240,6 +246,7 @@ class TimeVariantController(AbstractController):
         return u
 
     def initialize(self, param_value_dict):
-        self.model_type = param_value_dict["Model type"]
+        self.linearization_model_type = param_value_dict["Linearization Model type"]
+        self.flatness_model_type = param_value_dict["Flatness-calculation model type"]
         self.poles = param_value_dict["Poles"]
         self.feedback_computed = False
