@@ -13,6 +13,7 @@ from ControllerFrame import ControllerFrame
 from ModelFrame import ModelFrame
 from TrajectoryFrame import TrajectoryFrame
 from DisturbanceFrame import DisturbanceFrame
+from FeedforwardFrame import FeedforwardFrame
 from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
 from helicontrollers.TimeVariantController import TimeVariantController
@@ -157,10 +158,14 @@ class mainWindow(Qt.QMainWindow):
         self.trajectory_frame = TrajectoryFrame()
         self.controller_frame = ControllerFrame(controller_list)
         self.disturbance_frame = DisturbanceFrame()
+        self.feedforward_frame = FeedforwardFrame()
         settings_tabs.addTab(model_frame, "Model")
         settings_tabs.addTab(self.trajectory_frame, "Trajectory")
         settings_tabs.addTab(self.controller_frame, "Controller")
         settings_tabs.addTab(self.disturbance_frame, "Disturbance")
+        settings_tabs.addTab(self.feedforward_frame, "Feedforward")
+        self.feedforward_method = None
+        self.feedforward_model = None
 
         # Get the current trajectory planner
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
@@ -189,6 +194,7 @@ class mainWindow(Qt.QMainWindow):
         logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
         self.current_controller.initialize(param_values)
         self.disturbance = self.disturbance_frame.get_disturbance()
+        self.feedforward_method,  self.feedforward_model = self.feedforward_frame.get_feedforward_method_and_model()
 
         self.sim_running = True
         self.log_enabled = self.log_checkbox.checkState() == 2
@@ -216,7 +222,7 @@ class mainWindow(Qt.QMainWindow):
             t = self.heliSim.get_current_time()
             x = self.heliSim.get_current_state()
             # Get feed-forward output
-            feed_forward_method = self.controller_frame.get_selected_feed_forward_method()
+            # feed_forward_method = self.controller_frame.get_selected_feed_forward_method()
             e_and_derivatives = self.current_planner_elevation.eval(t)
             lambda_and_derivatives = self.current_planner_travel.eval(t)
             # The trajectory planners emit degrees, so we need to convert to rad
@@ -225,10 +231,10 @@ class mainWindow(Qt.QMainWindow):
             # get current disturbance
             current_disturbance = self.disturbance.eval(t)
 
-            if feed_forward_method == FeedForwardMethod.STATIC:
+            if self.feedforward_method == FeedForwardMethod.STATIC:
                 Vf_ff, Vb_ff = compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives)
-            elif feed_forward_method == FeedForwardMethod.FLATNESS:
-                Vf_ff, Vb_ff = compute_feed_forward_flatness(self.heliSim.get_model_type(),
+            elif self.feedforward_method == FeedForwardMethod.FLATNESS:
+                Vf_ff, Vb_ff = compute_feed_forward_flatness(self.feedforward_model,
                                                              e_and_derivatives, lambda_and_derivatives)
             else:
                 Vf_ff = 0

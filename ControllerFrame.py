@@ -109,5 +109,5 @@ class ControllerFrame(QtWidgets.QFrame):
 
         return selected_controller, param_values
 
-    def get_selected_feed_forward_method(self):
-        return self.feed_forward_combo.currentData()
+    # def get_selected_feed_forward_method(self):
+    #     return self.feed_forward_combo.currentData()
