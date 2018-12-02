@@ -133,7 +133,7 @@ def process(bundle: LoggingDataV1):
     plt.grid()
 
     plt.figure("Joint angles (deg)")
-    p_traj = np.array([get_p_and_first_derivative(ModelType.EASY, e, l)[0] for (e, l) in
+    p_traj = np.array([get_p_and_first_derivative(ModelType.CENTRIPETAL, e, l)[0] for (e, l) in
                        zip(e_traj_and_derivatives, lambda_traj_and_derivatives)])
     plt.plot(ts, xs[:, 0] / np.pi * 180.0, label="p")
     plt.plot(ts, p_traj / np.pi * 180.0, label="p_traj")

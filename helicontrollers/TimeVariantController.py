@@ -59,8 +59,90 @@ def getLinearizedMatrices(model_type: ModelType, operating_point, Vf_op, Vb_op):
 
     return A, B, Vf_op, Vb_op
 
-
 def get_p_and_first_derivative(model_type: ModelType, e_and_derivatives, lambda_and_derivatives):
+    if model_type == ModelType.EASY:
+        return get_p_and_first_derivative_simple(model_type, e_and_derivatives, lambda_and_derivatives)
+    elif model_type == ModelType.CENTRIPETAL:
+        return get_p_and_first_derivative_centripetal(model_type, e_and_derivatives, lambda_and_derivatives)
+    else:
+        raise NotImplementedError("get_p_and_first_derivative is not implemented for other model types than EASY and CENTRIPETAL.")
+
+def get_p_and_first_derivative_centripetal(model_type: ModelType, e_and_derivatives, lambda_and_derivatives):
+    """copied from util.compute_pitch_and_inputs_flatness_centripetal"""
+    e = e_and_derivatives[0]
+    de1 = e_and_derivatives[1]
+    de2 = e_and_derivatives[2]
+    de3 = e_and_derivatives[3]
+    de4 = e_and_derivatives[4]
+
+    l = lambda_and_derivatives[0]
+    dl1 = lambda_and_derivatives[1]
+    dl2 = lambda_and_derivatives[2]
+    dl3 = lambda_and_derivatives[3]
+    dl4 = lambda_and_derivatives[4]
+
+    a = Jl * dl2
+    b = mc.d_l * dl1
+    c = cos(e)
+    d = Je * de2
+    e_ = mc.d_e * de1
+    f = Je * cos(e) * sin(e) * dl1**2
+    g = -L2 * cos(e)
+
+    da1 = Jl * dl3
+    db1 = mc.d_l * dl2
+    dc1 = -sin(e) * de1
+    dd1 = Je * de3
+    de_1 = mc.d_e * de2
+    # f
+    k = cos(e) * sin(e)
+    l_ = dl1**2
+    dk1 = de1 * (cos(e)**2 - sin(e)**2)
+    dl_1 = 2 * dl1 * dl2
+    df1 = Je * (dk1 * l_ + k * dl_1)
+    dg1 = L2 * sin(e) * de1
+
+    da2 = Jl * dl4
+    db2 = mc.d_l * dl3
+    dc2 = -cos(e) * de1 ** 2 - sin(e) * de2
+    dd2 = Je * de4
+    de_2 = mc.d_e * de3
+    # f
+    dk2 = de2 * (cos(e)**2 - sin(e)**2) - 4 * sin(e) * cos(e) * de1 **2
+    dl2 = 2 * (dl2**2 + dl1 * dl3)
+    df2 = Je * (dk2 * l + 2*dk1 *dl1 + k * dl2)
+    dg2 = L2 * (cos(e) * de1**2 + sin(e) * de2)
+
+    h = a+b
+    i = d + e_ + f + g
+    j = c * i
+
+    dh1 = da1 + db1
+    di1 = dd1 + de_1 + df1 + dg1
+    dj1 = dc1 * i + c * di1
+
+    dh2 = da2 + db2
+    di2 = dd2 + de_2 + df2 + dg2
+    dj2 = dc2 * i + 2*dc1*di1 + c * di2
+
+    A =  h / j
+    dA1 = (dh1 * j - h * dj1) / (j ** 2)
+    dA2 = ((dh2 * j - h * dj2) * j - (dh1 *j -h * dj1) * 2 * dj1) / (j**3)
+
+    x = (L3/L4) * A
+    dx1 = (L3/L4) * dA1
+    dx2 = (L3/L4) * dA2
+
+    # p = arctan((L3/L4) * A)
+    # dp1 = (L3 / L4) * 1/(1+((L3/L4) * A)**2) * dA1
+    # dp2 = (L3 / L4) * (dA2 * (1+((L3/L4) * A)**2) - (L3/L4) * dA1**2) / ((1+((L3/L4) * A)**2)**2)
+    p = np.arctan(x)
+    dp1 = dx1/(1+x**2)
+    return p, dp1
+
+
+
+def get_p_and_first_derivative_simple(model_type: ModelType, e_and_derivatives, lambda_and_derivatives):
     "Computes p and dp from the flat output and its derivatives."
     if model_type != ModelType.EASY:
         print("model_type = " + str(model_type))

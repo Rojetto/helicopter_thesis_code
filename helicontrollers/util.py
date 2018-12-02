@@ -180,7 +180,7 @@ def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_
     db1 = mc.d_l * dl2
     dc1 = -sin(e) * de1
     dd1 = Je * de3
-    de_1 = mc.d_e *de2
+    de_1 = mc.d_e * de2
     # f
     k = cos(e) * sin(e)
     l_ = dl1**2
@@ -196,8 +196,8 @@ def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_
     de_2 = mc.d_e * de3
     # f
     dk2 = de2 * (cos(e)**2 - sin(e)**2) - 4 * sin(e) * cos(e) * de1 **2
-    dl2 = 2 * (dl2**2 + dl1 * dl3)
-    df2 = Je * (dk2 * l + 2*dk1 *dl1 + k * dl2)
+    dl_2 = 2 * (dl2**2 + dl1 * dl3)
+    df2 = Je * (dk2 * l_ + 2*dk1 *dl_1 + k * dl_2)
     dg2 = L2 * (cos(e) * de1**2 + sin(e) * de2)
 
     h = a+b
@@ -214,13 +214,22 @@ def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_
 
     A =  h / j
     dA1 = (dh1 * j - h * dj1) / (j ** 2)
-    dA2 = ((dh2 * j - h * dj2) * j - (dh1 *j -h * dj1) * 2 * dj1) / (j**3)
+    dA2 = ((dh2 * j - h * dj2) * j - (dh1 * j - h * dj1) * 2 * dj1) / (j**3)
 
-    p = arctan((L3/L4) * A)
-    dp1 = (L3 / L4) * 1/(1+((L3/L4) * A)**2) * dA1
-    dp2 = (L3 / L4) * (dA2 * (1+((L3/L4) * A)**2) - (L3/L4) * dA1**2) / ((1+((L3/L4) * A)**2)**2)
+    x = (L3/L4) * A
+    dx1 = (L3/L4) * dA1
+    dx2 = (L3/L4) * dA2
 
-    Vs = (Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e) * sin(p))
+    # p = arctan((L3/L4) * A)
+    # dp1 = (L3 / L4) * 1/(1+((L3/L4) * A)**2) * dA1
+    # dp2 = (L3 / L4) * (dA2 * (1+((L3/L4) * A)**2) - (L3/L4) * dA1**2) / ((1+((L3/L4) * A)**2)**2)
+    p = arctan(x)
+    dp1 = dx1/(1+x**2)
+    dp2 = ((1+x**2) * dx2 - 2 * x * dx1**2)/((1+x**2)**2)
+
+    # Vs = (Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e) * sin(p))
+    # Vs without Singularity
+    Vs = (((Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e))) ** 2 + ((Je * de2 + mc.d_e * de1 + Je * cos(e) * sin(e) * dl1**2 - L2 * cos(e)) / L3) ** 2) ** (1 / 2)
     Vd = (1/L1) * (Jp * dp2 + mc.d_p * dp1 - Jp * cos(p) * sin(p) * (de1**2 - cos(e)**2 * dl1**2))
 
 
