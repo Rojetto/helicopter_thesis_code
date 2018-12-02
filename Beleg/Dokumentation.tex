@@ -132,15 +132,16 @@
 	
 	\begin{equation}
 	\begin{split}
-	&(m_cl_c^2+ 2 m_p(l_h^2+l_p^2\sin^2 p))\ddot{e} + \cos e \sin e (m_c l_c^2 + 2 m_p ( l_h^2 -l_p^2 \sin^2 (p) )) \dot{\lambda}^2 \\
-	&= g(m_c l_c - 2 m_p l_h) \cos e + V_s K_f l_h  \cos p
+	&\overbrace{(m_cl_c^2+ 2 m_p(l_h^2+l_p^2\sin^2 p))}^{J_e}\ddot{e} + \cos e \sin e \overbrace{(m_c l_c^2 + 2 m_p ( l_h^2 -l_p^2 \sin^2 (p) ))}^{\approx J_e} \dot{\lambda}^2 \\
+	&= \underbrace{g(m_c l_c - 2 m_p l_h)}_{L_2} \cos e + V_s \underbrace{ K_f l_h}_{L_3}  \cos p
 	\end{split}
 	\end{equation}
-	Mittels Kleinwinkelnäherung $\sin^2 p \approx 0$ kann nun vereinfacht werden:
-	\begin{equation}
-	\underbrace{(m_cl_c^2+ 2 m_p l_h^2)}_{J_e}\ddot{e} + \cos e \sin e \underbrace{(m_c l_c^2 + 2 m_p l_h^2 )}_{J_e} \dot{\lambda}^2 
-	= \underbrace{g(m_c l_c - 2 m_p l_h)}_{L_2} \cos e + V_s \underbrace{ K_f l_h}_{L_3}  \cos p
-	\end{equation}
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=1\textwidth]{images/J_e}
+		\caption{$J_e$ in Abhängigkeit des Winkels $p$}
+		\label{fig:J_e}
+	\end{figure}
 	\subsection{Aufstellen der Bewegungsgleichung um $\lambda$}
 	\begin{equation}
 	\partiell{L}{\dot{\lambda}} = (m_c (l_c \cos e)^2
@@ -155,13 +156,15 @@
 	\end{equation}
 	Eingesetzt in \eqref{eq:lagrange} ergibt:
 	\begin{equation}
-	(m_c (l_c \cos e)^2
-	+ 2 m_p((l_h \cos e)^2 + (l_p \sin p \sin e)^2+(l_p \cos p)^2))\ddot{\lambda} = V_s K_f l_h \cos e \sin p
+	\underbrace{(m_c (l_c \cos e)^2
+	+ 2 m_p((l_h \cos e)^2 + (l_p \sin p \sin e)^2+(l_p \cos p)^2))}_{J_\lambda}\ddot{\lambda} =  V_s \underbrace{K_f l_h}_{L_4} \cos e \sin p
 	\end{equation}
-	Mittels Kleinwinkelnäherung $\sin^2 \alpha \approx 0$ und $\cos^2 \alpha \approx 1$  kann nun vereinfacht werden:
-	\begin{equation}
-	\underbrace{(m_c l_c^2 +  2 m_p(l_h^2 + l_p^2))}_{J_\lambda} \ddot{\lambda} = V_s \underbrace{K_f l_h}_{L_4} \cos e \sin p
-	\end{equation}
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=1\textwidth]{images/J_l}
+		\caption{$J_\lambda$ in Abhängigkeit der Winkel $p$ und $e$}
+		\label{fig:J_l}
+	\end{figure}	
 	\subsection{Zusammenfassen der Bewegungsgleichungen}
 	Insgesamt kann das System mit wenigen Vereinfachungen und ohne Berücksichtigung von Reibung wie folgt dargestellt werden:
 	\begin{align}
@@ -192,12 +195,17 @@
 	\begin{equation}
 	F_b = F_f - F_b = K (f - b)
 	\end{equation}
+	Weiterhin entstehen aus der Rotordrehzahl das jeweiliges Drehmoment $M_f$ und $M_b$ der Elektromotoren. Diese bewirken ein zusätzliches Moment auf die Drehachse um $e$ und $\lambda$.
+	\begin{align}
+	M_{M,e} &= \sin (p) (M_f - M_b) =\sin (p) K_M (f-b) \\
+	M_{M,\lambda} &= \cos (e) \cos (p) (M_b - M_f) =\cos (e) \cos (p) K_M (b-f)
+	\end{align}
 	Das resultierende System ist daher:
 	\begin{align}
-	J_p \ddot{p} + \mu_p \dot{p} - J_p \cos (p) \sin (p) (\dot{e}^2- \cos^2 (e) \dot{\lambda}^2) &= (f - b) K l_p\\
-	J_e\ddot{e} + \mu_e \dot{e} + J_e \cos (e) \sin (e) \dot{\lambda}^2 
-	&= L_2 \cos e + (f + b) K l_h \cos p\\
-	J_\lambda \ddot{\lambda} + \mu_\lambda \dot{\lambda} &= (f + b) K l_h \cos e \sin p
+	&J_p \ddot{p} + \mu_p \dot{p} - J_p \cos (p) \sin (p) (\dot{e}^2- \cos^2 (e) \dot{\lambda}^2) = K l_p (f - b)\\
+	&J_e\ddot{e} + \mu_e \dot{e} + J_e \cos (e) \sin (e) \dot{\lambda}^2 
+	= L_2 \cos e + K l_h \cos p (f + b) + \sin (p) K_M (f-b)\\
+	&J_\lambda \ddot{\lambda} + \mu_\lambda \dot{\lambda} = K l_h \cos e \sin p (f + b) +\cos (e) \cos (p) K_M (b-f)
 	\end{align}
 	
 \end{document}
