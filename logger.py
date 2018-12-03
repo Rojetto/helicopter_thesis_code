@@ -202,4 +202,71 @@ def process(bundle: LoggingDataV1):
     # plt.legend(['sum','centripetal','input','friction','gravitation'])
     # plt.grid()
     #
+
+    # figures to show the influence of all moments
+
+    L_1 = mc.l_p
+    L_2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
+    L_3 = mc.l_h
+    L_4 = mc.l_h
+
+    p, e, lamb, dp, de, dlamb, f_speed, b_speed = xs[:,0], xs[:,1], xs[:,2], xs[:,3], xs[:,4], xs[:,5], xs[:,6], xs[:,7]
+
+    J_p = 2 * mc.m_p * mc.l_p ** 2
+    J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2 * np.sin(p) ** 2)
+    J_l = mc.m_c * mc.l_c ** 2 * np.cos(e) ** 2 + 2 * mc.m_p * ((mc.l_h * np.cos(e)) ** 2 + (mc.l_p * np.sin(p) * np.cos(e)) ** 2 + (mc.l_p * np.cos(p)) ** 2)
+
+
+    p_gyro = (np.cos(p) * de * mc.J_m * (b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed)) / J_p / np.pi * 180.0
+    p_cor = np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) / np.pi * 180.0
+    p_input = (L_1 * mc.K / J_p) * (f_speed - b_speed) / np.pi * 180.0
+    p_fric = -(mc.d_p / J_p) * dp / np.pi * 180.0
+    ddp = p_input + p_fric + p_cor + p_gyro
+
+    e_motor = np.sin(p) * mc.K_m * (f_speed - b_speed) / J_e / np.pi * 180.0
+    e_gyro = (np.cos(p) * dp * mc.J_m * (f_speed - b_speed) + np.sin(e) * np.cos(p) * dlamb * mc.J_m * (b_speed - f_speed))/ J_e / np.pi * 180.0
+    e_cor = - np.cos(e) * np.sin(e) * dlamb ** 2 / np.pi * 180.0
+    e_input = L_3 * mc.K * np.cos(p) * (f_speed + b_speed)/ J_e / np.pi * 180.0
+    e_fric = - (mc.d_e / J_e) * de / np.pi * 180.0
+    e_grav = (L_2 / J_e) * np.cos(e) / np.pi * 180.0
+    dde = e_grav + e_input + e_fric + e_cor + e_gyro + e_motor
+
+    ddlamb = 1 / J_l * (L_4 * mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) - mc.d_l * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed - f_speed) \
+            + np.sin(p) * np.cos(e) * dp * mc.J_m * (f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m * (f_speed - b_speed))
+
+    l_imput = L_4 * mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) / J_l / np.pi * 180.0
+    l_fric = - mc.d_l * dlamb / J_l / np.pi * 180.0
+    l_motor = np.cos(e) * np.cos(p) * mc.K_m * (b_speed - f_speed) / J_l / np.pi * 180.0
+    l_gyro = (np.sin(p) * np.cos(e) * dp * mc.J_m * (f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m * (f_speed - b_speed)) / J_l / np.pi * 180.0
+    ddlamb = l_imput + l_fric + l_motor +l_gyro
+
+    plt.figure("Influence of torques at ddp (deg/s^2)")
+    plt.plot(ts, ddp)
+    plt.plot(ts, p_cor)
+    plt.plot(ts, p_input)
+    plt.plot(ts, p_fric)
+    plt.plot(ts, p_gyro)
+    plt.legend(['sum','centripetal','input','friction','gyroscope'])
+    plt.grid()
+
+    plt.figure("Influence of torques at dde (deg/s^2)")
+    plt.plot(ts, dde)
+    plt.plot(ts, e_cor)
+    plt.plot(ts, e_input)
+    plt.plot(ts, e_fric)
+    plt.plot(ts, e_grav)
+    plt.plot(ts, e_gyro)
+    plt.plot(ts, e_motor)
+    plt.legend(['sum','centripetal','input','friction','gravitation','gyroscope','motor torque'])
+    plt.grid()
+
+    plt.figure("Influence of torques at ddlambda (deg/s^2)")
+    plt.plot(ts, ddlamb)
+    plt.plot(ts, l_imput)
+    plt.plot(ts, l_fric)
+    plt.plot(ts, l_gyro)
+    plt.plot(ts, l_motor)
+    plt.legend(['sum','input','friction','gyroscope','motor torque'])
+    plt.grid()
+
     plt.show()
