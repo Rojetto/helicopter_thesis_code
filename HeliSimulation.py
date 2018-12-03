@@ -187,16 +187,19 @@ class HeliSimulation(object):
             ddp = (L_1 / J_p) * v_d
             dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s
             ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s
+            df_speed, db_speed = 0, 0
 
         if self.model_type == ModelType.FRICTION:
             ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp
             dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de
             ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
+            df_speed, db_speed = 0, 0
 
         if self.model_type == ModelType.CENTRIPETAL:
             ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
             dde = (L_2/J_e) * np.cos(e) + (L_3/J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
             ddlamb = (L_4/J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
+            df_speed, db_speed = 0, 0
 
         if self.model_type == ModelType.ROTORSPEED:
             df_speed = - f_speed / mc.T_f + mc.K_f / mc.T_f * v_f
@@ -204,8 +207,17 @@ class HeliSimulation(object):
             ddp = (L_1*mc.K/J_p) * (f_speed - b_speed) - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
             dde = (L_2/J_e) * np.cos(e) + (L_3*mc.K/J_e) * np.cos(p) * (f_speed + b_speed) - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed)
             ddlamb = (L_4*mc.K/J_l) * np.cos(e) * np.sin(p) * (f_speed + b_speed) - (mc.d_l / J_l) * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)
-        else:
-            df_speed, db_speed = 0, 0
+
+        if self.model_type == ModelType.GYROMOMENT:
+            df_speed = - f_speed / mc.T_f + mc.K_f / mc.T_f * v_f
+            db_speed = - b_speed / mc.T_b + mc.K_b/mc.T_b * v_b
+            ddp = (L_1*mc.K/J_p) * (f_speed - b_speed) - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) \
+                  + np.cos(p) * de * mc.J_m *(b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed)
+            dde = (L_2/J_e) * np.cos(e) + (L_3*mc.K/J_e) * np.cos(p) * (f_speed + b_speed) - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed) \
+                  + np.cos(p) * dp * mc.J_m * (f_speed -b_speed) + np.sin(e) * np.cos(p) * dlamb * mc.J_m *(b_speed - f_speed)
+            ddlamb = (L_4*mc.K/J_l) * np.cos(e) * np.sin(p) * (f_speed + b_speed) - (mc.d_l / J_l) * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)\
+                  + np.sin(p) * np.cos(e) * dp * mc.J_m *(f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m *(f_speed - b_speed)
+
 
         # Apply disturbance
         ddp += z_p / J_p

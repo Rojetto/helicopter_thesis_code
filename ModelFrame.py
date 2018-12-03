@@ -21,6 +21,8 @@ class ModelFrame(QtWidgets.QFrame):
         self.model_3_button.toggled.connect(self.on_model_toggle)
         self.model_4_button = QtWidgets.QRadioButton("+ rotor speed", self)
         self.model_4_button.toggled.connect(self.on_model_toggle)
+        self.model_5_button = QtWidgets.QRadioButton("+ gyro moment", self)
+        self.model_5_button.toggled.connect(self.on_model_toggle)
         self.model_4_button.setChecked(True)
 
         self.check_limits_box = QtWidgets.QCheckBox("Limit angles")
@@ -31,6 +33,7 @@ class ModelFrame(QtWidgets.QFrame):
         layout.addWidget(self.model_2_button)
         layout.addWidget(self.model_3_button)
         layout.addWidget(self.model_4_button)
+        layout.addWidget(self.model_5_button)
         layout.addWidget(self.check_limits_box)
 
     def on_model_toggle(self):
@@ -42,6 +45,7 @@ class ModelFrame(QtWidgets.QFrame):
             self.sim.set_model_type(ModelType.CENTRIPETAL)
         elif self.model_4_button.isChecked():
             self.sim.set_model_type(ModelType.ROTORSPEED)
-
+        elif self.model_5_button.isChecked():
+            self.sim.set_model_type(ModelType.GYROMOMENT)
     def on_limit_check_toggle(self):
         self.sim.set_should_limit(self.check_limits_box.checkState() == 2)
