@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets, QtGui
 import numpy as np
 import Planner
-from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus, NoDisturbance
+from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus, DisturbanceRect, NoDisturbance
 
 
 class DisturbanceFrame(QtWidgets.QFrame):
@@ -78,9 +78,35 @@ class DisturbanceFrame(QtWidgets.QFrame):
 
         self.disturbance_frame_stack.addWidget(disturbance_sin_frame)
 
-        # Add "No Disturbance"
+        # Rectangle disturbance
+        self.disturbance_combo.insertItem(3, "Rectangle Disturbance")
+        rect_disturbance_frame = QtWidgets.QFrame()
+        rect_disturbance_layout = QtWidgets.QFormLayout()
+        rect_disturbance_frame.setLayout(rect_disturbance_layout)
 
-        self.disturbance_combo.insertItem(3, "No Disturbance")
+        self.rect_disturbance_t_start = QtWidgets.QDoubleSpinBox()
+        self.rect_disturbance_t_start.setValue(1)
+        self.rect_disturbance_t_length = QtWidgets.QDoubleSpinBox()
+        self.rect_disturbance_t_length.setValue(1)
+        self.rect_disturbance_z_step = QtWidgets.QDoubleSpinBox()
+        self.rect_disturbance_z_step.setValue(20)
+        self.rect_disturbance_z_step.setMinimum(-99999)
+        self.rect_disturbance_type = QtWidgets.QComboBox()
+        self.rect_disturbance_type.addItems(["p", "e", "lambda", "f", "b"])
+
+        rect_disturbance_layout.addRow(QtWidgets.QLabel("Step time start"),
+                                       self.rect_disturbance_t_start)
+        rect_disturbance_layout.addRow(QtWidgets.QLabel("Step time length"),
+                                       self.rect_disturbance_t_length)
+        rect_disturbance_layout.addRow(QtWidgets.QLabel("Disturbance step height"),
+                                       self.rect_disturbance_z_step)
+        rect_disturbance_layout.addRow(QtWidgets.QLabel("Disturbance point of application"),
+                                       self.rect_disturbance_type)
+
+        self.disturbance_frame_stack.addWidget(rect_disturbance_frame)
+
+        # Add "No Disturbance"
+        self.disturbance_combo.insertItem(4, "No Disturbance")
         no_disturbance_frame = QtWidgets.QFrame()
         no_disturbance_layout = QtWidgets.QFormLayout()
         no_disturbance_frame.setLayout(no_disturbance_layout)
@@ -95,7 +121,7 @@ class DisturbanceFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.disturbance_combo)
         self.disturbance_combo.currentIndexChanged.connect(self.on_disturbance_combo_select)
-        self.disturbance_combo.setCurrentIndex(2)
+        self.disturbance_combo.setCurrentIndex(3)
 
     def on_disturbance_combo_select(self):
         # print("combo select: " + str(self.trajectory_combo.currentIndex()))
@@ -122,6 +148,12 @@ class DisturbanceFrame(QtWidgets.QFrame):
             point_of_application = self.disturbance_sin_type.currentText()
             disturbance = DisturbanceSinus(t_start, z_offset, z_amplitude, z_frequency, point_of_application)
         elif combo_idx == 2:
+            t_start = self.rect_disturbance_t_start.value()
+            t_length = self.rect_disturbance_t_length.value()
+            zf = self.rect_disturbance_z_step.value()
+            point_of_application = self.rect_disturbance_type.currentText()
+            disturbance = DisturbanceRect(t_start, t_length, zf, point_of_application)
+        elif combo_idx == 3:
             print("No Disturbance")
             disturbance = NoDisturbance()
         return disturbance

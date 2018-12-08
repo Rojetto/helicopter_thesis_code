@@ -123,7 +123,11 @@ class TrajectoryFrame(QtWidgets.QFrame):
         constant_op_frame.setLayout(constant_op_layout)
 
         self.constant_op_travel = QtWidgets.QDoubleSpinBox()
+        self.constant_op_travel.setMinimum(-180)
+        self.constant_op_travel.setMaximum(180)
         self.constant_op_elevation = QtWidgets.QDoubleSpinBox()
+        self.constant_op_elevation.setMinimum(-90)
+        self.constant_op_elevation.setMaximum(90)
 
         constant_op_layout.addRow(QtWidgets.QLabel("OP Travel"), self.constant_op_travel)
         constant_op_layout.addRow(QtWidgets.QLabel("OP Elevation"), self.constant_op_elevation)

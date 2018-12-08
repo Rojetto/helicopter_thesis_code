@@ -45,6 +45,21 @@ class DisturbanceSinus(Disturbance):
         return ret
 
 
+class DisturbanceRect(Disturbance):
+    """Impulse with specific length and height"""
+    def __init__(self, t_start, t_length, zf, point_of_application):
+        super().__init__()
+        self.t_start = t_start
+        self.t_length = t_length
+        self.zf = zf
+        self.point_of_application = point_of_application
+
+    def eval(self, t):
+        ret = np.zeros(5)
+        ret[self.idx_lookup[self.point_of_application]] = self.zf if self.t_start <= t < self.t_start + self.t_length else 0
+        return ret
+
+
 class NoDisturbance(Disturbance):
     def __init__(self):
         super().__init__()
