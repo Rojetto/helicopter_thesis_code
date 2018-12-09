@@ -17,9 +17,9 @@ L_2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
 L_3 = mc.l_h
 L_4 = mc.l_h
 
-J_p = 2*mc.m_p*mc.l_p**2
-J_e = mc.m_c * mc.l_c**2 + 2* mc.m_p*mc.l_h**2
-J_l = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2)
+J_p_static = 2*mc.m_p*mc.l_p**2
+J_e_static = mc.m_c * mc.l_c**2 + 2* mc.m_p*mc.l_h**2
+J_l_static = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2)
 
 
 class StateLimits(object):
@@ -48,6 +48,7 @@ class EventParams(object):
     V_d = -1
     model_type = -1
     current_disturbance = [0, 0, 0, 0, 0]
+    dynamic_inertia_torque = True
 
 
 def event_pmin(t, x):
@@ -64,7 +65,7 @@ def event_pdt0(t, x):
     """Checks if the second derivative has crossed zero."""
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
     z_p, z_e, z_lamb, z_f, z_b = EventParams.current_disturbance
-    J_p, J_e, J_l = getInertia(x, EventParams.model_type)
+    J_p, J_e, J_l = getInertia(x, EventParams.dynamic_inertia_torque)
 
     if EventParams.model_type == ModelType.EASY:
         ddp = (L_1 / J_p) * EventParams.V_d
@@ -99,7 +100,7 @@ event_emax.terminal = True
 def event_edt0(t, x):
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
     z_p, z_e, z_lamb, z_f, z_b = EventParams.current_disturbance
-    J_p, J_e, J_l = getInertia(x, EventParams.model_type)
+    J_p, J_e, J_l = getInertia(x, EventParams.dynamic_inertia_torque)
 
     if EventParams.model_type == ModelType.EASY:
         dde = (L_2 / J_e) * np.cos(e) + (L_3 / J_e) * np.cos(p) * EventParams.V_s
@@ -132,7 +133,7 @@ event_lambmax.terminal = True
 def event_lambdt0(t, x):
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
     z_p, z_e, z_lamb, z_f, z_b = EventParams.current_disturbance
-    J_p, J_e, J_l = getInertia(x, EventParams.model_type)
+    J_p, J_e, J_l = getInertia(x, EventParams.dynamic_inertia_torque)
 
     if EventParams.model_type == ModelType.EASY:
         ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * EventParams.V_s
@@ -152,17 +153,19 @@ def event_lambdt0(t, x):
     return ddlamb
 event_lambdt0.terminal = True
 
-def getInertia(x,model):
+
+def getInertia(x, dynamic_inertia_torque):
+    """Computes inertia torque dependend on """
     p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
 
-    if (model == ModelType.EASY) or (model == ModelType.FRICTION):
+    if dynamic_inertia_torque:
         J_p = 2 * mc.m_p * mc.l_p ** 2
-        J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
-        J_l = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
-    else:
-        J_p = 2 * mc.m_p * mc.l_p ** 2
-        J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p **2 * np.sin(p)**2 )
+        J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p **2 * np.sin(p)**2)
         J_l = mc.m_c * mc.l_c ** 2 * np.cos(e)**2 + 2 * mc.m_p * ((mc.l_h* np.cos(e))**2 + (mc.l_p * np.sin(p) * np.cos(e)) ** 2 + (mc.l_p * np.cos(p))**2)
+    else:
+        J_p = J_p_static
+        J_e = J_e_static
+        J_l = J_l_static
 
     return np.array([J_p, J_e, J_l])
 
@@ -172,6 +175,7 @@ class HeliSimulation(object):
         """Initializes the simulation"""
         self.currentState = np.array([theta1_0, theta2_0, theta3_0, 0, 0, 0, 0, 0])
         self.should_check_limits = True
+        self.dynamic_inertia_torque = True
         self.statLim = StateLimits()
         self.timeStep = time_step
         self.model_type = ModelType.CENTRIPETAL
@@ -183,7 +187,7 @@ class HeliSimulation(object):
         p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
         z_p, z_e, z_lamb, z_f, z_b = current_disturbance
 
-        J_p, J_e, J_l = getInertia(x, self.model_type)
+        J_p, J_e, J_l = getInertia(x, self.dynamic_inertia_torque)
 
         v_f = (v_s + v_d) / 2
         v_b = (v_s - v_d) / 2
@@ -229,7 +233,6 @@ class HeliSimulation(object):
         ddp += z_p / J_p
         dde += z_e / J_e
         ddlamb += z_lamb / J_l
-        # ToDo: make sure that df and db are handled correctly in these formulas
         df_speed += z_f
         db_speed += z_b
 
@@ -411,6 +414,7 @@ class HeliSimulation(object):
         EventParams.V_d = v_d
         EventParams.model_type = self.model_type
         EventParams.current_disturbance = current_disturbance
+        EventParams.dynamic_inertia_torque = self.dynamic_inertia_torque
         event_blacklist = self.process_limit_state_machine(v_s, v_d, current_disturbance)
         # if the event_list is empty, no events can be triggered that limit the angles
         # because process_limit_state_machine() does not limit anything it can still be called
@@ -447,4 +451,8 @@ class HeliSimulation(object):
 
     def set_should_limit(self, should_check_limits):
         self.should_check_limits = should_check_limits
+
+    def set_dynamic_inertia_torque(self, dynamic_intertia_torque):
+        self.dynamic_inertia_torque = dynamic_intertia_torque
+        # print("Dynamic intertia torque: " + str(self.dynamic_inertia_torque))
 

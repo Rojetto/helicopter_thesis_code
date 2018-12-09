@@ -9,8 +9,8 @@ class ModelFrame(QtWidgets.QFrame):
         QtWidgets.QFrame.__init__(self)
 
         self.sim = sim
-        layout = QtWidgets.QVBoxLayout()
-        self.setLayout(layout)
+        main_layout = QtWidgets.QVBoxLayout()
+        self.setLayout(main_layout)
 
         # Maybe it would be more consistent if we read the model type on "Start" instead of changing it here
         self.model_1_button = QtWidgets.QRadioButton("Simple model", self)
@@ -29,12 +29,20 @@ class ModelFrame(QtWidgets.QFrame):
         self.check_limits_box.setCheckState(2 if sim.should_check_limits else 0)
         self.check_limits_box.toggled.connect(self.on_limit_check_toggle)
 
-        layout.addWidget(self.model_1_button)
-        layout.addWidget(self.model_2_button)
-        layout.addWidget(self.model_3_button)
-        layout.addWidget(self.model_4_button)
-        layout.addWidget(self.model_5_button)
-        layout.addWidget(self.check_limits_box)
+        self.check_dynamic_inertia_torque = QtWidgets.QCheckBox("Dynamic Inertia Torque")
+        self.check_dynamic_inertia_torque.setCheckState(2 if self.sim.dynamic_inertia_torque else 0)
+        self.check_dynamic_inertia_torque.toggled.connect(self.on_dynamic_inertia_torque_toggle)
+
+        layout_h = QtWidgets.QHBoxLayout()
+        layout_h.addWidget(self.check_limits_box)
+        layout_h.addWidget(self.check_dynamic_inertia_torque)
+
+        main_layout.addWidget(self.model_1_button)
+        main_layout.addWidget(self.model_2_button)
+        main_layout.addWidget(self.model_3_button)
+        main_layout.addWidget(self.model_4_button)
+        main_layout.addWidget(self.model_5_button)
+        main_layout.addLayout(layout_h)
 
     def on_model_toggle(self):
         if self.model_1_button.isChecked():
@@ -47,5 +55,10 @@ class ModelFrame(QtWidgets.QFrame):
             self.sim.set_model_type(ModelType.ROTORSPEED)
         elif self.model_5_button.isChecked():
             self.sim.set_model_type(ModelType.GYROMOMENT)
+
     def on_limit_check_toggle(self):
         self.sim.set_should_limit(self.check_limits_box.checkState() == 2)
+
+    def on_dynamic_inertia_torque_toggle(self):
+        self.sim.set_dynamic_inertia_torque(self.check_dynamic_inertia_torque.checkState() == 2)
+
