@@ -79,7 +79,7 @@ def event_pdt0(t, x):
                     de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
     elif EventParams.model_type == ModelType.GYROMOMENT:
         ddp = 1/J_p*(L_1*mc.K * (f_speed - b_speed) - mc.d_p  * dp + J_p * np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) \
-                  + np.cos(p) * de * mc.J_m *(b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed))
+                  + np.cos(p) * de * mc.J_m *(b_speed - f_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m * (f_speed - b_speed))
     # Apply disturbance
     ddp += z_p / J_p
 
@@ -222,7 +222,7 @@ class HeliSimulation(object):
             df_speed = - f_speed / mc.T_f + mc.K_f / mc.T_f * v_f
             db_speed = - b_speed / mc.T_b + mc.K_b/mc.T_b * v_b
             ddp = 1/J_p*(L_1*mc.K * (f_speed - b_speed) - mc.d_p  * dp + J_p * np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) \
-                  + np.cos(p) * de * mc.J_m *(b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed))
+                  + np.cos(p) * de * mc.J_m *(b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed) * dlamb)
             dde = 1/J_e *(L_2 * np.cos(e) + L_3*mc.K * np.cos(p) * (f_speed + b_speed) - mc.d_e * de - J_e * np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed) \
                   + np.cos(p) * dp * mc.J_m * (f_speed -b_speed) + np.sin(e) * np.cos(p) * dlamb * mc.J_m *(b_speed - f_speed))
             ddlamb = 1/J_l * (L_4*mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) - mc.d_l * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)\
