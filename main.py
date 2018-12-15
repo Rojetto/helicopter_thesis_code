@@ -1,5 +1,6 @@
 import matplotlib
 matplotlib.use('Qt5Agg')
+import time
 
 import logger
 from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static, compute_feed_forward_flatness
@@ -14,6 +15,7 @@ from ModelFrame import ModelFrame
 from TrajectoryFrame import TrajectoryFrame
 from DisturbanceFrame import DisturbanceFrame
 from FeedforwardFrame import FeedforwardFrame
+from OberserverFrame import ObserverFrame
 from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
 from helicontrollers.TimeVariantController import TimeVariantController
@@ -69,7 +71,6 @@ class mainWindow(Qt.QMainWindow):
         self.disturbance = None
         # Initialize controller and kalman filter
         self.current_controller = None
-        self.kalmanObj = HeliKalmanFilter()
         controller_list = [ManualController(), PolePlacementController(), LqrController(), DirectPidController(),
                            CascadePidController(), TimeVariantController(), QuasistaticFlatnessController(),
                            FeedbackLinearizationController()]
@@ -159,13 +160,16 @@ class mainWindow(Qt.QMainWindow):
         self.controller_frame = ControllerFrame(controller_list)
         self.disturbance_frame = DisturbanceFrame()
         self.feedforward_frame = FeedforwardFrame()
+        self.observer_frame = ObserverFrame()
         settings_tabs.addTab(model_frame, "Model")
         settings_tabs.addTab(self.trajectory_frame, "Trajectory")
         settings_tabs.addTab(self.controller_frame, "Controller")
         settings_tabs.addTab(self.disturbance_frame, "Disturbance")
         settings_tabs.addTab(self.feedforward_frame, "Feedforward")
+        settings_tabs.addTab(self.observer_frame, "Observer")
         self.feedforward_method = None
         self.feedforward_model = None
+        self.observer = None
 
         # Get the current trajectory planner
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
@@ -194,6 +198,7 @@ class mainWindow(Qt.QMainWindow):
         logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
         self.current_controller.initialize(param_values)
         self.disturbance = self.disturbance_frame.get_disturbance()
+        self.observer = self.observer_frame.get_observer()
         self.feedforward_method,  self.feedforward_model = self.feedforward_frame.get_feedforward_method_and_model()
 
         self.sim_running = True
@@ -244,8 +249,8 @@ class mainWindow(Qt.QMainWindow):
             # Add feed-forward and controller
             Vf = Vf_ff + Vf_controller
             Vb = Vb_ff + Vb_controller
-            # Call kalman filter function
-            self.kalmanObj.kalman_compute(t, x, [Vf, Vb])
+            # Call observer object
+            self.observer.calc_observation(t, x, [Vf, Vb])
             # Log data
             if self.log_enabled:
                 logger.add_frame(t, x, [Vf_ff, Vb_ff], [Vf_controller, Vb_controller],
