@@ -1,7 +1,9 @@
 import matplotlib
 matplotlib.use('Qt5Agg')
 
+
 import logger
+import zentripedal_validation as val
 from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static, compute_feed_forward_flatness
 from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
@@ -240,10 +242,15 @@ class mainWindow(Qt.QMainWindow):
                 Vf_ff = 0
                 Vb_ff = 0
             # Get controller output
-            Vf_controller, Vb_controller = self.current_controller.control(t, x, e_and_derivatives, lambda_and_derivatives)
+            if not val.validation_enabled:
+                Vf_controller, Vb_controller = self.current_controller.control(t, x, e_and_derivatives, lambda_and_derivatives)
+            else:
+                Vf_controller, Vb_controller = val.convV(val.calculateInputs_DL_E(dl=1, e=10, rad=False))[0:2]
+
             # Add feed-forward and controller
             Vf = Vf_ff + Vf_controller
             Vb = Vb_ff + Vb_controller
+
             # Call kalman filter function
             self.kalmanObj.kalman_compute(t, x, [Vf, Vb])
             # Log data
@@ -254,10 +261,19 @@ class mainWindow(Qt.QMainWindow):
             p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb, current_disturbance)
             self.heliModel.setState(lamb, e, p)
         else:
-            orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])
-            orientation = orientation / 180.0 * np.pi
-            self.heliModel.setState(orientation[2], orientation[1], orientation[0])
-            self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], 0, 0, 0, 0, 0])
+            if not val.validation_enabled:
+                orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])
+                orientation = orientation / 180.0 * np.pi
+                self.heliModel.setState(orientation[2], orientation[1], orientation[0])
+                self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], 0, 0, 0, 0, 0])
+            else:
+
+                dl = 1
+                e = 10
+                p = val.calculateInputs_DL_E(dl, e, rad=False)[2]
+                orientation = np.array([p, e, 0, 0, 0, dl, 0, 0])/ 180.0 * np.pi
+                self.heliModel.setState(orientation[2], orientation[1], orientation[0])
+                self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], orientation[3], orientation[4], orientation[5], orientation[6], orientation[7]])
 
         # # handle vtk camera
         # pos = self.vtk_camera.GetPosition()
