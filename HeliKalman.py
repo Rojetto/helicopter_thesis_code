@@ -1,6 +1,9 @@
 import numpy as np
 import ModelConstants as mc
 
+# ToDo: Remove this file
+
+
 class HeliKalmanFilter(object):
     def __init__(self):
         pass

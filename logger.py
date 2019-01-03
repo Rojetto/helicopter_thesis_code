@@ -13,12 +13,28 @@ chunk_size = 600  # 10 s with 60 FPS
 current_size = chunk_size
 ts_store = np.empty(current_size)
 xs_store = np.empty((current_size, 8))
+xs_estimated_store = np.empty((current_size, 8))
+ys_noisy_output_store = np.empty((current_size, 3))
+us_noisy_input_store = np.empty((current_size, 2))
 us_ff_store = np.empty((current_size, 2))
 us_controller_store = np.empty((current_size, 2))
 e_traj_store = np.empty((current_size, 5))
 lambda_traj_store = np.empty((current_size, 5))
 planner_travel_g = 0
 planner_elevation_g = 0
+
+class LoggingDataV2:
+    def __init__(self, ts, xs, us_ff, us_controller, e_traj_and_derivatives, lambda_traj_and_derivatives,
+                 xs_estimated_state, us_noisy_input, ys_noisy_output):
+        self.ts = ts
+        self.xs = xs
+        self.us_ff = us_ff
+        self.us_controller = us_controller
+        self.e_traj_and_derivatives = e_traj_and_derivatives
+        self.lambda_traj_and_derivatives = lambda_traj_and_derivatives
+        self.xs_estimated_state = xs_estimated_state
+        self.ys_noisy_output = ys_noisy_output
+        self.us_noisy_input = us_noisy_input
 
 
 class LoggingDataV1:
@@ -34,8 +50,9 @@ class LoggingDataV1:
 def bundle_data():
     global index
 
-    bundle = LoggingDataV1(ts_store[:index], xs_store[:index], us_ff_store[:index], us_controller_store[:index],
-                           e_traj_store[:index], lambda_traj_store[:index])
+    bundle = LoggingDataV2(ts_store[:index], xs_store[:index], us_ff_store[:index], us_controller_store[:index],
+                           e_traj_store[:index], lambda_traj_store[:index], xs_estimated_store[:index],
+                           us_noisy_input_store[:index], ys_noisy_output_store[:index])
 
     return bundle
 
@@ -43,7 +60,7 @@ def bundle_data():
 def open_dialog_and_store():
     global last_storage_directory
     path, _ = QtWidgets.QFileDialog.getSaveFileName(None, directory=last_storage_directory,
-                                                    filter="HeliControl data (*.hc1)")
+                                                    filter="HeliControl data (*.hc2)")
 
     # User might have pressed "Cancel"
     if not path:
@@ -63,22 +80,29 @@ def add_planner(planner_travel, planner_elevation):
     planner_elevation_g = planner_elevation
 
 
-def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_derivatives):
+def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_derivatives, estimated_state,
+              us_noisy_input, ys_noisy_output):
     global current_size, index
 
     if index == current_size:
         current_size += chunk_size
         ts_store.resize(current_size, refcheck=False)
         xs_store.resize((current_size, 8), refcheck=False)
+        xs_estimated_store.resize((current_size, 8), refcheck=False)
         us_ff_store.resize((current_size, 2), refcheck=False)
         us_controller_store.resize((current_size, 2), refcheck=False)
         e_traj_store.resize((current_size, 5), refcheck=False)
         lambda_traj_store.resize((current_size, 5), refcheck=False)
+        ys_noisy_output_store.resize((current_size, 3), refcheck=False)
+        us_noisy_input_store.resize((current_size, 2), refcheck=False)
 
     ts_store[index] = t
     xs_store[index] = x
+    xs_estimated_store[index] = np.pad(estimated_state, (0, 2), "constant")
     us_ff_store[index] = u_ff
     us_controller_store[index] = u_controller
+    ys_noisy_output_store[index] = ys_noisy_output
+    us_noisy_input_store[index] = us_noisy_input
     e_traj_store[index] = e_traj_and_derivatives
     lambda_traj_store[index] = lambda_traj_and_derivatives
 
@@ -96,13 +120,16 @@ def show_plots():
     process(bundle)
 
 
-def process(bundle: LoggingDataV1):
+def process(bundle: LoggingDataV2):
     ts = bundle.ts
     xs = bundle.xs
     us_ff = bundle.us_ff
     us_controller = bundle.us_controller
     e_traj_and_derivatives = bundle.e_traj_and_derivatives
     lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
+    xs_estimated_state = bundle.xs_estimated_state
+    us_noisy_input = bundle.us_noisy_input
+    ys_noisy_output = bundle.ys_noisy_output
 
     # Your data processing code goes here
 
@@ -116,23 +143,23 @@ def process(bundle: LoggingDataV1):
     # ax1.grid()
     # plt.show()
 
-
-
-    plt.figure("Total front and back rotor voltages")
+    fig = plt.figure("Total front and back rotor voltages")
     plt.plot(ts, us_ff[:, 0] + us_controller[:, 0])
     plt.plot(ts, us_ff[:, 1] + us_controller[:, 1])
     plt.legend(['Vf', 'Vb'])
     plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
 
-    plt.figure("Feed forward and controller output")
+    fig = plt.figure("Feed forward and controller output")
     plt.plot(ts, us_ff[:, 0])
     plt.plot(ts, us_controller[:, 0])
     plt.plot(ts, us_ff[:, 1])
     plt.plot(ts, us_controller[:, 1])
     plt.legend(['Vf feed-forward', 'Vf controller', 'Vb feed-forward', 'Vb controller'])
     plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
 
-    plt.figure("Joint angles (deg)")
+    fig = plt.figure("Joint angles (deg)")
     p_traj = np.array([get_p_and_first_derivative(ModelType.CENTRIPETAL, e, l)[0] for (e, l) in
                        zip(e_traj_and_derivatives, lambda_traj_and_derivatives)])
     plt.plot(ts, xs[:, 0] / np.pi * 180.0, label="p")
@@ -143,12 +170,14 @@ def process(bundle: LoggingDataV1):
     plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0, label="lambda_traj")
     plt.legend()
     plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
 
-    plt.figure("Rotorspeed")
+    fig = plt.figure("Rotorspeed")
     plt.plot(ts, xs[:, 6])
     plt.plot(ts, xs[:, 7])
     plt.legend(['f','b'])
     plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
     #
     # plt.figure("Joint velocity (deg/s)")
     # plt.plot(ts, xs[:, 3] / np.pi * 180.0)
@@ -240,7 +269,7 @@ def process(bundle: LoggingDataV1):
     l_gyro = (np.sin(p) * np.cos(e) * dp * mc.J_m * (f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m * (f_speed - b_speed)) / J_l / np.pi * 180.0
     ddlamb = l_imput + l_fric + l_motor +l_gyro
 
-    plt.figure("Influence of torques at ddp (deg/s^2)")
+    fig = plt.figure("Influence of torques at ddp (deg/s^2)")
     plt.plot(ts, ddp)
     plt.plot(ts, p_cor)
     plt.plot(ts, p_input)
@@ -248,8 +277,9 @@ def process(bundle: LoggingDataV1):
     plt.plot(ts, p_gyro)
     plt.legend(['sum','centripetal','input','friction','gyroscope'])
     plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
 
-    plt.figure("Influence of torques at dde (deg/s^2)")
+    fig = plt.figure("Influence of torques at dde (deg/s^2)")
     plt.plot(ts, dde)
     plt.plot(ts, e_cor)
     plt.plot(ts, e_input)
@@ -259,8 +289,9 @@ def process(bundle: LoggingDataV1):
     plt.plot(ts, e_motor)
     plt.legend(['sum','centripetal','input','friction','gravitation','gyroscope','motor torque'])
     plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
 
-    plt.figure("Influence of torques at ddlambda (deg/s^2)")
+    fig = plt.figure("Influence of torques at ddlambda (deg/s^2)")
     plt.plot(ts, ddlamb)
     plt.plot(ts, l_imput)
     plt.plot(ts, l_fric)
@@ -268,5 +299,51 @@ def process(bundle: LoggingDataV1):
     plt.plot(ts, l_motor)
     plt.legend(['sum','input','friction','gyroscope','motor torque'])
     plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+    fig = plt.figure("Estimated state of observer")
+    plt.plot(ts, xs_estimated_state[:, 0], label="p observed")
+    plt.plot(ts, xs_estimated_state[:, 1], label="e observed")
+    plt.plot(ts, xs_estimated_state[:, 2], label="lambda observed")
+    plt.plot(ts, xs[:, 0], label="p from simulation")
+    plt.plot(ts, xs[:, 1], label="e from simulation")
+    plt.plot(ts, xs[:, 2], label="lambda from simulation")
+    plt.legend()
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+
+    fig = plt.figure("Input of system with and without noise")
+    ax1 = fig.add_subplot(111)
+    ax1.plot(ts, us_noisy_input[:, 0], label="Vf with noise")
+    ax1.plot(ts, us_noisy_input[:, 1], label="Vb with noise")
+    ax1.plot(ts, us_ff[:, 0] + us_controller[:, 0], label="Vf without noise")
+    ax1.plot(ts, us_ff[:, 1] + us_controller[:, 1], label="Vf without noise")
+    ax1.legend(loc=1)
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+    fig = plt.figure("Output of system with and without noise")
+    ax1 = fig.add_subplot(111)
+    ax1.plot(ts, ys_noisy_output[:, 0], label="p with noise")
+    ax1.plot(ts, ys_noisy_output[:, 1], label="e with noise")
+    ax1.plot(ts, ys_noisy_output[:, 2], label="lambda with noise")
+    ax1.plot(ts, xs[:, 0], label="p without noise")
+    ax1.plot(ts, xs[:, 1], label="e without noise")
+    ax1.plot(ts, xs[:, 2], label="lambda without noise")
+    ax1.legend(loc=2)
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+    fig = plt.figure("Noise of observed signal")
+    plt.plot(ts, xs_estimated_state[:, 0] - xs[:, 0], label="p_est - p")
+    plt.plot(ts, xs_estimated_state[:, 1] - xs[:, 1], label="e_est - e")
+    plt.plot(ts, xs_estimated_state[:, 2] - xs[:, 2], label="lambda_est - lambda")
+    plt.legend()
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
 
     plt.show()
+
+def handle_close(evt):
+    plt.close("all")
