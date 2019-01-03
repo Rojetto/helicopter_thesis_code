@@ -199,6 +199,7 @@ class mainWindow(Qt.QMainWindow):
         self.current_controller.initialize(param_values)
         self.disturbance = self.disturbance_frame.get_disturbance()
         self.observer = self.observer_frame.get_observer()
+        self.observer.set_system_model_and_step_size(self.heliSim.get_model_type(), self.timeStep)
         self.feedforward_method,  self.feedforward_model = self.feedforward_frame.get_feedforward_method_and_model()
 
         self.sim_running = True
@@ -250,11 +251,11 @@ class mainWindow(Qt.QMainWindow):
             Vf = Vf_ff + Vf_controller
             Vb = Vb_ff + Vb_controller
             # Call observer object
-            self.observer.calc_observation(t, x, [Vf, Vb])
+            estimated_state, noisy_input, noisy_output  = self.observer.calc_observation(t, x, [Vf, Vb])
             # Log data
             if self.log_enabled:
                 logger.add_frame(t, x, [Vf_ff, Vb_ff], [Vf_controller, Vb_controller],
-                                 e_and_derivatives, lambda_and_derivatives)
+                                 e_and_derivatives, lambda_and_derivatives, estimated_state, noisy_input, noisy_output)
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb, current_disturbance)
             self.heliModel.setState(lamb, e, p)

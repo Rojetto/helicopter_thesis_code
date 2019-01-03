@@ -45,6 +45,8 @@ class ObserverFrame(QtWidgets.QFrame):
         self.linear_kalman_init_dp = QtWidgets.QDoubleSpinBox()
         self.linear_kalman_init_de = QtWidgets.QDoubleSpinBox()
         self.linear_kalman_init_dlamb = QtWidgets.QDoubleSpinBox()
+        self.linear_kalman_init_f = QtWidgets.QDoubleSpinBox()
+        self.linear_kalman_init_b = QtWidgets.QDoubleSpinBox()
 
         linear_kalman_init_layout = QtWidgets.QHBoxLayout()
         linear_kalman_init_layout.addWidget(self.linear_kalman_init_p)
@@ -53,8 +55,10 @@ class ObserverFrame(QtWidgets.QFrame):
         linear_kalman_init_layout.addWidget(self.linear_kalman_init_dp)
         linear_kalman_init_layout.addWidget(self.linear_kalman_init_de)
         linear_kalman_init_layout.addWidget(self.linear_kalman_init_dlamb)
+        linear_kalman_init_layout.addWidget(self.linear_kalman_init_f)
+        linear_kalman_init_layout.addWidget(self.linear_kalman_init_b)
 
-        linear_kalman_layout.addRow(QtWidgets.QLabel("Initial state (p,e,lamb,dp,de,dlamb)"), linear_kalman_init_layout)
+        linear_kalman_layout.addRow(QtWidgets.QLabel("Initial state (p,e,lamb,dp,de,dlamb,f,b)"), linear_kalman_init_layout)
 
         # 3. initial covariance matrix
         self.linear_kalman_init_cov_p = QtWidgets.QDoubleSpinBox()
@@ -63,6 +67,8 @@ class ObserverFrame(QtWidgets.QFrame):
         self.linear_kalman_init_cov_dp = QtWidgets.QDoubleSpinBox()
         self.linear_kalman_init_cov_de = QtWidgets.QDoubleSpinBox()
         self.linear_kalman_init_cov_dlamb = QtWidgets.QDoubleSpinBox()
+        self.linear_kalman_init_cov_f = QtWidgets.QDoubleSpinBox()
+        self.linear_kalman_init_cov_b = QtWidgets.QDoubleSpinBox()
 
         linear_kalman_init_cov_layout = QtWidgets.QHBoxLayout()
 
@@ -72,12 +78,23 @@ class ObserverFrame(QtWidgets.QFrame):
         linear_kalman_init_cov_layout.addWidget(self.linear_kalman_init_cov_dp)
         linear_kalman_init_cov_layout.addWidget(self.linear_kalman_init_cov_de)
         linear_kalman_init_cov_layout.addWidget(self.linear_kalman_init_cov_dlamb)
+        linear_kalman_init_cov_layout.addWidget(self.linear_kalman_init_cov_f)
+        linear_kalman_init_cov_layout.addWidget(self.linear_kalman_init_cov_b)
 
-        linear_kalman_layout.addRow(QtWidgets.QLabel("Initial Cov = diag(p,e, lamb, dp,de, dlamb)"),
+        linear_kalman_layout.addRow(QtWidgets.QLabel("Initial Cov = diag(p,e, lamb, dp,de, dlamb,f,b)"),
                                     linear_kalman_init_cov_layout)
 
 
         self.observer_frame_stack.addWidget(linear_kalman_frame)
+
+        # Test Kalman Filter
+        self.observer_combo.insertItem(2, "Test Kalman Filter")
+        test_kalman_frame = QtWidgets.QFrame()
+        test_kalman_layout = QtWidgets.QFormLayout()
+        test_kalman_frame.setLayout(test_kalman_layout)
+
+        self.observer_frame_stack.addWidget(test_kalman_frame)
+
 
 
 
@@ -86,7 +103,7 @@ class ObserverFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.observer_combo)
         self.observer_combo.currentIndexChanged.connect(self.on_observer_combo_select)
-        self.observer_combo.setCurrentIndex(0)
+        self.observer_combo.setCurrentIndex(1)
 
     def on_observer_combo_select(self):
         self.observer_frame_stack.setCurrentIndex(self.observer_combo.currentIndex())
@@ -123,6 +140,9 @@ class ObserverFrame(QtWidgets.QFrame):
                                            dp_cov_init, de_cov_init, dlamb_cov_init])
 
             observer = Observer.LinearKalmanFilter(init_state_vector, init_cov_matrix, operating_point)
+        elif combo_idx == 1:
+            print("TestKalmanFilter")
+            observer = Observer.TestKalmanFilter([0, 0, 0, 0, 0, 0], np.diag([0, 0, 0]))
         else:
             raise NotImplementedError("This option of the combo box is not yet implemented.")
 
