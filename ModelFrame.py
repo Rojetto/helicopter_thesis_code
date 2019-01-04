@@ -23,7 +23,7 @@ class ModelFrame(QtWidgets.QFrame):
         self.model_4_button.toggled.connect(self.on_model_toggle)
         self.model_5_button = QtWidgets.QRadioButton("+ gyro moment", self)
         self.model_5_button.toggled.connect(self.on_model_toggle)
-        self.model_3_button.setChecked(True)
+        self.model_1_button.setChecked(True)
 
         self.check_limits_box = QtWidgets.QCheckBox("Limit angles")
         self.check_limits_box.setCheckState(2 if sim.should_check_limits else 0)

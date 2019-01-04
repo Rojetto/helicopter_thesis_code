@@ -175,7 +175,7 @@ class HeliSimulation(object):
         """Initializes the simulation"""
         self.currentState = np.array([theta1_0, theta2_0, theta3_0, 0, 0, 0, 0, 0])
         self.should_check_limits = True
-        self.dynamic_inertia_torque = True
+        self.dynamic_inertia_torque = False
         self.statLim = StateLimits()
         self.timeStep = time_step
         self.model_type = ModelType.CENTRIPETAL

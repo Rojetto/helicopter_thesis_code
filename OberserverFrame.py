@@ -95,6 +95,13 @@ class ObserverFrame(QtWidgets.QFrame):
 
         self.observer_frame_stack.addWidget(test_kalman_frame)
 
+        # Extended Kalman Filter for easy model
+        self.observer_combo.insertItem(3, "Extended Kalman Filter for Easy Model")
+        ext_easy_kalman_frame = QtWidgets.QFrame()
+        ext_easy_kalman_layout = QtWidgets.QFormLayout()
+        ext_easy_kalman_frame.setLayout(ext_easy_kalman_layout)
+
+        self.observer_frame_stack.addWidget(ext_easy_kalman_frame)
 
 
 
@@ -103,7 +110,7 @@ class ObserverFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.observer_combo)
         self.observer_combo.currentIndexChanged.connect(self.on_observer_combo_select)
-        self.observer_combo.setCurrentIndex(1)
+        self.observer_combo.setCurrentIndex(2)
 
     def on_observer_combo_select(self):
         self.observer_frame_stack.setCurrentIndex(self.observer_combo.currentIndex())
@@ -142,7 +149,10 @@ class ObserverFrame(QtWidgets.QFrame):
             observer = Observer.LinearKalmanFilter(init_state_vector, init_cov_matrix, operating_point)
         elif combo_idx == 1:
             print("TestKalmanFilter")
-            observer = Observer.TestKalmanFilter([0, 0, 0, 0, 0, 0], np.diag([0, 0, 0]))
+            observer = Observer.TestKalmanFilter([0, 0, 0, 0, 0, 0], np.diag([0, 0, 0, 0, 0, 0]))
+        elif combo_idx == 2:
+            print("Ext. Kalman Filter for Easy Model")
+            observer = Observer.ExtKalmanFilterEasyModel([0, 0, 0, 0, 0, 0], np.diag([0, 0, 0, 0, 0, 0]))
         else:
             raise NotImplementedError("This option of the combo box is not yet implemented.")
 

@@ -133,10 +133,17 @@ class mainWindow(Qt.QMainWindow):
         pitch_layout, self.init_pitch_edit = build_slider_textedit_combo(-80.0, 80.0, 0.0, self.on_init_value_change)
         initial_state_layout.addRow(QtWidgets.QLabel("Pitch"), pitch_layout)
 
+        # GUI for state estimation in Simulation box
+        estimated_state_layout = QtWidgets.QHBoxLayout()
+        main_simulation_controls_layout.addLayout(estimated_state_layout)
         self.show_estimated_state_checkbox = QtWidgets.QCheckBox("Show estimated state")
         self.show_estimated_state_checkbox.setChecked(1)
         self.show_estimated_state_checkbox.clicked.connect(self.on_show_estimated_state_click)
-        main_simulation_controls_layout.addWidget(self.show_estimated_state_checkbox)
+        estimated_state_layout.addWidget(self.show_estimated_state_checkbox)
+        self.set_initial_estimated_state_button = QtWidgets.QPushButton("Set Est. State")
+        estimated_state_layout.addWidget(self.set_initial_estimated_state_button)
+        self.set_initial_estimated_state_button.clicked.connect(self.set_estimated_state_button_clicked)
+        # GUI for Updating controller values
         simulation_update_controller_layout = QtWidgets.QHBoxLayout()
         main_simulation_controls_layout.addLayout(simulation_update_controller_layout)
         self.update_controller_button = QtWidgets.QPushButton("Update controller values")
@@ -181,6 +188,7 @@ class mainWindow(Qt.QMainWindow):
         self.feedforward_method = None
         self.feedforward_model = None
         self.observer = None
+        self.observer_initial_value = None
 
         # Get the current trajectory planner
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
@@ -193,6 +201,14 @@ class mainWindow(Qt.QMainWindow):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.timerCallback)
         self.timer.start(self.timeStep * 1000)
+
+    def set_estimated_state_button_clicked(self):
+        print("estimated state button clicked")
+        orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(),
+                                self.init_travel_edit.value()])
+        orientation = orientation / 180.0 * np.pi
+        self.observer_initial_value = [orientation[0], orientation[1], orientation[2], 0, 0, 0]
+        self.heliModelEst.setState(orientation[2], orientation[1], orientation[0])
 
     def on_show_estimated_state_click(self):
         if self.show_estimated_state_checkbox.checkState() == 2:
@@ -220,6 +236,7 @@ class mainWindow(Qt.QMainWindow):
         self.disturbance = self.disturbance_frame.get_disturbance()
         self.observer = self.observer_frame.get_observer()
         self.observer.set_system_model_and_step_size(self.heliSim.get_model_type(), self.timeStep)
+        self.observer.set_estimated_state(self.observer_initial_value)
         self.feedforward_method,  self.feedforward_model = self.feedforward_frame.get_feedforward_method_and_model()
 
         self.sim_running = True
