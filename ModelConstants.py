@@ -11,6 +11,7 @@ class ModelType(Enum):
     CENTRIPETAL = 3
     ROTORSPEED = 4
     GYROMOMENT = 5
+    NO_SIMPLIFICATIONS = 6
 
 # l_a = ? (not given in Fig. 7)
 l_p = 0.18 #m

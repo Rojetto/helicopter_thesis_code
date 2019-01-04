@@ -3,6 +3,7 @@ from ModelConstants import ModelType
 from enum import Enum
 from numpy.ma import cos, sin, arctan
 import numpy as np
+import sympy as sp
 
 L1 = mc.l_p
 L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
@@ -56,14 +57,17 @@ def compute_linear_ss(model_type: ModelType, e_op):
                       [0, 0, 0, 0, 0, 0],
                       [0, -L2 * sin(e_op) / Je, 0, 0, 0, 0],
                       [L4 * Vs_op * cos(e_op) / Jl, 0, 0, 0, 0, 0]])
-
-    if model_type == ModelType.FRICTION or model_type == ModelType.CENTRIPETAL:
+    elif model_type == ModelType.FRICTION or model_type == ModelType.CENTRIPETAL:
         A = np.array([[0, 0, 0, 1, 0, 0],
                       [0, 0, 0, 0, 1, 0],
                       [0, 0, 0, 0, 0, 1],
                       [0, 0, 0, - mc.d_p / Jp, 0, 0],
                       [0, -L2 * sin(e_op) / Je, 0, 0, - mc.d_e / Je, 0],
                       [L4 * Vs_op * cos(e_op) / Jl, 0, 0, 0, 0, - mc.d_l / Jl]])
+    else:
+        # TODO: Implement for remaining model types
+        print("Unsupported model type while trying to linearize system")
+        A = np.zeros((6, 6))
 
     B = np.array([[0, 0],
                   [0, 0],
@@ -73,6 +77,59 @@ def compute_linear_ss(model_type: ModelType, e_op):
                   [0, 0]])
 
     return A, B
+
+
+def compute_linear_ss_full(x_op, u_op):
+    """
+    Computes linear state space matrices A and B for the full model (without any simplifications) at operating point
+    x_op. This state space model contains all 8 (!) state variables.
+
+    :return: A, B
+    """
+
+    p, e, l = sp.symbols("p e \\lambda")
+    dp, de, dl = sp.symbols("\\dot{p} \\dot{e} \\dot{\\lambda}")
+    wf, wb, Vf, Vb = sp.symbols("\\omega_f \\omega_b V_f V_b")
+
+    x = sp.Matrix([p, e, l, dp, de, dl, wf, wb])
+    u = sp.Matrix([Vf, Vb])
+    op_sub = list(zip(x, x_op)) + list(zip(u, u_op))
+
+    dp_rhs = dp
+    de_rhs = de
+    dl_rhs = dl
+    ddp_rhs = 1/(2*mc.m_p*mc.l_p**2) * (2*mc.m_p*mc.l_p**2*sp.cos(p)*sp.sin(p)*(de**2-sp.cos(e)**2*dl**2)
+                                        - mc.d_p * dp
+                                        + mc.l_p*(wf-wb)
+                                        + mc.J_m * sp.cos(p) * de * (wb - wf)
+                                        + mc.J_m * sp.sin(p) * sp.cos(e) * dp * (wf - wb)
+                                        )
+    dde_rhs = 1/(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2+mc.l_p**2*sp.sin(p)**2))*(
+        - sp.cos(e)*sp.sin(e)*(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2-mc.l_p**2*sp.sin(p)**2))*dl**2
+        - mc.d_e*de
+        + mc.g*(mc.m_c*mc.l_c-2*mc.m_p*mc.l_h)*sp.cos(e)
+        + mc.l_h*sp.cos(p)*(wf+wb)
+        + sp.sin(p)*mc.K_m*(wf-wb)
+        + mc.J_m * sp.cos(p) * dp * (wf - wb)
+        + mc.J_m * sp.cos(p) * sp.sin(e) * dp * (wb - wf)
+    )
+    ddl_rhs = 1/(mc.m_c*(mc.l_c*sp.cos(e))**2+2*mc.m_p*((mc.l_h*sp.cos(e))**2+(mc.l_p*sp.sin(p)*sp.sin(e))**2+(mc.l_p*sp.cos(p))**2))*(
+        mc.l_h*sp.cos(e)*sp.sin(p)*(wf+wb)
+        - mc.d_l*dl
+        + sp.cos(e)*sp.cos(p)*mc.K_m*(wb-wf)
+        + mc.J_m * sp.sin(p) * sp.cos(e) * dp * (wf - wb)
+    )
+    dwf_rhs = 1/mc.T_f * (Vf - wf)
+    dwb_rhs = 1/mc.T_b * (Vb - wb)
+
+    ss_rhs = sp.Matrix([dp_rhs, de_rhs, dl_rhs, ddp_rhs, dde_rhs, ddl_rhs, dwf_rhs, dwb_rhs])
+    A_symbolic = ss_rhs.jacobian(x)
+    B_symbolic = ss_rhs.jacobian(u)
+
+    A = A_symbolic.subs(op_sub)
+    B = B_symbolic.subs(op_sub)
+
+    return np.array(A).astype(np.float64), np.array(B).astype(np.float64)
 
 
 def compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives):
@@ -85,6 +142,7 @@ def compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives):
 
     return Vf, Vb
 
+
 def compute_feed_forward_flatness(model_type : ModelType, e_and_derivatives, lambda_and_derivatives):
     if model_type == ModelType.EASY:
         # print("simple model is used")
@@ -96,6 +154,7 @@ def compute_feed_forward_flatness(model_type : ModelType, e_and_derivatives, lam
         print("Model type is not supported for flatness control. Model Type EASY will be used for calculations.")
         pitch, system_in = compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_derivatives)
     return system_in
+
 
 def compute_feed_forward_flatness_simple(e_and_derivatives, lambda_and_derivatives):
     pitch, system_in = compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_derivatives)
@@ -154,6 +213,7 @@ def compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_deriv
     Vb = (Vs - Vd) / 2
 
     return np.array([p, dp1, dp2]), np.array([Vf, Vb])
+
 
 def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_derivatives):
     e = e_and_derivatives[0]
