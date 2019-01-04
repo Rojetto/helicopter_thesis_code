@@ -175,6 +175,18 @@ class KalmanFilterBase(Observer):
         return
 
 
+class NoKalmanFilter(KalmanFilterBase):
+    def calc_observation(self, t, x, u):
+        # add noise to input and output
+        u_with_noise = self.get_noisy_input_of_system(u)
+        y_with_noise = self.get_noisy_output_of_system(x[0:3])
+        return np.zeros(8), u_with_noise, y_with_noise
+
+    def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
+        """nothing here"""
+        return
+
+
 class TestKalmanFilter(KalmanFilterBase):
     """just for testing the base class"""
 
