@@ -26,14 +26,22 @@ class PidAlgorithm:
         self.gains = gains
         self.ix = 0.0
         self.last_t = 0.0
+        self.last_x = None
 
-    def compute(self, t, x, dx):
+    def compute(self, t, x, dx=None):
         dt = t - self.last_t
         self.ix += dt * x
+
+        if dx is None:
+            if self.last_x is None:
+                dx = 0
+            else:
+                dx = (x - self.last_x) / dt
 
         out = self.gains[0] * x + self.gains[1] * self.ix + self.gains[2] * dx
 
         self.last_t = t
+        self.last_x = x
 
         return out
 
