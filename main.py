@@ -23,6 +23,7 @@ from helicontrollers.PolePlacementController import PolePlacementController
 from helicontrollers.TimeVariantController import TimeVariantController
 
 from HelicopterModel import HelicopterModel
+from HelicopterModelEstimated import HelicopterModelEstimated
 from HeliSimulation import HeliSimulation
 from HeliKalman import HeliKalmanFilter
 from MyQVTKRenderWindowInteractor import QVTKRenderWindowInteractor
@@ -68,6 +69,9 @@ class mainWindow(Qt.QMainWindow):
         # Initialize helicopter model
         self.heliModel = HelicopterModel()
         self.heliModel.addAllActors(vtk_renderer)
+        # Initialize helicopter model for visualising the estimated state
+        self.heliModelEst = HelicopterModelEstimated()
+        self.heliModelEst.addAllActors(vtk_renderer)
         # Initialize helicopter simulation
         self.heliSim = HeliSimulation(0, 0, 0, self.timeStep)
         self.disturbance = None
@@ -129,6 +133,10 @@ class mainWindow(Qt.QMainWindow):
         pitch_layout, self.init_pitch_edit = build_slider_textedit_combo(-80.0, 80.0, 0.0, self.on_init_value_change)
         initial_state_layout.addRow(QtWidgets.QLabel("Pitch"), pitch_layout)
 
+        self.show_estimated_state_checkbox = QtWidgets.QCheckBox("Show estimated state")
+        self.show_estimated_state_checkbox.setChecked(1)
+        self.show_estimated_state_checkbox.clicked.connect(self.on_show_estimated_state_click)
+        main_simulation_controls_layout.addWidget(self.show_estimated_state_checkbox)
         simulation_update_controller_layout = QtWidgets.QHBoxLayout()
         main_simulation_controls_layout.addLayout(simulation_update_controller_layout)
         self.update_controller_button = QtWidgets.QPushButton("Update controller values")
@@ -185,6 +193,15 @@ class mainWindow(Qt.QMainWindow):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.timerCallback)
         self.timer.start(self.timeStep * 1000)
+
+    def on_show_estimated_state_click(self):
+        if self.show_estimated_state_checkbox.checkState() == 2:
+            # show_estimated_state is checked
+            print("is checked")
+            self.heliModelEst.setVisibility(True)
+        else:
+            print("not checked")
+            self.heliModelEst.setVisibility(False)
 
     def on_init_value_change(self):
         pass
@@ -258,14 +275,15 @@ class mainWindow(Qt.QMainWindow):
             Vf = Vf_ff + Vf_controller
             Vb = Vb_ff + Vb_controller
             # Call observer object
-            estimated_state, noisy_input, noisy_output  = self.observer.calc_observation(t, x, [Vf, Vb])
+            x_estimated_state, noisy_input, noisy_output = self.observer.calc_observation(t, x, [Vf, Vb])
             # Log data
             if self.log_enabled:
                 logger.add_frame(t, x, [Vf_ff, Vb_ff], [Vf_controller, Vb_controller],
-                                 e_and_derivatives, lambda_and_derivatives, estimated_state, noisy_input, noisy_output)
+                                 e_and_derivatives, lambda_and_derivatives, x_estimated_state, noisy_input, noisy_output)
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb, current_disturbance)
             self.heliModel.setState(lamb, e, p)
+            self.heliModelEst.setState(x_estimated_state[2], x_estimated_state[1], x_estimated_state[0])
         else:
             if not val.validation_enabled:
                 orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])

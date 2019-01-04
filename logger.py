@@ -80,7 +80,7 @@ def add_planner(planner_travel, planner_elevation):
     planner_elevation_g = planner_elevation
 
 
-def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_derivatives, estimated_state,
+def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_derivatives, x_estimated_state,
               us_noisy_input, ys_noisy_output):
     global current_size, index
 
@@ -98,7 +98,7 @@ def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_
 
     ts_store[index] = t
     xs_store[index] = x
-    xs_estimated_store[index] = np.pad(estimated_state, (0, 2), "constant")
+    xs_estimated_store[index] = x_estimated_state
     us_ff_store[index] = u_ff
     us_controller_store[index] = u_controller
     ys_noisy_output_store[index] = ys_noisy_output
@@ -344,6 +344,23 @@ def process(bundle: LoggingDataV2):
     fig.canvas.mpl_connect('close_event', handle_close)
 
     plt.show()
+
+    # Calculate the variance of the kalman filter signals for verifying correct noise generation
+    vf_var = np.var(us_noisy_input[:, 0] - (us_ff[:, 0] + us_controller[:, 0]))
+    vb_var = np.var(us_noisy_input[:, 1] - (us_ff[:, 1] + us_controller[:, 1]))
+    p_var = np.var(ys_noisy_output[:, 0] - xs[:, 0])
+    e_var = np.var(ys_noisy_output[:, 1] - xs[:, 1])
+    lamb_var = np.var(ys_noisy_output[:, 2] - xs[:, 2])
+    print("Variance of Vf is " + str(vf_var))
+    print("   ... in degree the standard deviation is " + str(np.sqrt(vf_var) * 180 / np.pi))
+    print("Variance of Vb is " + str(vb_var))
+    print("   ... in degree the standard deviation is " + str(np.sqrt(vb_var) * 180 / np.pi))
+    print("Variance of p is " + str(p_var))
+    print("   ... in degree the standard deviation is " + str(np.sqrt(p_var) * 180 / np.pi))
+    print("Variance of e is " + str(e_var))
+    print("   ... in degree the standard deviation is " + str(np.sqrt(e_var) * 180 / np.pi))
+    print("Variance of lambda is " + str(lamb_var))
+    print("   ... in degree the standard deviation is " + str(np.sqrt(lamb_var) * 180 / np.pi))
 
 def handle_close(evt):
     plt.close("all")

@@ -42,7 +42,7 @@ class Observer(object):
         """Estimates the system state dependent on the output of the system.
                     Args:
                         t: current simulation time
-                        x: current system state. x = [p, e, lambda, dp/dt, de/dt, dlambda/dt]
+                        x: current system state. x = [p, e, lambda, dp/dt, de/dt, dlambda/dt, f, b]
                         u: current controller output (u[0]: Vf, u[1]: Vb)
                     Returns:
                         x_hat: estimated state of system
@@ -60,11 +60,11 @@ class KalmanFilterBase(Observer):
         self.cov_matrix = init_cov_matrix
 
         # set system noise parameters
-        vf_var = (1/ 180 * np.pi) ** 2
-        vb_var = (1 / 180 * np.pi) ** 2
+        vf_var = (1 / 180 * np.pi) ** 2
+        vb_var = (3 / 180 * np.pi) ** 2
         p_var = (1 / 180 * np.pi) ** 2
-        e_var = (1 / 180 * np.pi) ** 2
-        lamb_var = (1 / 180 * np.pi) ** 2
+        e_var = (3 / 180 * np.pi) ** 2
+        lamb_var = (5 / 180 * np.pi) ** 2
         # N is the covariance matrix of the input signals. 2 inputs ==> N is a 2x2 matrix
         # Assuming white noise
         self.N = np.diag([vf_var, vb_var])
@@ -116,7 +116,7 @@ class TestKalmanFilter(KalmanFilterBase):
     """just for testing the base class"""
 
     def calc_observation(self, t, x, u):
-        x_estimated = x[0:6]
+        x_estimated = x
         u_with_noise = self.get_noisy_input_of_system(np.resize(np.array(u), (2, 1)))
         y_with_noise = self.get_noisy_output_of_system(np.resize(np.array(x[0:3]), (3, 1)))
         return x_estimated, np.resize(u_with_noise, (1, 2)), np.resize(y_with_noise, (1, 3))
@@ -198,6 +198,8 @@ class LinearKalmanFilter(Observer):
 
         self.estimated_state = x_update
         self.cov_matrix = P_update
+
+        x_predict = np.pad(x_predict, (0, 2), "constant")
 
         return x_predict, [0, 0], y
 
