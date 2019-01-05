@@ -30,19 +30,18 @@ from MyQVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 import sys
 import vtk
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5 import Qt
+from PyQt5 import QtCore, QtWidgets
 import numpy as np
 
 
-class mainWindow(Qt.QMainWindow):
+class mainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
-        Qt.QMainWindow.__init__(self, parent)
+        QtWidgets.QMainWindow.__init__(self, parent)
         self.setWindowTitle("Helicopter Simulation")
 
         # GUI setup
-        frame = Qt.QFrame()
-        main_layout = Qt.QVBoxLayout()
+        frame = QtWidgets.QFrame()
+        main_layout = QtWidgets.QVBoxLayout()
         frame.setLayout(main_layout)
         self.setCentralWidget(frame)
 
@@ -84,11 +83,11 @@ class mainWindow(Qt.QMainWindow):
 
         # GUI layout
         main_layout.addWidget(vtk_widget, 1)  # Set a stretch factor > 0 so that this widget takes all remaining space
-        control_top_level_layout = Qt.QHBoxLayout()
+        control_top_level_layout = QtWidgets.QHBoxLayout()
         main_layout.addLayout(control_top_level_layout)
         main_simulation_controls = QtWidgets.QGroupBox("Simulation")
         control_top_level_layout.addWidget(main_simulation_controls)
-        main_simulation_controls_layout = Qt.QVBoxLayout()
+        main_simulation_controls_layout = QtWidgets.QVBoxLayout()
         main_simulation_controls.setLayout(main_simulation_controls_layout)
         initial_state_layout = QtWidgets.QFormLayout()
         main_simulation_controls_layout.addLayout(initial_state_layout)
@@ -100,7 +99,7 @@ class mainWindow(Qt.QMainWindow):
             def value_to_slider(value):
                 return int((value - min_value) / (max_value - min_value) * 99)
 
-            h_layout = Qt.QHBoxLayout()
+            h_layout = QtWidgets.QHBoxLayout()
             slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
             h_layout.addWidget(slider)
             slider.setValue(value_to_slider(init_value))
@@ -330,6 +329,6 @@ class mainWindow(Qt.QMainWindow):
 
 
 if __name__ == "__main__":
-    app = Qt.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     window = mainWindow()
     sys.exit(app.exec_())
