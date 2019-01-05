@@ -112,12 +112,20 @@ class ObserverFrame(QtWidgets.QFrame):
         self.observer_frame_stack.addWidget(no_kalman_frame)
 
         # Ext. Kalman Filter for Gyromoment model
-        self.observer_combo.insertItem(5, "Extended Kalman Filter for Gyromoment model")
+        self.observer_combo.insertItem(5, "Extended Kalman Filter for Gyromoment model (5-element-y)")
         ext_gyro_kalman_frame = QtWidgets.QFrame()
         ext_gyro_kalman_layout = QtWidgets.QFormLayout()
         ext_gyro_kalman_frame.setLayout(ext_gyro_kalman_layout)
 
         self.observer_frame_stack.addWidget(ext_gyro_kalman_frame)
+
+        # Ext. Kalman Filter for Gyromoment model
+        self.observer_combo.insertItem(6, "Extended Kalman Filter for Gyromoment model (3-element-y)")
+        ext_gyro_3_kalman_frame = QtWidgets.QFrame()
+        ext_gyro_3_kalman_layout = QtWidgets.QFormLayout()
+        ext_gyro_3_kalman_frame.setLayout(ext_gyro_3_kalman_layout)
+
+        self.observer_frame_stack.addWidget(ext_gyro_3_kalman_frame)
 
 
 
@@ -126,7 +134,7 @@ class ObserverFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.observer_combo)
         self.observer_combo.currentIndexChanged.connect(self.on_observer_combo_select)
-        self.observer_combo.setCurrentIndex(4)
+        self.observer_combo.setCurrentIndex(5)
 
     def on_observer_combo_select(self):
         self.observer_frame_stack.setCurrentIndex(self.observer_combo.currentIndex())
@@ -173,8 +181,11 @@ class ObserverFrame(QtWidgets.QFrame):
             print("No Kalman filter")
             observer = Observer.NoKalmanFilter(np.zeros(6), np.diag(np.zeros(6)))
         elif combo_idx == 4:
-            print("Ext. Kalman Filter for Gyromoment Model")
+            print("Ext. Kalman Filter for Gyromoment Model (5-element)")
             observer = Observer.ExtKalmanFilterGyroModel(np.zeros(8), np.diag([0, 0, 0, 0, 0, 0, 0, 0]))
+        elif combo_idx == 5:
+            print("Ext. Kalman Filter for Gyromoment Model(3-element)")
+            observer = Observer.ExtKalmanFilterGyroModelOnly3(np.zeros(8), np.diag([0, 0, 0, 0, 0, 0, 0, 0]))
         else:
             raise NotImplementedError("This option of the combo box is not implemented yet.")
 

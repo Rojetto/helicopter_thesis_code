@@ -151,7 +151,7 @@ class KalmanFilterBase(Observer):
     """Base class for Kalman Filter. Takes care of adding noise to input and output signals.
     Uses the variable naming conventions of the lecture 'Steuerung mobiler Roboter' of Prof. Janschek"""
 
-    def __init__(self, init_state, init_cov_matrix, model_type: ModelType):
+    def __init__(self, init_state, init_cov_matrix, model_type: ModelType, nOutputs):
         if model_type == ModelType.EASY:
             # delete the last two states because these are not present in the
             init_state = init_state[0:6]
@@ -187,10 +187,10 @@ class KalmanFilterBase(Observer):
         # N is the covariance matrix of the input signals. 2 inputs ==> N is a 2x2 matrix
         # Assuming white noise
         self.N = np.diag([vf_var, vb_var])
-        if self.model_type == ModelType.EASY:
+        if nOutputs == 3:
             # W is the covariance matrix of the output signals. 3 outputs ==> W is a 3x3 matrix
             self.W = np.diag([p_var, e_var, lamb_var])
-        elif self.model_type == ModelType.GYROMOMENT:
+        elif nOutputs == 5:
             # 5 Output signals ==> W is a 5x5 matrix
             self.W = np.diag([p_var, e_var, lamb_var, f_var, b_var])
         # Assuming NO PROCESS NOISE
@@ -202,12 +202,12 @@ class KalmanFilterBase(Observer):
         :arg y_without_noise: n-d-array with 3 elements (p, e, lambda). Dimension: 1x3"""
         # There were some problems with copying the array data so I just wrote a copy command for every single line
         if self.bOutputNoise:
-            if self.model_type == ModelType.EASY:
+            if np.size(y_without_noise, 0) == 3:
                 y_with_noise = np.zeros(3)
                 y_with_noise[0] = y_without_noise[0] + np.random.normal(0, np.sqrt(self.W[0][0]), 1)[0]
                 y_with_noise[1] = y_without_noise[1] + np.random.normal(0, np.sqrt(self.W[1][1]), 1)[0]
                 y_with_noise[2] = y_without_noise[2] + np.random.normal(0, np.sqrt(self.W[2][2]), 1)[0]
-            elif self.model_type == ModelType.GYROMOMENT:
+            elif np.size(y_without_noise, 0) == 5:
                 y_with_noise = np.zeros(5)
                 y_with_noise[0] = y_without_noise[0] + np.random.normal(0, np.sqrt(self.W[0][0]), 1)[0]
                 y_with_noise[1] = y_without_noise[1] + np.random.normal(0, np.sqrt(self.W[1][1]), 1)[0]
@@ -252,7 +252,7 @@ class KalmanFilterBase(Observer):
 class NoKalmanFilter(KalmanFilterBase):
 
     def __init__(self, init_state, init_cov_matrix):
-        super().__init__(init_state, init_cov_matrix, ModelType.EASY)
+        super().__init__(init_state, init_cov_matrix, ModelType.EASY, 3)
 
     def calc_observation(self, t, x, u):
         # add noise to input and output
@@ -283,7 +283,7 @@ class ExtKalmanFilterEasyModel(KalmanFilterBase):
     """Extended Kalman filter for the easy model without angle limiting"""
 
     def __init__(self, init_state, init_cov_matrix):
-        super().__init__(init_state, init_cov_matrix, ModelType.EASY)
+        super().__init__(init_state, init_cov_matrix, ModelType.EASY, 3)
 
     def set_estimated_state(self, x_estimated_state):
         x_estimated_state = x_estimated_state[0:6]
@@ -363,9 +363,10 @@ class ExtKalmanFilterEasyModel(KalmanFilterBase):
 
 
 class ExtKalmanFilterGyroModel(KalmanFilterBase):
+    """Kalman filter for the gyromoment model, using p, e, lambda, f and b as output"""
 
     def __init__(self, init_state, init_cov_matrix):
-        super().__init__(init_state, init_cov_matrix, ModelType.GYROMOMENT)
+        super().__init__(init_state, init_cov_matrix, ModelType.GYROMOMENT, 5)
 
     def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
         self.timeStep = stepSize
@@ -447,6 +448,89 @@ class ExtKalmanFilterGyroModel(KalmanFilterBase):
         x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
         return x_estimated_state, u_with_noise, y_with_noise
 
+
+class ExtKalmanFilterGyroModelOnly3(KalmanFilterBase):
+    """Kalman Filter for the Gyromoment model, using only the 3 angles as output"""
+
+    def __init__(self, init_state, init_cov_matrix):
+        super().__init__(init_state, init_cov_matrix, ModelType.GYROMOMENT, 3)
+
+    def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
+        self.timeStep = stepSize
+        return
+
+    def get_linear_discrete_matrices(self, operating_point, v_f, v_b):
+        """Linearizes and discretizes the current system model at the operating point
+        and saves it for calc_observation
+        :arg operating_point: 8-element-state vector"""
+
+        At, Bt = get_gyro_matrices(operating_point, v_f, v_b, self.dynamic_inertia)
+        Ct = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 1, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 1, 0, 0, 0, 0, 0]])
+        Dt = np.array([[0, 0],
+                      [0, 0],
+                      [0, 0]])
+
+        Ak, Bk, Ck, Dk = discretize_linear_state_space(At, Bt, Ct, Dt, self.timeStep)
+        return Ak, Bk, Ck, Dk
+
+    def rhs_time_continuous(self, t, x, v_f, v_b):
+        """Attention: think of v_f and v_b instead of v_s and v_d"""
+        p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+        J_p, J_e, J_l = getInertia(x, self.dynamic_inertia)
+
+        df_speed = - f_speed / mc.T_f + mc.K_f / mc.T_f * v_f
+        db_speed = - b_speed / mc.T_b + mc.K_b/mc.T_b * v_b
+        ddp = 1/J_p*(L1*mc.K * (f_speed - b_speed) - mc.d_p * dp + J_p * np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) \
+                + np.cos(p) * de * mc.J_m *(b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed) * dlamb)
+        dde = 1/J_e *(L2 * np.cos(e) + L3*mc.K * np.cos(p) * (f_speed + b_speed) - mc.d_e * de - J_e * np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed) \
+                + np.cos(p) * dp * mc.J_m * (f_speed -b_speed) + np.sin(e) * np.cos(p) * dlamb * mc.J_m *(b_speed - f_speed))
+        ddlamb = 1/J_l * (L4*mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) - mc.d_l * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)\
+                + np.sin(p) * np.cos(e) * dp * mc.J_m *(f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m *(f_speed - b_speed))
+        return np.array([dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed])
+
+    def ekf_algorithm(self, u, y):
+        """Computes the estimated state using the ekf algorithm.
+        :arg u: input signal with noise (Dimension: 2x1)
+        :arg y: output signal with noise (Dimension: 3x1)"""
+        x_est_before = self.x_estimated_state
+        cov_matrix_before = self.cov_matrix
+        #     1. Prediction
+        # predict the state by integrate the time continuous system numerically
+        tt = np.linspace(0, self.timeStep, 2)
+        sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs_time_continuous(t, x, u[0][0], u[1][0]),
+                                        (0, self.timeStep), np.resize(x_est_before, (1, 8))[0],
+                                        method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9)
+        x_est_predict = np.resize(sol.y[:, -1], (8, 1))
+        # predict the new covariance by linearizing and discretizing the model
+        Ak, Bk, Ck, Dk = self.get_linear_discrete_matrices(x_est_before, u[0][0], u[1][0])
+        cov_matrix_predict = Ak @ cov_matrix_before @ np.transpose(Ak) + Bk @ self.N @ np.transpose(Bk)
+
+        #     2. Update
+        # compute kalman gain
+        Kl = cov_matrix_predict @ np.transpose(Ck) @ np.linalg.inv(Ck @ cov_matrix_predict @ np.transpose(Ck) + self.W)
+        # update state
+        y_est = x_est_predict[0:3, ]
+        x_est_update = x_est_predict + Kl @ (y - y_est)
+        # update covariance matrix (identity matrix must have as many lines as the Kalman gain
+        cov_matrix_update = (np.eye(np.size(Kl, 0)) - Kl @ Ck) @ cov_matrix_predict
+        self.x_estimated_state = x_est_update
+        self.cov_matrix = cov_matrix_update
+        # print("------")
+        # print(cov_matrix_predict)
+        return x_est_update
+
+    def calc_observation(self, t, x, u):
+        # 1. add noise to input and output
+        u_with_noise = self.get_noisy_input_of_system(u)
+        y_with_noise = self.get_noisy_output_of_system(x[0:3])
+        # 2. execute ekf algorithm
+        x_estimated_state = self.ekf_algorithm(np.resize(u_with_noise, (2, 1)), np.resize(y_with_noise, (3, 1)))
+        # 3. add two zero elements at the end of the state vector and at the end of the y_with_noise_vector
+        x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
+        y_with_noise = np.pad(y_with_noise, (0, 2), "constant")
+        return x_estimated_state, u_with_noise, y_with_noise
 
 
 class LinearKalmanFilter(Observer):
