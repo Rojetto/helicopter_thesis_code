@@ -15,9 +15,9 @@ L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
 L3 = mc.l_h
 L4 = mc.l_h
 
-Jp = 2 * mc.m_p * mc.l_p ** 2
-Je = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
-Jl = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
+Jp_static = 2 * mc.m_p * mc.l_p ** 2
+Je_static = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
+Jl_static = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
 
 
 def getLinearizedMatrices(model_type: ModelType, operating_point, Vf_op, Vb_op):
@@ -39,29 +39,56 @@ def getLinearizedMatrices(model_type: ModelType, operating_point, Vf_op, Vb_op):
                       [0, 0, 0, 0, 1, 0],
                       [0, 0, 0, 0, 0, 1],
                       [0, 0, 0, 0, 0, 0],
-                      [-L3 * Vs_op * sin(p_op) / Je, -L2 * sin(e_op) / Je, 0, 0, 0, 0],
-                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl, 0, 0, 0, 0, 0]])
+                      [-L3 * Vs_op * sin(p_op) / Je_static, -L2 * sin(e_op) / Je_static, 0, 0, 0, 0],
+                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl_static, 0, 0, 0, 0, 0]])
     elif model_type == ModelType.FRICTION:
         A = np.array([[0, 0, 0, 1, 0, 0],
                       [0, 0, 0, 0, 1, 0],
                       [0, 0, 0, 0, 0, 1],
-                      [0, 0, 0, -mc.d_p / Jp, 0, 0],
-                      [-L3 * Vs_op * sin(p_op) / Je, -L2 * sin(e_op) / Je, 0, 0, -mc.d_e / Je, 0],
-                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl, -L4 * Vs_op * sin(p_op) * sin(e_op) / Jl, 0, 0, 0, -mc.d_l / Jl]])
+                      [0, 0, 0, -mc.d_p / Jp_static, 0, 0],
+                      [-L3 * Vs_op * sin(p_op) / Je_static, -L2 * sin(e_op) / Je_static, 0, 0, -mc.d_e / Je_static, 0],
+                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl_static, -L4 * Vs_op * sin(p_op) * sin(e_op) / Jl_static, 0, 0, 0, -mc.d_l / Jl_static]])
     elif model_type == ModelType.CENTRIPETAL:
         A = np.array([[0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1],
-                      [-(de_op ** 2 - dlamb_op ** 2 * cos(e_op) ** 2) * sin(p_op) ** 2 + (de_op ** 2 - dlamb_op ** 2 * cos(e_op) ** 2) * cos(p_op) ** 2, 2 * dlamb_op ** 2 * sin(p_op) * sin(e_op) * cos(p_op) * cos(e_op), 0, -mc.d_p / Jp, 2 * de_op * sin(p_op) * cos(p_op), -2 * dlamb_op * sin(p_op) * cos(p_op) * cos(e_op) ** 2],
-                      [-L3 * Vs_op * sin(p_op) / Je, dlamb_op ** 2 * sin(e_op) ** 2 - dlamb_op ** 2 * cos(e_op) ** 2 - L2 * sin(e_op) / Je, 0, 0, -mc.d_e / Je, -2 * dlamb_op * sin(e_op) * cos(e_op)],
-                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl, -L4 * Vs_op * sin(p_op) * sin(e_op) / Jl, 0, 0, 0, -mc.d_l / Jl]])
+                      [-(de_op ** 2 - dlamb_op ** 2 * cos(e_op) ** 2) * sin(p_op) ** 2 + (de_op ** 2 - dlamb_op ** 2 * cos(e_op) ** 2) * cos(p_op) ** 2, 2 * dlamb_op ** 2 * sin(p_op) * sin(e_op) * cos(p_op) * cos(e_op), 0, -mc.d_p / Jp_static, 2 * de_op * sin(p_op) * cos(p_op), -2 * dlamb_op * sin(p_op) * cos(p_op) * cos(e_op) ** 2],
+                      [-L3 * Vs_op * sin(p_op) / Je_static, dlamb_op ** 2 * sin(e_op) ** 2 - dlamb_op ** 2 * cos(e_op) ** 2 - L2 * sin(e_op) / Je_static, 0, 0, -mc.d_e / Je_static, -2 * dlamb_op * sin(e_op) * cos(e_op)],
+                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl_static, -L4 * Vs_op * sin(p_op) * sin(e_op) / Jl_static, 0, 0, 0, -mc.d_l / Jl_static]])
 
     B = np.array([[0, 0],
                   [0, 0],
                   [0, 0],
-                  [L1 / Jp, -L1 / Jp],
-                  [L3 / Je * cos(p_op), L3 / Je * cos(p_op)],
-                  [L4 * sin(p_op) * cos(e_op) / Jl, L4 * sin(p_op) * cos(e_op) / Jl]])
+                  [L1 / Jp_static, -L1 / Jp_static],
+                  [L3 / Je_static * cos(p_op), L3 / Je_static * cos(p_op)],
+                  [L4 * sin(p_op) * cos(e_op) / Jl_static, L4 * sin(p_op) * cos(e_op) / Jl_static]])
 
     return A, B, Vf_op, Vb_op
+
+def get_gyro_matrices(operating_point, v_f, v_b, dynamic_inertia):
+    """":arg operating point: 8-element-vector
+    :arg v_f, v_b: operating point input values
+    :arg dynamic_inertia: False ==> static inertia, True ==> dynamic inertia
+    :return A, B"""
+    if dynamic_inertia:
+        raise NotImplementedError("Dynamic Torque is not implemented for the kalman filter yet")
+    p, e, lamb, dp, de, dlamb, f_speed, b_speed = operating_point
+
+    A = np.array([[0, 0, 0, 1, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 1, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 1, 0, 0],
+                  [(-mc.J_m*de*(b_speed - f_speed)*np.sin(p) + mc.J_m*dlamb*(-b_speed + f_speed)*np.cos(e)*np.cos(p) - Jp_static*(de**2 - dlamb**2*np.cos(e)**2)*np.sin(p)**2 + Jp_static*(de**2 - dlamb**2*np.cos(e)**2)*np.cos(p)**2)/Jp_static, (-mc.J_m*dlamb*(-b_speed + f_speed)*np.sin(e)*np.sin(p) + 2*Jp_static*dlamb**2*np.sin(e)*np.sin(p)*np.cos(e)*np.cos(p))/Jp_static, 0, -mc.d_p/Jp_static, (mc.J_m*(b_speed - f_speed)*np.cos(p) + 2*Jp_static*de*np.sin(p)*np.cos(p))/Jp_static, (mc.J_m*(-b_speed + f_speed)*np.sin(p)*np.cos(e) - 2*Jp_static*dlamb*np.sin(p)*np.cos(e)**2*np.cos(p))/Jp_static, (-mc.J_m*de*np.cos(p) + mc.J_m*dlamb*np.sin(p)*np.cos(e) + mc.K*L1)/Jp_static, (mc.J_m*de*np.cos(p) - mc.J_m*dlamb*np.sin(p)*np.cos(e) - mc.K*L1)/Jp_static],
+                  [(-mc.J_m*dlamb*(b_speed - f_speed)*np.sin(e)*np.sin(p) - mc.J_m*dp*(-b_speed + f_speed)*np.sin(p) - mc.K*L3*(b_speed + f_speed)*np.sin(p) + mc.K_m*(-b_speed + f_speed)*np.cos(p))/Je_static, (Je_static*dlamb**2*np.sin(e)**2 - Je_static*dlamb**2*np.cos(e)**2 + mc.J_m*dlamb*(b_speed - f_speed)*np.cos(e)*np.cos(p) - L2*np.sin(e))/Je_static, 0, mc.J_m*(-b_speed + f_speed)*np.cos(p)/Je_static, -mc.d_e/Je_static, (-2*Je_static*dlamb*np.sin(e)*np.cos(e) + mc.J_m*(b_speed - f_speed)*np.sin(e)*np.cos(p))/Je_static, (-mc.J_m*dlamb*np.sin(e)*np.cos(p) + mc.J_m*dp*np.cos(p) + mc.K*L3*np.cos(p) + mc.K_m*np.sin(p))/Je_static, (mc.J_m*dlamb*np.sin(e)*np.cos(p) - mc.J_m*dp*np.cos(p) + mc.K*L3*np.cos(p) - mc.K_m*np.sin(p))/Je_static],
+                  [(mc.J_m*dlamb*(-b_speed + f_speed)*np.cos(e)*np.cos(p) + mc.J_m*dp*(-b_speed + f_speed)*np.cos(e)*np.cos(p) + mc.K*L4*(b_speed + f_speed)*np.cos(e)*np.cos(p) - mc.K_m*(b_speed - f_speed)*np.sin(p)*np.cos(e))/Jl_static, (-mc.J_m*dlamb*(-b_speed + f_speed)*np.sin(e)*np.sin(p) - mc.J_m*dp*(-b_speed + f_speed)*np.sin(e)*np.sin(p) - mc.K*L4*(b_speed + f_speed)*np.sin(e)*np.sin(p) - mc.K_m*(b_speed - f_speed)*np.sin(e)*np.cos(p))/Jl_static, 0, mc.J_m*(-b_speed + f_speed)*np.sin(p)*np.cos(e)/Jl_static, 0, (mc.J_m*(-b_speed + f_speed)*np.sin(p)*np.cos(e) - mc.d_l)/Jl_static, (mc.J_m*dlamb*np.sin(p)*np.cos(e) + mc.J_m*dp*np.sin(p)*np.cos(e) + mc.K*L4*np.sin(p)*np.cos(e) - mc.K_m*np.cos(e)*np.cos(p))/Jl_static, (-mc.J_m*dlamb*np.sin(p)*np.cos(e) - mc.J_m*dp*np.sin(p)*np.cos(e) + mc.K*L4*np.sin(p)*np.cos(e) + mc.K_m*np.cos(e)*np.cos(p))/Jl_static],
+                  [0, 0, 0, 0, 0, 0, -1/mc.T_f, 0],
+                  [0, 0, 0, 0, 0, 0, 0, -1/mc.T_b]])
+    B = np.array([[0, 0],
+                  [0, 0],
+                  [0, 0],
+                  [0, 0],
+                  [0, 0],
+                  [0, 0],
+                  [mc.K_f/mc.T_f, 0],
+                  [0, mc.K_b/mc.T_b]])
+    return A, B
 
 def compute_exp_matrix_intergration(A,T,nbins=100):
     """https://math.stackexchange.com/questions/658276/integral-of-matrix-exponential"""
@@ -88,7 +115,7 @@ class Observer(object):
     """Base class for observer"""
 
     def __init__(self, init_state):
-        self.x_estimated_state = np.array(init_state)
+        self.x_estimated_state = np.resize(np.array(init_state), (np.size(init_state), 1))
 
     @abc.abstractmethod
     def calc_observation(self, t, x, u):
@@ -104,16 +131,22 @@ class Observer(object):
         return
 
     def set_estimated_state(self, x_estimated_state):
-        self.x_estimated_state = np.array(x_estimated_state)
+        self.x_estimated_state = np.resize(np.array(x_estimated_state), (8, 1))
 
 
 class KalmanFilterBase(Observer):
     """Base class for Kalman Filter. Takes care of adding noise to input and output signals.
     Uses the variable naming conventions of the lecture 'Steuerung mobiler Roboter' of Prof. Janschek"""
 
-    def __init__(self, init_state, init_cov_matrix):
+    def __init__(self, init_state, init_cov_matrix, model_type: ModelType):
+        if model_type == ModelType.EASY:
+            # delete the last two states because these are not present in the
+            init_state = init_state[0:6]
+            init_cov_matrix = init_cov_matrix[0:6, 0:6]
+
         super().__init__(init_state)
         self.cov_matrix = init_cov_matrix
+        self.model_type = model_type
 
         # set system noise parameters
         vf_var = (0.25/20) ** 2
@@ -121,11 +154,17 @@ class KalmanFilterBase(Observer):
         p_var = (1 / 180 * np.pi) ** 2
         e_var = (1 / 180 * np.pi) ** 2
         lamb_var = (1 / 180 * np.pi) ** 2
+        f_var = (1 / 180 * np.pi) ** 2
+        b_var = (1 / 180 * np.pi) ** 2
         # N is the covariance matrix of the input signals. 2 inputs ==> N is a 2x2 matrix
         # Assuming white noise
         self.N = np.diag([vf_var, vb_var])
-        # W is the covariance matrix of the output signals. 3 outputs ==> W is a 3x3 matrix
-        self.W = np.diag([p_var, e_var, lamb_var])
+        if self.model_type == ModelType.EASY:
+            # W is the covariance matrix of the output signals. 3 outputs ==> W is a 3x3 matrix
+            self.W = np.diag([p_var, e_var, lamb_var])
+        elif self.model_type == ModelType.GYROMOMENT:
+            # 5 Output signals ==> W is a 5x5 matrix
+            self.W = np.diag([p_var, e_var, lamb_var, f_var, b_var])
         # Assuming NO PROCESS NOISE
 
         self.bNoise = True
@@ -158,7 +197,6 @@ class KalmanFilterBase(Observer):
     def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
         """Sets the current model"""
         return
-
 
 
     @abc.abstractmethod
@@ -203,6 +241,13 @@ class TestKalmanFilter(KalmanFilterBase):
 class ExtKalmanFilterEasyModel(KalmanFilterBase):
     """Extended Kalman filter for the easy model without angle limiting"""
 
+    def __init__(self, init_state, init_cov_matrix):
+        super().__init__(init_state, init_cov_matrix, ModelType.EASY)
+
+    def set_estimated_state(self, x_estimated_state):
+        x_estimated_state = x_estimated_state[0:6]
+        super().set_estimated_state(x_estimated_state)
+
     def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
         self.timeStep = stepSize
         return
@@ -225,9 +270,9 @@ class ExtKalmanFilterEasyModel(KalmanFilterBase):
 
     def rhs_time_continuous(self, t, x, v_s, v_d):
         p, e, lamb, dp, de, dlamb = x
-        ddp = (L1 / Jp) * v_d
-        dde = (L2 / Je) * np.cos(e) + (L3 / Je) * np.cos(p) * v_s
-        ddlamb = (L4 / Jl) * np.cos(e) * np.sin(p) * v_s
+        ddp = (L1 / Jp_static) * v_d
+        dde = (L2 / Je_static) * np.cos(e) + (L3 / Je_static) * np.cos(p) * v_s
+        ddlamb = (L4 / Jl_static) * np.cos(e) * np.sin(p) * v_s
         return np.array([dp, de, dlamb, ddp, dde, ddlamb])
 
     def ekf_algorithm(self, u, y):
@@ -276,6 +321,88 @@ class ExtKalmanFilterEasyModel(KalmanFilterBase):
 
 
 
+class ExtKalmanFilterGyroModel(KalmanFilterBase):
+
+    def __init__(self, init_state, init_cov_matrix):
+        super().__init__(init_state, init_cov_matrix, ModelType.GYROMOMENT)
+
+    def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
+        self.timeStep = stepSize
+        return
+
+    def get_linear_discrete_matrices(self, operating_point, v_f, v_b):
+        """Linearizes and discretizes the current system model at the operating point
+        and saves it for calc_observation
+        :arg operating_point: 8-element-state vector"""
+
+        At, Bt = get_gyro_matrices(operating_point, v_f, v_b, False)
+        Ct = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 1, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 1, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 1, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 1]])
+        Dt = np.array([[0, 0],
+                      [0, 0],
+                      [0, 0],
+                      [0, 0],
+                      [0, 0]])
+
+        Ak, Bk, Ck, Dk = discretize_linear_state_space(At, Bt, Ct, Dt, self.timeStep)
+        return Ak, Bk, Ck, Dk
+
+    def rhs_time_continuous(self, t, x, v_f, v_b):
+        """Attention: think of v_f and v_b instead of v_s and v_d"""
+        p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+        df_speed = - f_speed / mc.T_f + mc.K_f / mc.T_f * v_f
+        db_speed = - b_speed / mc.T_b + mc.K_b/mc.T_b * v_b
+        ddp = 1/Jp_static*(L1*mc.K * (f_speed - b_speed) - mc.d_p * dp + Jp_static * np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) \
+                + np.cos(p) * de * mc.J_m *(b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed) * dlamb)
+        dde = 1/Je_static *(L2 * np.cos(e) + L3*mc.K * np.cos(p) * (f_speed + b_speed) - mc.d_e * de - Je_static * np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed) \
+                + np.cos(p) * dp * mc.J_m * (f_speed -b_speed) + np.sin(e) * np.cos(p) * dlamb * mc.J_m *(b_speed - f_speed))
+        ddlamb = 1/Jl_static * (L4*mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) - mc.d_l * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)\
+                + np.sin(p) * np.cos(e) * dp * mc.J_m *(f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m *(f_speed - b_speed))
+        return np.array([dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed])
+
+    def ekf_algorithm(self, u, y):
+        """Computes the estimated state using the ekf algorithm.
+        :arg u: input signal with noise (Dimension: 2x1)
+        :arg y: output signal with noise (Dimension: 3x1)"""
+        x_est_before = self.x_estimated_state
+        cov_matrix_before = self.cov_matrix
+        #     1. Prediction
+        # predict the state by integrate the time continuous system numerically
+        tt = np.linspace(0, self.timeStep, 2)
+        sol = scipy.integrate.solve_ivp(lambda t, x: self.rhs_time_continuous(t, x, u[0][0], u[1][0]),
+                                        (0, self.timeStep), np.resize(x_est_before, (1, 8))[0],
+                                        method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9)
+        x_est_predict = np.resize(sol.y[:, -1], (8, 1))
+        # predict the new covariance by linearizing and discretizing the model
+        Ak, Bk, Ck, Dk = self.get_linear_discrete_matrices(x_est_before, u[0][0], u[1][0])
+        cov_matrix_predict = Ak @ cov_matrix_before @ np.transpose(Ak) + Bk @ self.N @ np.transpose(Bk)
+
+        #     2. Update
+        # compute kalman gain
+        Kl = cov_matrix_predict @ np.transpose(Ck) @ np.linalg.inv(Ck @ cov_matrix_predict @ np.transpose(Ck) + self.W)
+        # update state
+        y_est = np.concatenate((x_est_predict[0:3], x_est_predict[6:8]))
+        x_est_update = x_est_predict + Kl @ (y - y_est)
+        # update covariance matrix (identity matrix must have as many lines as the Kalman gain
+        cov_matrix_update = (np.eye(np.size(Kl, 0)) - Kl @ Ck) @ cov_matrix_predict
+        self.x_estimated_state = x_est_update
+        self.cov_matrix = cov_matrix_update
+        # print("------")
+        # print(cov_matrix_predict)
+        return x_est_update
+
+    def calc_observation(self, t, x, u):
+        # 1. add noise to input and output
+        u_with_noise = self.get_noisy_input_of_system(u)
+        y_with_noise = self.get_noisy_output_of_system(np.concatenate((x[0:3], x[6:8])))
+        # 2. execute ekf algorithm
+        x_estimated_state = self.ekf_algorithm(np.resize(u_with_noise, (2, 1)), np.resize(y_with_noise, (5, 1)))
+        # 3. add two zero elements at the end of the state vector
+        x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
+        return x_estimated_state, u_with_noise, y_with_noise
 
 
 

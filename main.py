@@ -207,7 +207,7 @@ class mainWindow(Qt.QMainWindow):
         orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(),
                                 self.init_travel_edit.value()])
         orientation = orientation / 180.0 * np.pi
-        self.observer_initial_value = [orientation[0], orientation[1], orientation[2], 0, 0, 0]
+        self.observer_initial_value = [orientation[0], orientation[1], orientation[2], 0, 0, 0, 0, 0]
         self.heliModelEst.setState(orientation[2], orientation[1], orientation[0])
 
     def on_show_estimated_state_click(self):
@@ -236,7 +236,8 @@ class mainWindow(Qt.QMainWindow):
         self.disturbance = self.disturbance_frame.get_disturbance()
         self.observer = self.observer_frame.get_observer()
         self.observer.set_system_model_and_step_size(self.heliSim.get_model_type(), self.timeStep)
-        self.observer.set_estimated_state(self.observer_initial_value)
+        if self.observer_initial_value is not None:
+            self.observer.set_estimated_state(self.observer_initial_value)
         self.feedforward_method,  self.feedforward_model = self.feedforward_frame.get_feedforward_method_and_model()
 
         self.sim_running = True

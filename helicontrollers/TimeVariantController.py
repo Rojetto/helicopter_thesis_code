@@ -61,6 +61,7 @@ def getLinearizedMatrices(model_type: ModelType, operating_point, Vf_op, Vb_op):
 
     return A, B, Vf_op, Vb_op
 
+
 def get_p_and_first_derivative(model_type: ModelType, e_and_derivatives, lambda_and_derivatives):
     if model_type == ModelType.EASY:
         return get_p_and_first_derivative_simple(model_type, e_and_derivatives, lambda_and_derivatives)
