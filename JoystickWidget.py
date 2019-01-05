@@ -133,7 +133,9 @@ class JoystickWidget(QWidget):
         return real_x, real_y
 
     def reset_pos(self):
-        self.x_pos, self.y_pos = self.real_to_virtual(0, 0)
+        x, y = self.real_to_virtual(0, 0)
+        self.set_x_pos(x)
+        self.set_y_pos(y)
 
     def mouseMoveEvent(self, e: QMouseEvent):
         mouse_x = e.pos().x()

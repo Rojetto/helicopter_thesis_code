@@ -1,4 +1,7 @@
 import matplotlib
+
+from JoystickWidget import JoystickWidget
+
 matplotlib.use('Qt5Agg')
 import time
 
@@ -11,6 +14,7 @@ from helicontrollers.CascadePidController import CascadePidController
 from helicontrollers.LqrController import LqrController
 from helicontrollers.QuasistaticFlatnessController import QuasistaticFlatnessController
 from helicontrollers.FeedbackLinearizationController import FeedbackLinearizationController
+from helicontrollers.InteractiveController import InteractiveController
 
 from ControllerFrame import ControllerFrame
 from ModelFrame import ModelFrame
@@ -65,6 +69,16 @@ class mainWindow(QtWidgets.QMainWindow):
         self.sim_running = False
         self.log_enabled = False
 
+        # Open separate window for joystick widget
+        joystick_window = QtWidgets.QMainWindow(self)
+        joystick_window.setWindowTitle("Joystick")
+        # Remove title bar buttons
+        joystick_window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowTitleHint | QtCore.Qt.CustomizeWindowHint)
+        joystick_widget = JoystickWidget()
+        joystick_window.setCentralWidget(joystick_widget)
+        joystick_window.resize(400, 400)
+        joystick_window.show()
+
         # Initialize helicopter model
         self.heliModel = HelicopterModel()
         self.heliModel.addAllActors(vtk_renderer)
@@ -77,7 +91,8 @@ class mainWindow(QtWidgets.QMainWindow):
         # Initialize controller and kalman filter
         self.current_controller = None
         self.kalmanObj = HeliKalmanFilter()
-        controller_list = [ManualController(), PolePlacementController(), LqrController(), DirectPidController(),
+        controller_list = [ManualController(), InteractiveController(joystick_widget), PolePlacementController(),
+                           LqrController(), DirectPidController(),
                            CascadePidController(), TimeVariantController(), QuasistaticFlatnessController(),
                            FeedbackLinearizationController()]
 
