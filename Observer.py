@@ -148,14 +148,29 @@ class KalmanFilterBase(Observer):
         self.cov_matrix = init_cov_matrix
         self.model_type = model_type
 
+        self.bInputNoise = True
+        self.bOutputNoise = True
+
         # set system noise parameters
-        vf_var = (0.25/20) ** 2
-        vb_var = (0.25/20) ** 2
-        p_var = (1 / 180 * np.pi) ** 2
-        e_var = (1 / 180 * np.pi) ** 2
-        lamb_var = (1 / 180 * np.pi) ** 2
-        f_var = (1 / 180 * np.pi) ** 2
-        b_var = (1 / 180 * np.pi) ** 2
+        if self.bInputNoise:
+            vf_var = (0.25/50) ** 2
+            vb_var = (0.25/50) ** 2
+        else:
+            vf_var = 0
+            vb_var = 0
+        if self.bOutputNoise:
+            p_var = (0.5 / 180 * np.pi) ** 2
+            e_var = (0.5 / 180 * np.pi) ** 2
+            lamb_var = (0.5 / 180 * np.pi) ** 2
+            f_var = (0.5 / 180 * np.pi) ** 2
+            b_var = (0.5 / 180 * np.pi) ** 2
+        else:
+            # if W is singular, then the matrix to be inversed can happen to be the 0-Matrix
+            p_var = (0.00001 / 180 * np.pi) ** 2
+            e_var = (0.00001 / 180 * np.pi) ** 2
+            lamb_var = (0.00001 / 180 * np.pi) ** 2
+            f_var = (0.00001 / 180 * np.pi) ** 2
+            b_var = (0.00001 / 180 * np.pi) ** 2
         # N is the covariance matrix of the input signals. 2 inputs ==> N is a 2x2 matrix
         # Assuming white noise
         self.N = np.diag([vf_var, vb_var])
@@ -167,17 +182,25 @@ class KalmanFilterBase(Observer):
             self.W = np.diag([p_var, e_var, lamb_var, f_var, b_var])
         # Assuming NO PROCESS NOISE
 
-        self.bNoise = True
         return
 
     def get_noisy_output_of_system(self, y_without_noise):
         """Adds gaussian (white) noise to the output signals
         :arg y_without_noise: n-d-array with 3 elements (p, e, lambda). Dimension: 1x3"""
-        y_with_noise = np.zeros(3)
-        if self.bNoise:
-            y_with_noise[0] = y_without_noise[0] + np.random.normal(0, np.sqrt(self.W[0][0]), 1)[0]
-            y_with_noise[1] = y_without_noise[1] + np.random.normal(0, np.sqrt(self.W[1][1]), 1)[0]
-            y_with_noise[2] = y_without_noise[2] + np.random.normal(0, np.sqrt(self.W[2][2]), 1)[0]
+        # There were some problems with copying the array data so I just wrote a copy command for every single line
+        if self.bOutputNoise:
+            if self.model_type == ModelType.EASY:
+                y_with_noise = np.zeros(3)
+                y_with_noise[0] = y_without_noise[0] + np.random.normal(0, np.sqrt(self.W[0][0]), 1)[0]
+                y_with_noise[1] = y_without_noise[1] + np.random.normal(0, np.sqrt(self.W[1][1]), 1)[0]
+                y_with_noise[2] = y_without_noise[2] + np.random.normal(0, np.sqrt(self.W[2][2]), 1)[0]
+            elif self.model_type == ModelType.GYROMOMENT:
+                y_with_noise = np.zeros(5)
+                y_with_noise[0] = y_without_noise[0] + np.random.normal(0, np.sqrt(self.W[0][0]), 1)[0]
+                y_with_noise[1] = y_without_noise[1] + np.random.normal(0, np.sqrt(self.W[1][1]), 1)[0]
+                y_with_noise[2] = y_without_noise[2] + np.random.normal(0, np.sqrt(self.W[2][2]), 1)[0]
+                y_with_noise[3] = y_without_noise[3] + np.random.normal(0, np.sqrt(self.W[2][2]), 1)[0]
+                y_with_noise[4] = y_without_noise[4] + np.random.normal(0, np.sqrt(self.W[2][2]), 1)[0]
         else:
             y_with_noise = y_without_noise
         return y_with_noise
@@ -186,7 +209,7 @@ class KalmanFilterBase(Observer):
         """Adds gaussian (white) noise to the input signals
         :arg u_without_noise: n-d-array with 2 elements (Vf, Vb). Dimension: 2x1"""
         u_with_noise = np.zeros(2)
-        if self.bNoise:
+        if self.bInputNoise:
             u_with_noise[0] = u_without_noise[0] + np.random.normal(0, np.sqrt(self.N[0][0]), 1)[0]
             u_with_noise[1] = u_without_noise[1] + np.random.normal(0, np.sqrt(self.N[1][1]), 1)[0]
         else:
@@ -214,10 +237,15 @@ class KalmanFilterBase(Observer):
 
 
 class NoKalmanFilter(KalmanFilterBase):
+
+    def __init__(self, init_state, init_cov_matrix):
+        super().__init__(init_state, init_cov_matrix, ModelType.EASY)
+
     def calc_observation(self, t, x, u):
         # add noise to input and output
         u_with_noise = self.get_noisy_input_of_system(u)
         y_with_noise = self.get_noisy_output_of_system(x[0:3])
+        y_with_noise = np.pad(y_with_noise, (0, 2), "constant")
         return np.zeros(8), u_with_noise, y_with_noise
 
     def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
@@ -317,6 +345,7 @@ class ExtKalmanFilterEasyModel(KalmanFilterBase):
         # 3. add two zero elements at the end of the state vector
         x_estimated_state = np.resize(x_estimated_state, (1, 6))[0]
         x_estimated_state = np.pad(x_estimated_state, (0, 2), "constant")
+        y_with_noise = np.pad(y_with_noise, (0, 2), "constant")
         return x_estimated_state, u_with_noise, y_with_noise
 
 
@@ -400,7 +429,7 @@ class ExtKalmanFilterGyroModel(KalmanFilterBase):
         y_with_noise = self.get_noisy_output_of_system(np.concatenate((x[0:3], x[6:8])))
         # 2. execute ekf algorithm
         x_estimated_state = self.ekf_algorithm(np.resize(u_with_noise, (2, 1)), np.resize(y_with_noise, (5, 1)))
-        # 3. add two zero elements at the end of the state vector
+        # 3. add two zero elements at the end of the state vector and at the end of the y_with_noise_vector
         x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
         return x_estimated_state, u_with_noise, y_with_noise
 
