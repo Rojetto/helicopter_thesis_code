@@ -12,6 +12,7 @@ class InputDevice(Enum):
     MOUSE = 1
     GAMEPAD_LEFT_STICK = 2
     GAMEPAD_LEFT_STICK_AND_TRIGGER = 3
+    GAMEPAD_BOTH_TRIGGERS = 4
 
 
 def clamp(value):
@@ -61,7 +62,9 @@ class JoystickWidget(QWidget):
 
     def every_dt(self):
         if self.gamepad.connected:
-            if self.gamepad.trig_right > 0:
+            if self.gamepad.trig_left > 0:
+                self.input_device = InputDevice.GAMEPAD_BOTH_TRIGGERS
+            elif self.gamepad.trig_right > 0:
                 self.input_device = InputDevice.GAMEPAD_LEFT_STICK_AND_TRIGGER
             elif abs(self.gamepad.stick_left_y) > 0.3:
                 self.input_device = InputDevice.GAMEPAD_LEFT_STICK
@@ -73,8 +76,14 @@ class JoystickWidget(QWidget):
             self.set_x_pos(self.x_pos + right_factor * self.MOVE_SPEED * self.DT)
             self.set_y_pos(self.y_pos + up_factor * self.MOVE_SPEED * self.DT)
         elif (self.input_device == InputDevice.GAMEPAD_LEFT_STICK
-              or self.input_device == InputDevice.GAMEPAD_LEFT_STICK_AND_TRIGGER):
-            in_x = self.gamepad.stick_left_x
+              or self.input_device == InputDevice.GAMEPAD_LEFT_STICK_AND_TRIGGER
+              or self.input_device == InputDevice.GAMEPAD_BOTH_TRIGGERS):
+
+            if self.input_device == InputDevice.GAMEPAD_BOTH_TRIGGERS:
+                in_x = self.gamepad.trig_left
+            else:
+                in_x = self.gamepad.stick_left_x
+
             if self.input_device == InputDevice.GAMEPAD_LEFT_STICK:
                 in_y = self.gamepad.stick_left_y
             else:
