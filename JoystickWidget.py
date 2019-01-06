@@ -3,7 +3,7 @@ from inputs import devices
 from threading import Thread
 
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import QPaintEvent, QPainter, QColor, QKeyEvent, QMouseEvent
+from PyQt5.QtGui import QPaintEvent, QPainter, QColor, QKeyEvent, QMouseEvent, QFont
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 
 
@@ -21,8 +21,8 @@ def clamp(value):
 class JoystickWidget(QWidget):
     DT = 1 / 60.0
     MOVE_SPEED = 1.0
-    GAP = 5
-    MAIN_SQUARE = 75
+    GAP = 8
+    MAIN_SQUARE = 70
 
     GAMEPAD_DEADZONE = 0.05
 
@@ -140,6 +140,13 @@ class JoystickWidget(QWidget):
         painter.restore()
 
         # sliders
+        real_x, real_y = self.virtual_to_real(self.x_pos, self.y_pos)
+        real_x_string = f"{real_x:.2f}"  # print with 2 decimal places
+        real_y_string = f"{real_y:.2f}"
+        font = QFont("Courier New", 3)
+        font.setBold(True)
+        painter.setFont(font)
+
         painter.setBrush(Qt.NoBrush)
         painter.save()
         painter.translate(self.GAP, self.GAP)
@@ -147,6 +154,8 @@ class JoystickWidget(QWidget):
         painter.drawRect(0, 0, slider_long, slider_short)
         painter.setPen(Qt.red)
         painter.drawLine(self.x_pos * slider_long, 0, self.x_pos * slider_long, slider_short)
+        painter.scale(1, -1)  # text drawing expects y to point "down"
+        painter.drawText(0, -2*slider_short - 1, slider_long, slider_short, Qt.AlignCenter, real_x_string)
         painter.restore()
 
         painter.save()
@@ -155,6 +164,9 @@ class JoystickWidget(QWidget):
         painter.drawLine(0, virtual_y_orig * slider_long, slider_short, virtual_y_orig * slider_long)
         painter.setPen(Qt.red)
         painter.drawLine(0, self.y_pos * slider_long, slider_short, self.y_pos * slider_long)
+        painter.scale(1, -1)
+        painter.rotate(-90)
+        painter.drawText(0, -slider_short - 1, slider_long, slider_short, Qt.AlignCenter, real_y_string)
         painter.restore()
 
     def keyChange(self, key, is_down):
