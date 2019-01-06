@@ -4,7 +4,7 @@ from HeliSimulation import getInertia
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from matplotlib import cm
-validation_enabled = True
+validation_enabled = False
 dl = 54
 e = 25
 
