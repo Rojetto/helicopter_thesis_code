@@ -1,6 +1,17 @@
+from enum import Enum
+from inputs import devices
+from threading import Thread
+
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPaintEvent, QPainter, QColor, QKeyEvent, QMouseEvent
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+
+
+class InputDevice(Enum):
+    KEYBOARD = 0
+    MOUSE = 1
+    GAMEPAD_LEFT_STICK = 2
+    GAMEPAD_LEFT_STICK_AND_TRIGGER = 3
 
 
 def clamp(value):
@@ -12,6 +23,8 @@ class JoystickWidget(QWidget):
     MOVE_SPEED = 1.0
     GAP = 5
     MAIN_SQUARE = 75
+
+    GAMEPAD_DEADZONE = 0.05
 
     pos_changed = pyqtSignal(float, float)
 
@@ -34,16 +47,56 @@ class JoystickWidget(QWidget):
 
         self.reset_pos()
 
+        self.input_device = InputDevice.MOUSE
+
+        self.gamepad = Gamepad()
+        if self.gamepad.connected:
+            print("Gamepad connected")
+        else:
+            print("No gamepad connected")
+
         timer = QTimer(self)
         timer.timeout.connect(self.every_dt)
         timer.start(self.DT * 1000)
 
     def every_dt(self):
-        up_factor = (1 if self.up_pressed else 0) + (-1 if self.down_pressed else 0)
-        right_factor = (1 if self.right_pressed else 0) + (-1 if self.left_pressed else 0)
+        if self.gamepad.connected:
+            if self.gamepad.trig_right > 0:
+                self.input_device = InputDevice.GAMEPAD_LEFT_STICK_AND_TRIGGER
+            elif abs(self.gamepad.stick_left_y) > 0.3:
+                self.input_device = InputDevice.GAMEPAD_LEFT_STICK
 
-        self.set_x_pos(self.x_pos + right_factor * self.MOVE_SPEED * self.DT)
-        self.set_y_pos(self.y_pos + up_factor * self.MOVE_SPEED * self.DT)
+        if self.input_device == InputDevice.KEYBOARD:
+            up_factor = (1 if self.up_pressed else 0) + (-1 if self.down_pressed else 0)
+            right_factor = (1 if self.right_pressed else 0) + (-1 if self.left_pressed else 0)
+
+            self.set_x_pos(self.x_pos + right_factor * self.MOVE_SPEED * self.DT)
+            self.set_y_pos(self.y_pos + up_factor * self.MOVE_SPEED * self.DT)
+        elif (self.input_device == InputDevice.GAMEPAD_LEFT_STICK
+              or self.input_device == InputDevice.GAMEPAD_LEFT_STICK_AND_TRIGGER):
+            in_x = self.gamepad.stick_left_x
+            if self.input_device == InputDevice.GAMEPAD_LEFT_STICK:
+                in_y = self.gamepad.stick_left_y
+            else:
+                in_y = self.gamepad.trig_right
+
+            in_x = in_x if abs(in_x) > self.GAMEPAD_DEADZONE else 0
+            in_y = in_y if abs(in_y) > self.GAMEPAD_DEADZONE else 0
+
+            virtual_x_orig, virtual_y_orig = self.real_to_virtual(0, 0)
+
+            if in_x > 0:
+                virtual_x = virtual_x_orig + (1 - virtual_x_orig) * in_x
+            else:
+                virtual_x = virtual_x_orig + virtual_x_orig * in_x
+
+            if in_y > 0:
+                virtual_y = virtual_y_orig + (1 - virtual_y_orig) * in_y
+            else:
+                virtual_y = virtual_y_orig + virtual_y_orig * in_y
+
+            self.set_x_pos(virtual_x)
+            self.set_y_pos(virtual_y)
 
         self.update()
 
@@ -105,6 +158,8 @@ class JoystickWidget(QWidget):
         painter.restore()
 
     def keyChange(self, key, is_down):
+        self.input_device = InputDevice.KEYBOARD
+
         if key == Qt.Key_Up or key == Qt.Key_W:
             self.up_pressed = is_down
         elif key == Qt.Key_Down or key == Qt.Key_S:
@@ -138,6 +193,8 @@ class JoystickWidget(QWidget):
         self.set_y_pos(y)
 
     def mouseMoveEvent(self, e: QMouseEvent):
+        self.input_device = InputDevice.MOUSE
+
         mouse_x = e.pos().x()
         mouse_y = e.pos().y()
 
@@ -150,6 +207,10 @@ class JoystickWidget(QWidget):
 
         y_m = -100.0 / (self.MAIN_SQUARE * side)
         self.set_y_pos(mouse_y * y_m - (y_orig + (self.GAP + self.MAIN_SQUARE) * side / 100.0) * y_m)
+
+    def mouseReleaseEvent(self, e: QMouseEvent):
+        self.input_device = InputDevice.MOUSE
+        self.reset_pos()
 
     def set_x_pos(self, new_x_pos):
         clamped = clamp(new_x_pos)
@@ -166,3 +227,85 @@ class JoystickWidget(QWidget):
             self.y_pos = clamped
             real_x, real_y = self.virtual_to_real(self.x_pos, self.y_pos)
             self.pos_changed.emit(real_x, real_y)
+
+
+class Gamepad:
+    def __init__(self):
+        self.connected = False
+        self.device = None
+
+        self.btn_a_down = False
+        self.btn_a_pressed = False
+        self.btn_b_down = False
+        self.btn_b_pressed = False
+        self.btn_x_down = False
+        self.btn_x_pressed = False
+        self.btn_y_down = False
+        self.btn_y_pressed = False
+
+        self.trig_right = 0
+        self.trig_left = 0
+
+        self.stick_left_x = 0
+        self.stick_left_y = 0
+        self.stick_right_x = 0
+        self.stick_right_y = 0
+
+        connected_gamepads = devices.gamepads
+        if len(connected_gamepads) > 0:
+            self.device = connected_gamepads[0]
+            self.connected = True
+
+        self.thread = Thread(target=self._read_event_loop)
+        self.thread.start()
+
+    def _read_event_loop(self):
+        if not self.connected:
+            return
+
+        while True:
+            # This "read" call blocks when there are no queued events
+            events = self.device.read()
+            for e in events:
+                code = e.code
+                val = e.state
+
+                if code == "BTN_SOUTH":
+                    if val and not self.btn_a_down:
+                        self.btn_a_pressed = True
+                    self.btn_a_down = val == 1
+                if code == "BTN_EAST":
+                    if val and not self.btn_b_down:
+                        self.btn_b_pressed = True
+                    self.btn_b_down = val == 1
+                if code == "BTN_WEST":
+                    if val and not self.btn_x_down:
+                        self.btn_x_pressed = True
+                    self.btn_x_down = val == 1
+                if code == "BTN_NORTH":
+                    if val and not self.btn_y_down:
+                        self.btn_y_pressed = True
+                    self.btn_y_down = val == 1
+
+                if code == "ABS_Z":
+                    self.trig_left = val / 255.0
+                if code == "ABS_RZ":
+                    self.trig_right = val / 255.0
+
+                if code == "ABS_X":
+                    self.stick_left_x = val / 32768.0
+                if code == "ABS_Y":
+                    self.stick_left_y = val / 32768.0
+                if code == "ABS_RX":
+                    self.stick_right_x = val / 32768.0
+                if code == "ABS_RY":
+                    self.stick_right_y = val / 32768.0
+
+    def reset_pressed(self):
+        """
+        Reset all "pressed" variables to False so that you get accurate values in the next frame
+        """
+        self.btn_a_pressed = False
+        self.btn_b_pressed = False
+        self.btn_x_pressed = False
+        self.btn_y_pressed = False

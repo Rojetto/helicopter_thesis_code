@@ -1,13 +1,10 @@
 import matplotlib
-
-from JoystickWidget import JoystickWidget
-
 matplotlib.use('Qt5Agg')
-import time
-
+import os
 
 import logger
 import zentripedal_validation as val
+from JoystickWidget import JoystickWidget
 from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static, compute_feed_forward_flatness
 from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
@@ -346,4 +343,5 @@ class mainWindow(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     window = mainWindow()
-    sys.exit(app.exec_())
+    result = app.exec_()
+    os._exit(result)  # hard kill because the gamepad thread might block
