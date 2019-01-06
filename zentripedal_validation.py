@@ -4,7 +4,9 @@ from HeliSimulation import getInertia
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from matplotlib import cm
-validation_enabled = False
+validation_enabled = True
+dl = 54
+e = 25
 
 def convV(x):
     vb = (x[0] - x[1]) / 2
@@ -25,13 +27,32 @@ def calculateInputs_DL_E(dl, e, rad=True):
     L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
     L3 = mc.l_h
     L4 = mc.l_h
-    J_p, J_e, J_l = getInertia([0, e, 0, 0, 0, 0, 0, 0], True)
+    J_p, J_e, J_l = getInertia([0, e, 0, 0, 0, 0, 0, 0], False)
 
     p = np.arctan(mc.d_l * dl * L3 / ((J_e * np.cos(e) * np.sin(e) - L2 * np.cos(e)) * L4 * np.cos(e)))
 
-    Vd = J_p * np.cos(p) * np.sin(p) * np.cos(e) * dl ** 2 / L1
+    Vd = J_p * np.cos(p) * np.sin(p) * np.cos(e)**2 * dl ** 2 / L1
 
-    Vs = (J_e * np.cos(e) * np.sin(e) * dl ** 2 - L2 * np.cos(e)) / L3 * np.cos(p)
+    Vs = (J_e * np.cos(e) * np.sin(e) * dl ** 2 - L2 * np.cos(e)) / (L3 * np.cos(p))
+    #Vs = mc.d_l * dl / (L4 * np.cos(e) * np.sin(p))
+
+
+
+    #test this function:
+    dp, de = 0,0
+    ddp = (L1 / J_p) * Vd - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dl ** 2)
+    dde = (L2 / J_e) * np.cos(e) + (L3 / J_e) * np.cos(p) * Vs - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dl ** 2
+    ddlamb = (L4 / J_l) * np.cos(e) * np.sin(p) * Vs - (mc.d_l / J_l) * dl
+
+    max_error = 2 / 180 * np.pi # rad/s^2
+    if (np.abs(ddp)>max_error) or (np.abs(dde)>max_error) or (np.abs(ddlamb)>max_error) :
+        k = 180 / np.pi
+        print(dl*k,p*k,ddp*k, dde*k, ddlamb*k) # should be zero
+        return [np.nan]*3
+
+    #k = 180 / np.pi
+    #print(dl*k,p*k,ddp*k, dde*k, ddlamb*k) # should be zero
+
 
     if not rad:
         p = p * 180 / np.pi
@@ -77,9 +98,6 @@ def calculateInputs_E_P(e, p, rad=True):
 
 if __name__ == '__main__':
 
-    res = calculateInputs_DL_E(dl=90, e=20, rad=False)
-    print(convV(res)[0:2])
-
     steps = 100
     e = np.linspace(-90, 90, steps)
     dl = np.linspace(0, 90, steps)
@@ -105,6 +123,9 @@ if __name__ == '__main__':
     ax = fig3.gca(projection='3d')
     surf = ax.plot_surface(em, dlm, Sol[:, :, 2])
     ax.set(title='p', xlabel='e', ylabel='dlamda', zlabel='p')
+
+    res = calculateInputs_DL_E(dl=54, e=25, rad=False)
+    print(convV(res)[0:2])
 
     plt.show()
 

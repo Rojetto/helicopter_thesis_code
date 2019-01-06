@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import ModelConstants as mc
 from helicontrollers.TimeVariantController import get_p_and_first_derivative
 from helicontrollers.util import ModelType
+from HeliSimulation import getInertia
 from PyQt5 import QtWidgets
 import os.path
 import pickle
@@ -22,6 +23,7 @@ e_traj_store = np.empty((current_size, 5))
 lambda_traj_store = np.empty((current_size, 5))
 planner_travel_g = 0
 planner_elevation_g = 0
+
 
 class LoggingDataV2:
     def __init__(self, ts, xs, us_ff, us_controller, e_traj_and_derivatives, lambda_traj_and_derivatives,
@@ -116,6 +118,7 @@ def reset():
 
 
 def show_plots():
+    print("Start Plotting")
     bundle = bundle_data()
     process(bundle)
 
@@ -143,131 +146,105 @@ def process(bundle: LoggingDataV2):
     # ax1.grid()
     # plt.show()
 
-    # fig = plt.figure("Total front and back rotor voltages")
-    # plt.plot(ts, us_ff[:, 0] + us_controller[:, 0])
-    # plt.plot(ts, us_ff[:, 1] + us_controller[:, 1])
-    # plt.legend(['Vf', 'Vb'])
-    # plt.grid()
-    # fig.canvas.mpl_connect('close_event', handle_close)
+    #plotMoments(bundle)
 
-    # fig = plt.figure("Feed forward and controller output")
-    # plt.plot(ts, us_ff[:, 0])
-    # plt.plot(ts, us_controller[:, 0])
-    # plt.plot(ts, us_ff[:, 1])
-    # plt.plot(ts, us_controller[:, 1])
-    # plt.legend(['Vf feed-forward', 'Vf controller', 'Vb feed-forward', 'Vb controller'])
-    # plt.grid()
-    # fig.canvas.mpl_connect('close_event', handle_close)
+    plotBasics(bundle)
 
-    # fig = plt.figure("Joint angles (deg)")
-    # p_traj = np.array([get_p_and_first_derivative(ModelType.CENTRIPETAL, e, l)[0] for (e, l) in
-    #                    zip(e_traj_and_derivatives, lambda_traj_and_derivatives)])
-    # plt.plot(ts, xs[:, 0] / np.pi * 180.0, label="p")
-    # plt.plot(ts, p_traj / np.pi * 180.0, label="p_traj")
-    # plt.plot(ts, xs[:, 1] / np.pi * 180.0, label="e")
-    # plt.plot(ts, e_traj_and_derivatives[:, 0] / np.pi * 180.0, label="e_traj")
-    # plt.plot(ts, xs[:, 2] / np.pi * 180.0, label="lambda")
-    # plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0, label="lambda_traj")
-    # plt.legend()
-    # plt.grid()
-    # fig.canvas.mpl_connect('close_event', handle_close)
+    plotValidation(bundle)
 
-    # fig = plt.figure("Rotorspeed")
-    # plt.plot(ts, xs[:, 6])
-    # plt.plot(ts, xs[:, 7])
-    # plt.legend(['f','b'])
-    # plt.grid()
-    # fig.canvas.mpl_connect('close_event', handle_close)
-    #
-    # plt.figure("Joint velocity (deg/s)")
-    # plt.plot(ts, xs[:, 3] / np.pi * 180.0)
-    # plt.plot(ts, xs[:, 4] / np.pi * 180.0)
-    # plt.plot(ts, xs[:, 5] / np.pi * 180.0)
-    # plt.legend(['dp','de','dlambda'])
-    # plt.grid()
-    #
-    # # figures to show the influence of CENTRIPETAL forces
-    #
-    # L_1 = mc.l_p
-    # L_2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
-    # L_3 = mc.l_h
-    # L_4 = mc.l_h
-    #
-    # J_p = 2 * mc.m_p * mc.l_p ** 2
-    # J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
-    # J_l = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
-    #
-    #
-    # V_s = us[:,0] + us[:,1]
-    # V_d = us[:,0] - us[:,1]
-    # p, e = xs[:,0], xs[:,1]
-    # dp, de, dlamb = xs[:,3], xs[:,4], xs[:,5]
-    #
-    # p_cor = np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) / np.pi * 180.0
-    # p_input = (L_1 / J_p) * V_d / np.pi * 180.0
-    # p_fric = -(mc.d_p / J_p) * dp / np.pi * 180.0
-    # ddp = p_input + p_fric + p_cor
-    #
-    # e_cor = - np.cos(e) * np.sin(e) * dlamb ** 2 / np.pi * 180.0
-    # e_input = (L_3 / J_e) * np.cos(p) * V_s / np.pi * 180.0
-    # e_fric = - (mc.d_e / J_e) * de / np.pi * 180.0
-    # e_grav = (L_2 / J_e) * np.cos(e) / np.pi * 180.0
-    # dde = e_grav + e_input + e_fric + e_cor
-    #
-    # plt.figure("Influence of centripetal forces at ddp (deg/s^2)")
-    # plt.plot(ts, ddp)
-    # plt.plot(ts, p_cor)
-    # plt.plot(ts, p_input)
-    # plt.plot(ts, p_fric)
-    # plt.legend(['sum','centripetal','input','friction'])
-    # plt.grid()
-    #
-    # plt.figure("Influence of centripetal forces at dde (deg/s^2)")
-    # plt.plot(ts, dde)
-    # plt.plot(ts, e_cor)
-    # plt.plot(ts, e_input)
-    # plt.plot(ts, e_fric)
-    # plt.plot(ts, e_grav)
-    # plt.legend(['sum','centripetal','input','friction','gravitation'])
-    # plt.grid()
-    #
+    #plotInputs(bundle)
 
-    # figures to show the influence of all moments
+    # plotObserver(bundle)
+
+    plt.show()
+
+
+def handle_close(evt):
+    plt.close("all")
+
+
+def plotValidation(bundle):
+    # figures to show the influence of CENTRIPETAL forces
+    ts = bundle.ts
+    xs = bundle.xs
+    us_controller = bundle.us_controller
+
+    Vf, Vb = us_controller[:, 0], us_controller[:, 1]
+    v_s = Vf + Vb
+    v_d = Vf - Vb
+
+    p, e, lamb, dp, de, dlamb, f_speed, b_speed = xs[:, 0], xs[:, 1], xs[:, 2], \
+                                                  xs[:, 3], xs[:, 4], xs[:, 5], \
+                                                  xs[:, 6], xs[:, 7]
 
     L_1 = mc.l_p
     L_2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
     L_3 = mc.l_h
     L_4 = mc.l_h
 
-    p, e, lamb, dp, de, dlamb, f_speed, b_speed = xs[:,0], xs[:,1], xs[:,2], xs[:,3], xs[:,4], xs[:,5], xs[:,6], xs[:,7]
+    J_p = 2 * mc.m_p * mc.l_p ** 2
+    J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
+    J_l = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
+
+    ddp = (L_1 / J_p) * v_d - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2)
+    dde = (L_2 / J_e) * np.cos(e) + (L_3 / J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
+    ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
+
+    fig = plt.figure("Joint acceleration (deg/s^2)")
+    plt.plot(ts, ddp / np.pi * 180.0)
+    plt.plot(ts, dde / np.pi * 180.0)
+    plt.plot(ts, ddlamb / np.pi * 180.0)
+    plt.legend(['ddp', 'dde', 'ddlamb'])
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+def plotMoments(bundle):
+    # figures to show the influence of all moments
+    ts = bundle.ts
+    xs = bundle.xs
+
+    L_1 = mc.l_p
+    L_2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
+    L_3 = mc.l_h
+    L_4 = mc.l_h
+
+    p, e, lamb, dp, de, dlamb, f_speed, b_speed = xs[:, 0], xs[:, 1], xs[:, 2], \
+                                                  xs[:, 3], xs[:, 4], xs[:, 5], \
+                                                  xs[:, 6], xs[:, 7]
 
     J_p = 2 * mc.m_p * mc.l_p ** 2
     J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2 * np.sin(p) ** 2)
-    J_l = mc.m_c * mc.l_c ** 2 * np.cos(e) ** 2 + 2 * mc.m_p * ((mc.l_h * np.cos(e)) ** 2 + (mc.l_p * np.sin(p) * np.cos(e)) ** 2 + (mc.l_p * np.cos(p)) ** 2)
+    J_l = mc.m_c * mc.l_c ** 2 * np.cos(e) ** 2 + 2 * mc.m_p * (
+            (mc.l_h * np.cos(e)) ** 2 + (mc.l_p * np.sin(p) * np.cos(e)) ** 2 + (mc.l_p * np.cos(p)) ** 2)
 
-
-    p_gyro = (np.cos(p) * de * mc.J_m * (b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed)) / J_p / np.pi * 180.0
+    p_gyro = (np.cos(p) * de * mc.J_m * (b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (
+            f_speed - b_speed)) / J_p / np.pi * 180.0
     p_cor = np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) / np.pi * 180.0
     p_input = (L_1 * mc.K / J_p) * (f_speed - b_speed) / np.pi * 180.0
     p_fric = -(mc.d_p / J_p) * dp / np.pi * 180.0
     ddp = p_input + p_fric + p_cor + p_gyro
 
     e_motor = np.sin(p) * mc.K_m * (f_speed - b_speed) / J_e / np.pi * 180.0
-    e_gyro = (np.cos(p) * dp * mc.J_m * (f_speed - b_speed) + np.sin(e) * np.cos(p) * dlamb * mc.J_m * (b_speed - f_speed))/ J_e / np.pi * 180.0
+    e_gyro = (np.cos(p) * dp * mc.J_m * (f_speed - b_speed) + np.sin(e) * np.cos(p) * dlamb * mc.J_m * (
+            b_speed - f_speed)) / J_e / np.pi * 180.0
     e_cor = - np.cos(e) * np.sin(e) * dlamb ** 2 / np.pi * 180.0
-    e_input = L_3 * mc.K * np.cos(p) * (f_speed + b_speed)/ J_e / np.pi * 180.0
+    e_input = L_3 * mc.K * np.cos(p) * (f_speed + b_speed) / J_e / np.pi * 180.0
     e_fric = - (mc.d_e / J_e) * de / np.pi * 180.0
     e_grav = (L_2 / J_e) * np.cos(e) / np.pi * 180.0
     dde = e_grav + e_input + e_fric + e_cor + e_gyro + e_motor
 
-    ddlamb = 1 / J_l * (L_4 * mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) - mc.d_l * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed - f_speed) \
-            + np.sin(p) * np.cos(e) * dp * mc.J_m * (f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m * (f_speed - b_speed))
+    ddlamb = 1 / J_l * (
+            L_4 * mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) - mc.d_l * dlamb + np.cos(e) * np.cos(
+        p) * mc.K_m * (b_speed - f_speed) \
+            + np.sin(p) * np.cos(e) * dp * mc.J_m * (f_speed - b_speed) + np.sin(p) * np.cos(
+        e) * dlamb * mc.J_m * (f_speed - b_speed))
 
     l_imput = L_4 * mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) / J_l / np.pi * 180.0
     l_fric = - mc.d_l * dlamb / J_l / np.pi * 180.0
     l_motor = np.cos(e) * np.cos(p) * mc.K_m * (b_speed - f_speed) / J_l / np.pi * 180.0
-    l_gyro = (np.sin(p) * np.cos(e) * dp * mc.J_m * (f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m * (f_speed - b_speed)) / J_l / np.pi * 180.0
-    ddlamb = l_imput + l_fric + l_motor +l_gyro
+    l_gyro = (np.sin(p) * np.cos(e) * dp * mc.J_m * (f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m * (
+            f_speed - b_speed)) / J_l / np.pi * 180.0
+    ddlamb = l_imput + l_fric + l_motor + l_gyro
 
     fig = plt.figure("Influence of torques at ddp (deg/s^2)")
     plt.plot(ts, ddp)
@@ -275,7 +252,7 @@ def process(bundle: LoggingDataV2):
     plt.plot(ts, p_input)
     plt.plot(ts, p_fric)
     plt.plot(ts, p_gyro)
-    plt.legend(['sum','centripetal','input','friction','gyroscope'])
+    plt.legend(['sum', 'centripetal', 'input', 'friction', 'gyroscope'])
     plt.grid()
     fig.canvas.mpl_connect('close_event', handle_close)
 
@@ -287,7 +264,7 @@ def process(bundle: LoggingDataV2):
     plt.plot(ts, e_grav)
     plt.plot(ts, e_gyro)
     plt.plot(ts, e_motor)
-    plt.legend(['sum','centripetal','input','friction','gravitation','gyroscope','motor torque'])
+    plt.legend(['sum', 'centripetal', 'input', 'friction', 'gravitation', 'gyroscope', 'motor torque'])
     plt.grid()
     fig.canvas.mpl_connect('close_event', handle_close)
 
@@ -297,9 +274,83 @@ def process(bundle: LoggingDataV2):
     plt.plot(ts, l_fric)
     plt.plot(ts, l_gyro)
     plt.plot(ts, l_motor)
-    plt.legend(['sum','input','friction','gyroscope','motor torque'])
+    plt.legend(['sum', 'input', 'friction', 'gyroscope', 'motor torque'])
     plt.grid()
     fig.canvas.mpl_connect('close_event', handle_close)
+
+
+def plotInputs(bundle):
+    ts = bundle.ts
+    xs = bundle.xs
+    us_ff = bundle.us_ff
+    us_controller = bundle.us_controller
+    e_traj_and_derivatives = bundle.e_traj_and_derivatives
+    lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
+
+    fig = plt.figure("Total front and back rotor voltages")
+    plt.plot(ts, us_ff[:, 0] + us_controller[:, 0])
+    plt.plot(ts, us_ff[:, 1] + us_controller[:, 1])
+    plt.legend(['Vf', 'Vb'])
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+    fig = plt.figure("Feed forward and controller output")
+    plt.plot(ts, us_ff[:, 0])
+    plt.plot(ts, us_controller[:, 0])
+    plt.plot(ts, us_ff[:, 1])
+    plt.plot(ts, us_controller[:, 1])
+    plt.legend(['Vf feed-forward', 'Vf controller', 'Vb feed-forward', 'Vb controller'])
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+    fig = plt.figure("Rotorspeed")
+    plt.plot(ts, xs[:, 6])
+    plt.plot(ts, xs[:, 7])
+    plt.legend(['f', 'b'])
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+
+def plotBasics(bundle):
+    ts = bundle.ts
+    xs = bundle.xs
+    us_ff = bundle.us_ff
+    us_controller = bundle.us_controller
+    e_traj_and_derivatives = bundle.e_traj_and_derivatives
+    lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
+
+    fig = plt.figure("Joint angles (deg)")
+    p_traj = np.array([get_p_and_first_derivative(ModelType.CENTRIPETAL, e, l)[0] for (e, l) in
+                       zip(e_traj_and_derivatives, lambda_traj_and_derivatives)])
+    plt.plot(ts, xs[:, 0] / np.pi * 180.0, label="p")
+    #plt.plot(ts, p_traj / np.pi * 180.0, label="p_traj")
+    plt.plot(ts, xs[:, 1] / np.pi * 180.0, label="e")
+    #plt.plot(ts, e_traj_and_derivatives[:, 0] / np.pi * 180.0, label="e_traj")
+    plt.plot(ts, xs[:, 2] / np.pi * 180.0, label="lambda")
+    #plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0, label="lambda_traj")
+    plt.legend()
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+    fig = plt.figure("Joint velocity (deg/s)")
+    plt.plot(ts, xs[:, 3] / np.pi * 180.0)
+    plt.plot(ts, xs[:, 4] / np.pi * 180.0)
+    plt.plot(ts, xs[:, 5] / np.pi * 180.0)
+    plt.legend(['dp', 'de', 'dlambda'])
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+
+def plotObserver(bundle):
+    ts = bundle.ts
+    xs = bundle.xs
+    us_ff = bundle.us_ff
+    us_controller = bundle.us_controller
+    e_traj_and_derivatives = bundle.e_traj_and_derivatives
+    lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
+    xs_estimated_state = bundle.xs_estimated_state
+    us_noisy_input = bundle.us_noisy_input
+    ys_noisy_output = bundle.ys_noisy_output
 
     fig = plt.figure("Estimated state of observer (p, e, lambda)")
     plt.plot(ts, xs_estimated_state[:, 0], label="p observed")
@@ -331,7 +382,6 @@ def process(bundle: LoggingDataV2):
     plt.legend()
     plt.grid()
     fig.canvas.mpl_connect('close_event', handle_close)
-
 
     fig = plt.figure("Input of system with and without noise")
     ax1 = fig.add_subplot(111)
@@ -373,8 +423,6 @@ def process(bundle: LoggingDataV2):
     plt.grid()
     fig.canvas.mpl_connect('close_event', handle_close)
 
-    plt.show()
-
     # Calculate the variance of the kalman filter signals for verifying correct noise generation
     vf_var = np.var(us_noisy_input[:, 0] - (us_ff[:, 0] + us_controller[:, 0]))
     vb_var = np.var(us_noisy_input[:, 1] - (us_ff[:, 1] + us_controller[:, 1]))
@@ -391,6 +439,3 @@ def process(bundle: LoggingDataV2):
     print("   ... in degree the standard deviation is " + str(np.sqrt(e_var) * 180 / np.pi))
     print("Variance of lambda is " + str(lamb_var))
     print("   ... in degree the standard deviation is " + str(np.sqrt(lamb_var) * 180 / np.pi))
-
-def handle_close(evt):
-    plt.close("all")

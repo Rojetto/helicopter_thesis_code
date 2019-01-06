@@ -299,7 +299,7 @@ class mainWindow(QtWidgets.QMainWindow):
             if not val.validation_enabled:
                 Vf_controller, Vb_controller = self.current_controller.control(t, x, e_and_derivatives, lambda_and_derivatives)
             else:
-                Vf_controller, Vb_controller = val.convV(val.calculateInputs_DL_E(dl=1, e=10, rad=False))[0:2]
+                Vf_controller, Vb_controller = val.convV(val.calculateInputs_DL_E(dl=val.dl, e=val.e, rad=False))[0:2]
 
             # Add feed-forward and controller
             Vf = Vf_ff + Vf_controller
@@ -321,11 +321,8 @@ class mainWindow(QtWidgets.QMainWindow):
                 self.heliModel.setState(orientation[2], orientation[1], orientation[0])
                 self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], 0, 0, 0, 0, 0])
             else:
-
-                dl = 1
-                e = 10
-                p = val.calculateInputs_DL_E(dl, e, rad=False)[2]
-                orientation = np.array([p, e, 0, 0, 0, dl, 0, 0])/ 180.0 * np.pi
+                p = val.calculateInputs_DL_E(val.dl, val.e, rad=False)[2]
+                orientation = np.array([p, val.e, 0, 0, 0, val.dl, 0, 0])/ 180.0 * np.pi
                 self.heliModel.setState(orientation[2], orientation[1], orientation[0])
                 self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], orientation[3], orientation[4], orientation[5], orientation[6], orientation[7]])
 
