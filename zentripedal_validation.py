@@ -4,14 +4,54 @@ from HeliSimulation import getInertia
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from scipy.optimize import fsolve
+
 validation_enabled = False
-dl = 54
+dl = 100
 e = 25
+
+
+
+
+def n_solve(functions,variables):
+    func = lambda x: [ f(*x) for f in functions]
+    return fsolve(func, variables)
 
 def convV(x):
     vb = (x[0] - x[1]) / 2
     vf = (x[0] + x[1]) / 2
     return (vf, vb, x[2])
+
+def calcInputs_numeric(dl, e, rad=True):
+    """
+    calculates inputs Vs, Vd, p for special case: ddlambda = 0, de = 0, dp = 0 with an numeric algorithm
+    """
+    if not rad:
+        dl = dl * np.pi / 180
+        e = e * np.pi / 180
+
+    L1 = mc.l_p
+    L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
+    L3 = mc.l_h
+    L4 = mc.l_h
+    J_p, J_e, J_l = getInertia([0, e, 0, 0, 0, 0, 0, 0], False)
+
+    p_ana = np.arctan(mc.d_l * dl * L3 / ((J_e * np.cos(e) * np.sin(e) - L2 * np.cos(e)) * L4 * np.cos(e)))
+    Vd_ana = J_p * np.cos(p_ana) * np.sin(p_ana) * np.cos(e)**2 * dl ** 2 / L1
+    Vs_ana = (J_e * np.cos(e) * np.sin(e) * dl ** 2 - L2 * np.cos(e)) / (L3 * np.cos(p_ana))
+
+    dp, de = 0, 0
+    ddp = lambda Vs,Vd,p : (L1 / J_p) * Vd - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dl ** 2)
+    dde = lambda Vs,Vd,p : (L2 / J_e) * np.cos(e) + (L3 / J_e) * np.cos(p) * Vs - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dl ** 2
+    ddlamb = lambda Vs,Vd,p : (L4 / J_l) * np.cos(e) * np.sin(p) * Vs - (mc.d_l / J_l) * dl
+
+    Vs, Vd, p = n_solve([ddp, dde, ddlamb], [Vs_ana,Vd_ana, p_ana])
+
+    if not rad:
+        p = p * 180 / np.pi
+
+    return [Vs, Vd, p]
+
 
 
 def calculateInputs_DL_E(dl, e, rad=True):
@@ -34,7 +74,7 @@ def calculateInputs_DL_E(dl, e, rad=True):
     Vd = J_p * np.cos(p) * np.sin(p) * np.cos(e)**2 * dl ** 2 / L1
 
     Vs = (J_e * np.cos(e) * np.sin(e) * dl ** 2 - L2 * np.cos(e)) / (L3 * np.cos(p))
-    #Vs = mc.d_l * dl / (L4 * np.cos(e) * np.sin(p))
+    Vs2 = mc.d_l * dl / (L4 * np.cos(e) * np.sin(p))
 
 
 
@@ -45,13 +85,11 @@ def calculateInputs_DL_E(dl, e, rad=True):
     ddlamb = (L4 / J_l) * np.cos(e) * np.sin(p) * Vs - (mc.d_l / J_l) * dl
 
     max_error = 2 / 180 * np.pi # rad/s^2
-    if (np.abs(ddp)>max_error) or (np.abs(dde)>max_error) or (np.abs(ddlamb)>max_error) :
-        k = 180 / np.pi
-        print(dl*k,p*k,ddp*k, dde*k, ddlamb*k) # should be zero
-        return [np.nan]*3
+    #if (np.abs(ddp)>max_error) or (np.abs(dde)>max_error) or (np.abs(ddlamb)>max_error) :
+    #    k = 180 / np.pi
+    #    print(dl*k,p*k,ddp*k, dde*k, ddlamb*k) # should be zero
+    #    return [np.nan]*3
 
-    #k = 180 / np.pi
-    #print(dl*k,p*k,ddp*k, dde*k, ddlamb*k) # should be zero
 
 
     if not rad:
@@ -99,13 +137,15 @@ def calculateInputs_E_P(e, p, rad=True):
 if __name__ == '__main__':
 
     steps = 100
-    e = np.linspace(-90, 90, steps)
+    e = np.linspace(-50, 50, steps)
     dl = np.linspace(0, 90, steps)
     dlm, em = np.meshgrid(dl, e)
     Sol = np.empty((steps, steps, 3))
     for x in range(steps):
         for y in range(steps):
-            Sol[x, y] = np.array([calculateInputs_DL_E(dl[y], e[x], rad=False)])
+            #Sol[x, y] = np.array([calculateInputs_DL_E(dl[y], e[x], rad=False)])
+            Sol[x, y] = np.array([calcInputs_numeric(dl[y], e[x], rad=False)])
+
 
     print(Sol.shape)
 
