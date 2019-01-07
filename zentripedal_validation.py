@@ -133,9 +133,16 @@ def calculateInputs_E_P(e, p, rad=True):
     # return [(-0, -0, -0), (-0, -0, 0)]
     return [(Vs1, dl1, Vd1), (Vs2, dl2, Vd2)]
 
+def calcdde(dl,e):
+    L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
+    J_e = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
 
-if __name__ == '__main__':
+    return L2 * np.cos(e)/J_e - np.cos(e)* np.sin(e) *dl**2
 
+def calcddp(dl,p):
+    return -np.cos(p)*np.sin(p)* dl**2
+
+def printValInput():
     steps = 100
     e = np.linspace(-50, 50, steps)
     dl = np.linspace(0, 90, steps)
@@ -143,9 +150,8 @@ if __name__ == '__main__':
     Sol = np.empty((steps, steps, 3))
     for x in range(steps):
         for y in range(steps):
-            #Sol[x, y] = np.array([calculateInputs_DL_E(dl[y], e[x], rad=False)])
+            # Sol[x, y] = np.array([calculateInputs_DL_E(dl[y], e[x], rad=False)])
             Sol[x, y] = np.array([calcInputs_numeric(dl[y], e[x], rad=False)])
-
 
     print(Sol.shape)
 
@@ -167,34 +173,38 @@ if __name__ == '__main__':
     res = calculateInputs_DL_E(dl=54, e=25, rad=False)
     print(convV(res)[0:2])
 
+def printValnoInput():
+    steps = 100
+
+    dl = np.linspace(0, 120, steps)
+    p = np.linspace(-80, 80, steps)
+    dlm, pm = np.meshgrid(p, dl)
+    dde = np.empty((steps, steps))
+    ddp = np.empty((steps, steps))
+    for x in range(steps):
+        for y in range(steps):
+            dde[x, y] = np.array([calcdde(dl[x]/180 *np.pi, p[y]/180 *np.pi)])
+            ddp[x, y] = np.array([calcddp(dl[x]/180 *np.pi, p[y]/180 *np.pi)])
+
+    ddp = ddp * 180 / np.pi
+    dde = dde * 180 / np.pi
+
+
+    fig1 = plt.figure()
+    ax = fig1.gca(projection='3d')
+    surf = ax.plot_surface(pm, dlm, dde)
+    ax.set(title='dde', xlabel='dlambda', ylabel='e', zlabel='dde')
+
+    fig2 = plt.figure()
+    ax = fig2.gca(projection='3d')
+    surf = ax.plot_surface(pm, dlm, ddp)
+    ax.set(title='ddp', xlabel='dlambda', ylabel='p', zlabel='ddp')
+
+
+
+if __name__ == '__main__':
+    printValInput()
+    printValnoInput()
+
     plt.show()
 
-    # steps = 100
-    #     e = np.linspace(10, 80, steps)
-    #     e = np.linspace(100, 170, steps)
-    #     p = np.linspace(10, 80, steps)
-    #     em, pm = np.meshgrid(p, e)
-    #     Sol = np.empty((steps, steps, 2, 3))
-    #     for x in range(steps):
-    #         for y in range(steps):
-    #             Sol[x, y] = np.array([calculateInputs_E_P(e[x], p[y], rad=False)])
-    #
-    #     print(e.shape, p.shape, Sol.shape)
-    #
-    #     for solnr in [0, 1]:
-    #         fig1 = plt.figure()
-    #         ax = fig1.gca(projection='3d')
-    #         surf = ax.plot_surface(pm, em, Sol[:, :, solnr, 0])
-    #         ax.set(title='Vs', xlabel='e', ylabel='p', zlabel='Vs')
-    #
-    #         fig2 = plt.figure()
-    #         ax = fig2.gca(projection='3d')
-    #         surf = ax.plot_surface(pm, em, Sol[:, :, solnr, 2])
-    #         ax.set(title='Vd', xlabel='e', ylabel='p', zlabel='Vd')
-    #
-    #         fig3 = plt.figure()
-    #         ax = fig3.gca(projection='3d')
-    #         surf = ax.plot_surface(pm, em, Sol[:, :, solnr, 1])
-    #         ax.set(title='velocity of lambda', xlabel='e', ylabel='p', zlabel='dlambda')
-    #
-    #         plt.show()
