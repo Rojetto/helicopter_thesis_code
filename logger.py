@@ -7,6 +7,7 @@ from HeliSimulation import getInertia
 from PyQt5 import QtWidgets
 import os.path
 import pickle
+from matplotlib.figure import Figure
 
 last_storage_directory = None
 index = 0
@@ -146,17 +147,33 @@ def process(bundle: LoggingDataV2):
     # ax1.grid()
     # plt.show()
 
-    #plotMoments(bundle)
+    plotMoments(bundle)
 
     plotBasics(bundle)
 
     plotValidation(bundle)
 
-    #plotInputs(bundle)
+    plotInputs(bundle)
 
-    # plotObserver(bundle)
+    plotObserver(bundle)
 
     plt.show()
+
+
+def custom_figure(num=None,  # autoincrement if None, else integer from 1-N
+                  figsize=None,  # defaults to rc figure.figsize
+                  dpi=None,  # defaults to rc figure.dpi
+                  facecolor=None,  # defaults to rc figure.facecolor
+                  edgecolor=None,  # defaults to rc figure.edgecolor
+                  frameon=True,
+                  FigureClass=Figure,
+                  clear=False,
+                  **kwargs):
+    fig = plt.figure(**kwargs, num=num,figsize=figsize,dpi=dpi,facecolor=facecolor,edgecolor=edgecolor,frameon=frameon,FigureClass=FigureClass,clear=clear)
+    plt.grid()
+    fig.canvas.mpl_connect('close_event', handle_close)
+
+    return fig
 
 
 def handle_close(evt):
@@ -190,13 +207,11 @@ def plotValidation(bundle):
     dde = (L_2 / J_e) * np.cos(e) + (L_3 / J_e) * np.cos(p) * v_s - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dlamb ** 2
     ddlamb = (L_4 / J_l) * np.cos(e) * np.sin(p) * v_s - (mc.d_l / J_l) * dlamb
 
-    fig = plt.figure("Joint acceleration (deg/s^2)")
+    fig = custom_figure("Joint acceleration (deg/s^2)")
     plt.plot(ts, ddp / np.pi * 180.0)
     plt.plot(ts, dde / np.pi * 180.0)
     plt.plot(ts, ddlamb / np.pi * 180.0)
     plt.legend(['ddp', 'dde', 'ddlamb'])
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
 def plotMoments(bundle):
     # figures to show the influence of all moments
@@ -246,17 +261,15 @@ def plotMoments(bundle):
             f_speed - b_speed)) / J_l / np.pi * 180.0
     ddlamb = l_imput + l_fric + l_motor + l_gyro
 
-    fig = plt.figure("Influence of torques at ddp (deg/s^2)")
+    fig = custom_figure("Influence of torques at ddp (deg/s^2)")
     plt.plot(ts, ddp)
     plt.plot(ts, p_cor)
     plt.plot(ts, p_input)
     plt.plot(ts, p_fric)
     plt.plot(ts, p_gyro)
     plt.legend(['sum', 'centripetal', 'input', 'friction', 'gyroscope'])
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Influence of torques at dde (deg/s^2)")
+    fig = custom_figure("Influence of torques at dde (deg/s^2)")
     plt.plot(ts, dde)
     plt.plot(ts, e_cor)
     plt.plot(ts, e_input)
@@ -265,18 +278,14 @@ def plotMoments(bundle):
     plt.plot(ts, e_gyro)
     plt.plot(ts, e_motor)
     plt.legend(['sum', 'centripetal', 'input', 'friction', 'gravitation', 'gyroscope', 'motor torque'])
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Influence of torques at ddlambda (deg/s^2)")
+    fig = custom_figure("Influence of torques at ddlambda (deg/s^2)")
     plt.plot(ts, ddlamb)
     plt.plot(ts, l_imput)
     plt.plot(ts, l_fric)
     plt.plot(ts, l_gyro)
     plt.plot(ts, l_motor)
     plt.legend(['sum', 'input', 'friction', 'gyroscope', 'motor torque'])
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
 
 def plotInputs(bundle):
@@ -287,28 +296,22 @@ def plotInputs(bundle):
     e_traj_and_derivatives = bundle.e_traj_and_derivatives
     lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
 
-    fig = plt.figure("Total front and back rotor voltages")
+    fig = custom_figure("Total front and back rotor voltages")
     plt.plot(ts, us_ff[:, 0] + us_controller[:, 0])
     plt.plot(ts, us_ff[:, 1] + us_controller[:, 1])
     plt.legend(['Vf', 'Vb'])
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Feed forward and controller output")
+    fig = custom_figure("Feed forward and controller output")
     plt.plot(ts, us_ff[:, 0])
     plt.plot(ts, us_controller[:, 0])
     plt.plot(ts, us_ff[:, 1])
     plt.plot(ts, us_controller[:, 1])
     plt.legend(['Vf feed-forward', 'Vf controller', 'Vb feed-forward', 'Vb controller'])
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Rotorspeed")
+    fig = custom_figure("Rotorspeed")
     plt.plot(ts, xs[:, 6])
     plt.plot(ts, xs[:, 7])
     plt.legend(['f', 'b'])
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
 
 def plotBasics(bundle):
@@ -319,7 +322,7 @@ def plotBasics(bundle):
     e_traj_and_derivatives = bundle.e_traj_and_derivatives
     lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
 
-    fig = plt.figure("Joint angles (deg)")
+    fig = custom_figure("Joint angles (deg)")
     p_traj = np.array([get_p_and_first_derivative(ModelType.CENTRIPETAL, e, l)[0] for (e, l) in
                        zip(e_traj_and_derivatives, lambda_traj_and_derivatives)])
     plt.plot(ts, xs[:, 0] / np.pi * 180.0, label="p")
@@ -329,16 +332,12 @@ def plotBasics(bundle):
     plt.plot(ts, xs[:, 2] / np.pi * 180.0, label="lambda")
     #plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0, label="lambda_traj")
     plt.legend()
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Joint velocity (deg/s)")
+    fig = custom_figure("Joint velocity (deg/s)")
     plt.plot(ts, xs[:, 3] / np.pi * 180.0)
     plt.plot(ts, xs[:, 4] / np.pi * 180.0)
     plt.plot(ts, xs[:, 5] / np.pi * 180.0)
     plt.legend(['dp', 'de', 'dlambda'])
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
 
 def plotObserver(bundle):
@@ -352,7 +351,7 @@ def plotObserver(bundle):
     us_noisy_input = bundle.us_noisy_input
     ys_noisy_output = bundle.ys_noisy_output
 
-    fig = plt.figure("Estimated state of observer (p, e, lambda)")
+    fig = custom_figure("Estimated state of observer (p, e, lambda)")
     plt.plot(ts, xs_estimated_state[:, 0], label="p observed")
     plt.plot(ts, xs_estimated_state[:, 1], label="e observed")
     plt.plot(ts, xs_estimated_state[:, 2], label="lambda observed")
@@ -360,10 +359,8 @@ def plotObserver(bundle):
     plt.plot(ts, xs[:, 1], label="e from simulation")
     plt.plot(ts, xs[:, 2], label="lambda from simulation")
     plt.legend()
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Estimated state of observer (dp, de, dlambda)")
+    fig = custom_figure("Estimated state of observer (dp, de, dlambda)")
     plt.plot(ts, xs_estimated_state[:, 3], label="dp observed")
     plt.plot(ts, xs_estimated_state[:, 4], label="de observed")
     plt.plot(ts, xs_estimated_state[:, 5], label="dlambda observed")
@@ -371,29 +368,23 @@ def plotObserver(bundle):
     plt.plot(ts, xs[:, 4], label="de from simulation")
     plt.plot(ts, xs[:, 5], label="dlambda from simulation")
     plt.legend()
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Estimated state of observer (f, b)")
+    fig = custom_figure("Estimated state of observer (f, b)")
     plt.plot(ts, xs_estimated_state[:, 6], label="f observed")
     plt.plot(ts, xs_estimated_state[:, 7], label="b observed")
     plt.plot(ts, xs[:, 6], label="f from simulation")
     plt.plot(ts, xs[:, 7], label="b from simulation")
     plt.legend()
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Input of system with and without noise")
+    fig = custom_figure("Input of system with and without noise")
     ax1 = fig.add_subplot(111)
     ax1.plot(ts, us_noisy_input[:, 0], label="Vf with noise")
     ax1.plot(ts, us_noisy_input[:, 1], label="Vb with noise")
     ax1.plot(ts, us_ff[:, 0] + us_controller[:, 0], label="Vf without noise")
     ax1.plot(ts, us_ff[:, 1] + us_controller[:, 1], label="Vf without noise")
     ax1.legend(loc=1)
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Output of system with and without noise (p, e, lambda)")
+    fig = custom_figure("Output of system with and without noise (p, e, lambda)")
     ax1 = fig.add_subplot(111)
     ax1.plot(ts, ys_noisy_output[:, 0], label="p with noise")
     ax1.plot(ts, ys_noisy_output[:, 1], label="e with noise")
@@ -402,26 +393,20 @@ def plotObserver(bundle):
     ax1.plot(ts, xs[:, 1], label="e without noise")
     ax1.plot(ts, xs[:, 2], label="lambda without noise")
     ax1.legend(loc=2)
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Output of system with and without noise (f, b)")
+    fig = custom_figure("Output of system with and without noise (f, b)")
     ax1 = fig.add_subplot(111)
     ax1.plot(ts, ys_noisy_output[:, 3], label="f with noise")
     ax1.plot(ts, ys_noisy_output[:, 4], label="b with noise")
     ax1.plot(ts, xs[:, 6], label="f without noise")
     ax1.plot(ts, xs[:, 7], label="b without noise")
     ax1.legend(loc=2)
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
-    fig = plt.figure("Noise of observed signal")
+    fig = custom_figure("Noise of observed signal")
     plt.plot(ts, xs_estimated_state[:, 0] - xs[:, 0], label="p_est - p")
     plt.plot(ts, xs_estimated_state[:, 1] - xs[:, 1], label="e_est - e")
     plt.plot(ts, xs_estimated_state[:, 2] - xs[:, 2], label="lambda_est - lambda")
     plt.legend()
-    plt.grid()
-    fig.canvas.mpl_connect('close_event', handle_close)
 
     # Calculate the variance of the kalman filter signals for verifying correct noise generation
     vf_var = np.var(us_noisy_input[:, 0] - (us_ff[:, 0] + us_controller[:, 0]))
