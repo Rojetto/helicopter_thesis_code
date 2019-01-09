@@ -114,7 +114,7 @@ def discretize_linear_state_space(At, Bt, Ct, Dt, T):
     if np.linalg.det(At) != 0:
         Bk = np.linalg.inv(At) * (Ak - np.eye(n)) * Bt
     else:
-        Bk = compute_exp_matrix_intergration(At, T) @ Bt
+        Bk = compute_exp_matrix_intergration(At, T, nbins=5) @ Bt
     Ck = Ct
     Dk = Dt
     return Ak, Bk, Ck, Dk
