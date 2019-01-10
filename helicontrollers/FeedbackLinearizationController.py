@@ -62,8 +62,8 @@ class FeedbackLinearizationController(AbstractController):
         Vb = (Vs - Vd) / 2
 
         if self.rotor_speed_controller:
-            Vf = self.front_rotor_pid.compute(t, Vf - wf)
-            Vb = self.back_rotor_pid.compute(t, Vb - wb)
+            Vf = Vf + self.front_rotor_pid.compute(t, Vf - wf)
+            Vb = Vb + self.back_rotor_pid.compute(t, Vb - wb)
 
         return Vf, Vb
 
