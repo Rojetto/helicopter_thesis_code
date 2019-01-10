@@ -326,11 +326,11 @@ def plotBasics(bundle):
     p_traj = np.array([get_p_and_first_derivative(ModelType.CENTRIPETAL, e, l)[0] for (e, l) in
                        zip(e_traj_and_derivatives, lambda_traj_and_derivatives)])
     plt.plot(ts, xs[:, 0] / np.pi * 180.0, label="p")
-    #plt.plot(ts, p_traj / np.pi * 180.0, label="p_traj")
+    plt.plot(ts, p_traj / np.pi * 180.0, label="p_traj")
     plt.plot(ts, xs[:, 1] / np.pi * 180.0, label="e")
-    #plt.plot(ts, e_traj_and_derivatives[:, 0] / np.pi * 180.0, label="e_traj")
+    plt.plot(ts, e_traj_and_derivatives[:, 0] / np.pi * 180.0, label="e_traj")
     plt.plot(ts, xs[:, 2] / np.pi * 180.0, label="lambda")
-    #plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0, label="lambda_traj")
+    plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0, label="lambda_traj")
     plt.legend()
 
     fig = custom_figure("Joint velocity (deg/s)")
