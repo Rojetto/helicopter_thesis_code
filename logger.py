@@ -147,13 +147,13 @@ def process(bundle: LoggingDataV2):
     # ax1.grid()
     # plt.show()
 
-    plotMoments(bundle)
+    # plotMoments(bundle)
 
     plotBasics(bundle)
 
-    plotValidation(bundle)
+    # plotValidation(bundle)
 
-    plotInputs(bundle)
+    # plotInputs(bundle)
 
     plotObserver(bundle)
 

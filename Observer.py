@@ -64,6 +64,7 @@ def getLinearizedMatrices(model_type: ModelType, operating_point, Vf_op, Vb_op):
 
     return A, B, Vf_op, Vb_op
 
+
 def get_gyro_matrices(operating_point, v_f, v_b, dynamic_inertia):
     """":arg operating point: 8-element-vector
     :arg v_f, v_b: operating point input values
@@ -98,6 +99,26 @@ def get_gyro_matrices(operating_point, v_f, v_b, dynamic_inertia):
                   [mc.K_f/mc.T_f, 0],
                   [0, mc.K_b/mc.T_b]])
     return A, B
+
+
+def get_operating_point_inputs(e_op, model_type: ModelType):
+    ''':return vf_op, vb_op: steady-state inputs'''
+    if model_type == ModelType.GYROMOMENT:
+        f_plus_b = - (L2/L3) * np.cos(e_op)
+        f = f_plus_b / 2
+        b = f_plus_b / 2
+
+        vf_op = f / mc.K_f
+        vb_op = b / mc.K_b
+    elif model_type == ModelType.EASY:
+        v_s = - L2 / L3 * cos(e_op)
+        vf_op = v_s / 2
+        vb_op = v_s / 2
+    else:
+        raise NotImplementedError("[ERROR] At the moment only EASY and Gyromoment are implemented")
+
+    return vf_op, vb_op
+
 
 def compute_exp_matrix_intergration(A,T,nbins=100):
     """https://math.stackexchange.com/questions/658276/integral-of-matrix-exponential"""
@@ -277,6 +298,159 @@ class TestKalmanFilter(KalmanFilterBase):
 
     def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
         return
+
+
+class LinearKalmanFilter(KalmanFilterBase):
+    """This kalman filter linearizes the model in a fixed operating point which is defined at initialisation."""
+
+    # ToDo: perhaps split up this class into two (LinearKalmanFilterSimple and LinearKalmanFilterGyro)
+    # ToDo: because of all the if statements it has already become a bit difficult to read
+    def __init__(self, init_state, init_cov_matrix, model_type : ModelType, e_op, lamb_op, nOutputs, stepSize):
+        ''':arg operating_point: 8-element-vector'''
+        super().__init__(init_state, init_cov_matrix, model_type, 3)
+        if np.size(init_cov_matrix, 0) != np.size(init_state, 0):
+            raise Exception("dim(init_x) = " + str(np.size(init_state)) + " dim(init_cov_matrix) = " +
+                            str(np.size(init_cov_matrix)))
+        self.timeStep = stepSize
+        vf_op, vb_op = get_operating_point_inputs(e_op, model_type)
+        self.operating_point = np.array([0, e_op, lamb_op, 0, 0, 0, vf_op  * mc.K_f, vb_op * mc.K_b])
+        self.model_type = model_type
+        self.nOutputs = nOutputs
+        if model_type == ModelType.EASY:
+            self.nStateVars = 6
+        elif model_type == ModelType.GYROMOMENT:
+            self.nStateVars = 8
+
+        # Linearize and discretize the system in the operating point because it is already fixed
+        vf_op, vb_op = get_operating_point_inputs(e_op, self.model_type)
+        self.u_op = np.array([[vf_op], [vb_op]])
+        self.Ak, self.Bk, self.Ck, self.Dk = self.get_linear_discrete_matrices()
+
+    def set_estimated_state(self, x_estimated_state):
+        x_estimated_state = x_estimated_state[0:self.nStateVars]
+        super().set_estimated_state(x_estimated_state)
+
+    def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
+        '''The model_type can't be set by this function and the parent function should be changed.'''
+        self.timeStep = stepSize
+        return
+
+    def get_linear_discrete_matrices(self):
+        """Linearizes and discretizes the current system model at the operating point
+        and saves it for calc_observation"""
+
+        vf_op, vb_op = get_operating_point_inputs(self.operating_point[1], self.model_type)
+        if self.model_type == ModelType.EASY:
+            At, Bt, Vf_op, Vd_op = getLinearizedMatrices(self.model_type, self.operating_point[0:6], vf_op, vb_op)
+        elif self.model_type == ModelType.GYROMOMENT:
+            At, Bt = get_gyro_matrices(self.operating_point, self.operating_point[6] / mc.K_f, vf_op, vb_op)
+        if self.model_type == ModelType.EASY:
+            Ct = np.array([[1, 0, 0, 0, 0, 0],
+                          [0, 1, 0, 0, 0, 0],
+                          [0, 0, 1, 0, 0, 0]])
+            Dt = np.array([[0, 0],
+                           [0, 0],
+                           [0, 0]])
+        elif self.model_type == ModelType.GYROMOMENT:
+            if self.nOutputs == 3:
+                Ct = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                               [0, 1, 0, 0, 0, 0, 0, 0],
+                               [0, 0, 1, 0, 0, 0, 0, 0]])
+                Dt = np.array([[0, 0],
+                               [0, 0],
+                               [0, 0],
+                               [0, 0],
+                               [0, 0]])
+            elif self.nOutputs == 5:
+                Ct = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                               [0, 1, 0, 0, 0, 0, 0, 0],
+                               [0, 0, 1, 0, 0, 0, 0, 0],
+                               [0, 0, 0, 0, 0, 0, 1, 0],
+                               [0, 0, 0, 0, 0, 0, 0, 1]])
+                Dt = np.array([[0, 0],
+                               [0, 0],
+                               [0, 0],
+                               [0, 0],
+                               [0, 0]])
+
+        Ak, Bk, Ck, Dk = discretize_linear_state_space(At, Bt, Ct, Dt, self.timeStep)
+        return Ak, Bk, Ck, Dk
+
+    def ekf_algorithm(self, u, y):
+        """Computes the estimated state using the ekf algorithm.
+        :arg u: input signal with noise (Dimension: 2x1)
+        :arg y: output signal with noise (Dimension: self.nOutputsx1)"""
+        # For the linear filter, x_estimated_state is the difference to the operating point
+        cov_matrix_before = self.cov_matrix
+        # 0. Calculate difference to operating point
+        u = u - self.u_op
+        if self.model_type == ModelType.EASY:
+            x_est_before = self.x_estimated_state - self.operating_point[0:6].reshape((6, 1))
+            # x_est_before.reshape((6, 1))
+        else:
+            x_est_before = self.x_estimated_state - self.operating_point.reshape((8, 1))
+            # x_est_before.reshape((8, 1))
+        if self.nOutputs == 3:
+            y = y - self.operating_point[0:3].reshape(3, 1)
+        elif self.nOutputs == 5:
+            y = y - np.concatenate((self.operating_point[0:3], self.operating_point[6:8])).reshape(5, 1)
+        # x_est_before = self.x_estimated_state - self.operating_point
+        #     1. Prediction
+        # predict the state by using the linearized system at the fixed operating point
+        v_s = u[0][0] + u[1][0]
+        v_d = u[0][0] - u[1][0]
+        x_est_predict = self.Ak @ x_est_before + self.Bk @ u
+        # predict the new covariance
+        cov_matrix_predict = (self.Ak @ cov_matrix_before @ np.transpose(self.Ak)
+                              + self.Bk @ self.N @ np.transpose(self.Bk))
+        #     2. Update
+        # compute kalman gain
+        Kl = (cov_matrix_predict @ np.transpose(self.Ck) @
+              np.linalg.inv(self.Ck @ cov_matrix_predict @ np.transpose(self.Ck) + self.W))
+        print(Kl)
+        # update state
+        if self.nOutputs == 3:
+            y_est = x_est_predict[0:3,]
+        elif self.nOutputs == 5:
+            y_est = np.concatenate((x_est_predict[0:3], x_est_predict[6:8]))
+        x_est_update = x_est_predict + Kl @ (y - y_est)
+        # update covariance matrix (identity matrix must have as many lines as the Kalman gain
+        cov_matrix_update = (np.eye(np.size(Kl, 0)) - Kl @ self.Ck) @ cov_matrix_predict
+        # add again the operating point
+        if self.model_type == ModelType.EASY:
+            x_estimated_state = x_est_update + self.operating_point[0:6].reshape((6, 1))
+            # self.x_estimated_state = x_estimated_state.reshape((1, 6))[0]
+        else:
+            x_estimated_state = x_est_update + self.operating_point.reshape((8, 1))
+            # self.x_estimated_state = x_estimated_state.reshape((1, 8))[0]
+        self.x_estimated_state = x_estimated_state
+        self.cov_matrix = cov_matrix_update
+        # print("------")
+        # print(cov_matrix_predict)
+        return x_est_update
+
+    def calc_observation(self, t, x, u):
+        # 1. add noise to input and output
+        u_with_noise = self.get_noisy_input_of_system(u)
+        if self.nOutputs == 6:
+            y_with_noise = self.get_noisy_output_of_system(np.concatenate((x[0:3], x[6:8])))
+        elif self.nOutputs == 3:
+            y_with_noise = self.get_noisy_output_of_system(x[0:3])
+        # 2. execute ekf algorithm
+        x_estimated_state = self.ekf_algorithm(np.resize(u_with_noise, (2, 1)), np.resize(y_with_noise,
+                                                                                          (self.nOutputs, 1)))
+        # 3. add two zero elements at the end of the state vector
+        if self.model_type == ModelType.EASY:
+            x_estimated_state = np.resize(x_estimated_state, (1, 6))[0]
+            x_estimated_state = np.pad(x_estimated_state, (0, 2), "constant")
+            y_with_noise = np.pad(y_with_noise, (0, 2), "constant")
+        elif self.model_type == ModelType.GYROMOMENT:
+            x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
+            if self.nOutputs == 3:
+                y_with_noise = np.pad(y_with_noise, (0, 2), "constant")
+        # add operating point for real state
+        return x_estimated_state, u_with_noise, y_with_noise
+
 
 
 class ExtKalmanFilterEasyModel(KalmanFilterBase):
@@ -533,79 +707,79 @@ class ExtKalmanFilterGyroModelOnly3(KalmanFilterBase):
         return x_estimated_state, u_with_noise, y_with_noise
 
 
-class LinearKalmanFilter(Observer):
-    """Linear Kalman Filter with static operating point. This class linearizes the current system at the
-    given operating point."""
-
-    def __init__(self, init_state, init_cov_matrix, operating_point):
-        super().__init__(init_state)
-        self.cov_matrix = init_cov_matrix
-        self.operating_point = operating_point
-        self.Ak = np.zeros((6, 6))
-        self.Bk = np.zeros((6, 2))
-        self.Ck = np.zeros((3, 6))
-        self.Dk = np.zeros((3, 2))
-
-        # set system noise parameters
-        # these variables contain the variance of the noise
-        self.p_noise = (1 / 180 * np.pi) ** 2
-        self.e_noise = (1 / 180 * np.pi) ** 2
-        self.lamb_noise = (1 / 180 * np.pi) ** 2
-        self.output_covariance_R = np.diagflat([self.p_noise, self.e_noise, self.lamb_noise])
-        # self.process_noise_Q = np.zeros((6, 6))
-        self.process_noise_Q = np.diag([self.e_noise, self.e_noise, self.e_noise, self.e_noise, self.e_noise,
-                                        self.e_noise])
-
-    def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
-        """Linearizes and discretizes the current system model at the operating point
-        and saves it for calc_observation"""
-
-        At, Bt = compute_linear_ss(model_type, self.operating_point[1])
-        Ct = np.array([[1, 0, 0, 0, 0, 0],
-                      [0, 1, 0, 0, 0, 0],
-                      [0, 0, 1, 0, 0, 0]])
-        Dt = np.array([[0, 0],
-                      [0, 0],
-                      [0, 0]])
-
-        self.Ak, self.Bk, self.Ck, self.Dk = discretize_linear_state_space(At, Bt, Ct, Dt, stepSize)
-        return
-
-    def get_output_of_system(self, x):
-        """Calculates the output from the current state and the Ck-Matrix + adds gaussian noise"""
-        y = self.Ck @ x
-        # ToDo: Werte anzeigen
-        y[0] += np.random.normal(0, np.sqrt(self.p_noise), 1)[0]
-        y[1] += np.random.normal(0, np.sqrt(self.e_noise), 1)[0]
-        y[2] += np.random.normal(0, np.sqrt(self.lamb_noise), 1)[0]
-        return y
-
-    def calc_observation(self, t, x, u):
-        # delete the last two elements
-        x = x[0:-2]
-        # get output of system from real matrix
-        y = self.get_output_of_system(x)
-
-        # 0. Initialization
-        x_old = self.estimated_state
-        P_old = self.cov_matrix
-        # 1. Prediction
-        x_predict = self.Ak @ x_old + self.Bk @ u
-        P_predict = self.Ak @ P_old @ self.Ak.T + self.process_noise_Q
-
-        # 2. Update
-        innovation = y - self.Ck @ x_predict
-        innovation_covariance = self.output_covariance_R + self.Ck @ P_predict @ self.Ck.T
-        kalman_gain = P_predict @ self.Ck.T @ np.linalg.inv(innovation_covariance)
-        x_update = x_predict + kalman_gain @ innovation
-        P_update = ((np.eye(6) - kalman_gain @ self.Ck) @ P_predict
-                    @ np.transpose(np.eye(6) - kalman_gain @ self.Ck)
-                    + kalman_gain @ self.output_covariance_R @ kalman_gain.T)
-
-        self.estimated_state = x_update
-        self.cov_matrix = P_update
-
-        x_predict = np.pad(x_predict, (0, 2), "constant")
-
-        return x_predict, [0, 0], y
+# class LinearKalmanFilter(Observer):
+#     """Linear Kalman Filter with static operating point. This class linearizes the current system at the
+#     given operating point."""
+#
+#     def __init__(self, init_state, init_cov_matrix, operating_point):
+#         super().__init__(init_state)
+#         self.cov_matrix = init_cov_matrix
+#         self.operating_point = operating_point
+#         self.Ak = np.zeros((6, 6))
+#         self.Bk = np.zeros((6, 2))
+#         self.Ck = np.zeros((3, 6))
+#         self.Dk = np.zeros((3, 2))
+#
+#         # set system noise parameters
+#         # these variables contain the variance of the noise
+#         self.p_noise = (1 / 180 * np.pi) ** 2
+#         self.e_noise = (1 / 180 * np.pi) ** 2
+#         self.lamb_noise = (1 / 180 * np.pi) ** 2
+#         self.output_covariance_R = np.diagflat([self.p_noise, self.e_noise, self.lamb_noise])
+#         # self.process_noise_Q = np.zeros((6, 6))
+#         self.process_noise_Q = np.diag([self.e_noise, self.e_noise, self.e_noise, self.e_noise, self.e_noise,
+#                                         self.e_noise])
+#
+#     def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
+#         """Linearizes and discretizes the current system model at the operating point
+#         and saves it for calc_observation"""
+#
+#         At, Bt = compute_linear_ss(model_type, self.operating_point[1])
+#         Ct = np.array([[1, 0, 0, 0, 0, 0],
+#                       [0, 1, 0, 0, 0, 0],
+#                       [0, 0, 1, 0, 0, 0]])
+#         Dt = np.array([[0, 0],
+#                       [0, 0],
+#                       [0, 0]])
+#
+#         self.Ak, self.Bk, self.Ck, self.Dk = discretize_linear_state_space(At, Bt, Ct, Dt, stepSize)
+#         return
+#
+#     def get_output_of_system(self, x):
+#         """Calculates the output from the current state and the Ck-Matrix + adds gaussian noise"""
+#         y = self.Ck @ x
+#         # ToDo: Werte anzeigen
+#         y[0] += np.random.normal(0, np.sqrt(self.p_noise), 1)[0]
+#         y[1] += np.random.normal(0, np.sqrt(self.e_noise), 1)[0]
+#         y[2] += np.random.normal(0, np.sqrt(self.lamb_noise), 1)[0]
+#         return y
+#
+#     def calc_observation(self, t, x, u):
+#         # delete the last two elements
+#         x = x[0:-2]
+#         # get output of system from real matrix
+#         y = self.get_output_of_system(x)
+#
+#         # 0. Initialization
+#         x_old = self.estimated_state
+#         P_old = self.cov_matrix
+#         # 1. Prediction
+#         x_predict = self.Ak @ x_old + self.Bk @ u
+#         P_predict = self.Ak @ P_old @ self.Ak.T + self.process_noise_Q
+#
+#         # 2. Update
+#         innovation = y - self.Ck @ x_predict
+#         innovation_covariance = self.output_covariance_R + self.Ck @ P_predict @ self.Ck.T
+#         kalman_gain = P_predict @ self.Ck.T @ np.linalg.inv(innovation_covariance)
+#         x_update = x_predict + kalman_gain @ innovation
+#         P_update = ((np.eye(6) - kalman_gain @ self.Ck) @ P_predict
+#                     @ np.transpose(np.eye(6) - kalman_gain @ self.Ck)
+#                     + kalman_gain @ self.output_covariance_R @ kalman_gain.T)
+#
+#         self.estimated_state = x_update
+#         self.cov_matrix = P_update
+#
+#         x_predict = np.pad(x_predict, (0, 2), "constant")
+#
+#         return x_predict, [0, 0], y
 

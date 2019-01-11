@@ -4,6 +4,7 @@ import Planner
 from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus, DisturbanceRect, NoDisturbance
 from ModelConstants import ObserverType
 import Observer
+from ModelConstants import ModelType
 
 
 class ObserverFrame(QtWidgets.QFrame):
@@ -84,6 +85,15 @@ class ObserverFrame(QtWidgets.QFrame):
         linear_kalman_layout.addRow(QtWidgets.QLabel("Initial Cov = diag(p,e, lamb, dp,de, dlamb,f,b)"),
                                     linear_kalman_init_cov_layout)
 
+        # 4. Model type
+        self.linear_kalman_model_type = QtWidgets.QComboBox()
+        self.linear_kalman_model_type.addItems(["simple", "gyromoment"])
+        linear_kalman_layout.addRow(QtWidgets.QLabel("Model type:"), self.linear_kalman_model_type)
+
+        # 5. Number of Outputs
+        self.linear_kalman_nOutputs_combo = QtWidgets.QComboBox()
+        self.linear_kalman_nOutputs_combo.addItems(["p, e, lambda", "p, e, lambda, f, b"])
+        linear_kalman_layout.addRow(QtWidgets.QLabel("Measured variables: "), self.linear_kalman_nOutputs_combo)
 
         self.observer_frame_stack.addWidget(linear_kalman_frame)
 
@@ -134,20 +144,21 @@ class ObserverFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.observer_combo)
         self.observer_combo.currentIndexChanged.connect(self.on_observer_combo_select)
-        self.observer_combo.setCurrentIndex(5)
+        self.observer_combo.setCurrentIndex(0)
 
     def on_observer_combo_select(self):
         self.observer_frame_stack.setCurrentIndex(self.observer_combo.currentIndex())
 
-    def get_observer(self):
-        """:return observer object """
+    def get_observer(self, stepSize):
+        """:arg timeStep: step size of simulation
+        :return observer object """
         combo_idx = self.observer_combo.currentIndex()
         # the chosen combo entry defines the type of planner that is returned
         if combo_idx == 0:
             print("Linear Kalman Filter")
             # 1. Operational Point
-            lamb_op = self.linear_kalman_init_p.value()
-            e_op = self.linear_kalman_init_e.value()
+            lamb_op = self.linear_kalman_lamb_op.value()
+            e_op = self.linear_kalman_e_op.value()
 
             # 2. Initial values
             p_init = self.linear_kalman_init_p.value()
@@ -156,6 +167,8 @@ class ObserverFrame(QtWidgets.QFrame):
             dp_init = self.linear_kalman_init_dp.value()
             de_init = self.linear_kalman_init_de.value()
             dlamb_init = self.linear_kalman_init_dlamb.value()
+            f_init = self.linear_kalman_init_f.value()
+            b_init = self.linear_kalman_init_b.value()
 
             # 3. Initial covariance
             p_cov_init = self.linear_kalman_init_cov_p.value()
@@ -164,13 +177,41 @@ class ObserverFrame(QtWidgets.QFrame):
             dp_cov_init = self.linear_kalman_init_cov_dp.value()
             de_cov_init = self.linear_kalman_init_cov_de.value()
             dlamb_cov_init = self.linear_kalman_init_cov_dlamb.value()
+            f_cov_init = self.linear_kalman_init_cov_f.value()
+            b_cov_init = self.linear_kalman_init_cov_b.value()
 
-            operating_point = np.array([0, e_op, lamb_op])
-            init_state_vector = np.array([p_init, e_init, lamb_init, dp_init, de_init, dlamb_init])
-            init_cov_matrix = np.diagflat([p_cov_init, e_cov_init, lamb_cov_init,
-                                           dp_cov_init, de_cov_init, dlamb_cov_init])
+            # 4. Model Type
+            model_name = self.linear_kalman_model_type.currentText()
+            if model_name == "simple":
+                model_type = ModelType.EASY
+            elif model_name == "gyromoment":
+                model_type = ModelType.GYROMOMENT
+            else:
+                raise NotImplementedError("Combo element not implemented yet")
 
-            observer = Observer.LinearKalmanFilter(init_state_vector, init_cov_matrix, operating_point)
+            # 5. Number of Outputs
+            nOutputs_text = self.linear_kalman_nOutputs_combo.currentText()
+            if nOutputs_text == "p, e, lambda":
+                nOutputs = 3
+            elif nOutputs_text == "p, e, lambda, f, b":
+                nOutputs = 5
+            else:
+                raise NotImplementedError("Combo element not implemented yet")
+
+
+            if model_type == ModelType.GYROMOMENT:
+                init_state_vector = np.array([p_init, e_init, lamb_init, dp_init, de_init, dlamb_init, f_init, b_init])
+                init_cov_matrix = np.diagflat([p_cov_init, e_cov_init, lamb_cov_init,
+                                               dp_cov_init, de_cov_init, dlamb_cov_init,
+                                               f_cov_init, b_cov_init])
+            else:
+                init_state_vector = np.array([p_init, e_init, lamb_init, dp_init, de_init, dlamb_init])
+                init_cov_matrix = np.diagflat([p_cov_init, e_cov_init, lamb_cov_init,
+                                               dp_cov_init, de_cov_init, dlamb_cov_init])
+
+            observer = Observer.LinearKalmanFilter(init_state_vector, init_cov_matrix, model_type, e_op, lamb_op,
+                                                   nOutputs, stepSize)
+
         elif combo_idx == 1:
             print("TestKalmanFilter")
             observer = Observer.TestKalmanFilter([0, 0, 0, 0, 0, 0, 0, 0], np.diag([0, 0, 0, 0, 0, 0, 0, 0]))

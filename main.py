@@ -245,7 +245,7 @@ class mainWindow(QtWidgets.QMainWindow):
         logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
         self.current_controller.initialize(param_values)
         self.disturbance = self.disturbance_frame.get_disturbance()
-        self.observer = self.observer_frame.get_observer()
+        self.observer = self.observer_frame.get_observer(self.timeStep)
         self.observer.set_system_model_and_step_size(self.heliSim.get_model_type(), self.timeStep)
         self.observer.set_dynamic_inertia(self.heliSim.dynamic_inertia_torque)
         if self.observer_initial_value is not None:
