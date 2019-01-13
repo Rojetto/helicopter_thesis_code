@@ -158,7 +158,8 @@ class Observer(object):
                     Returns:
                         x_hat: estimated state of system
                         noisy_input: input signal with noise
-                        noisy_output; output signal with noise"""
+                        noisy_output; output signal with noise
+                        cov_matrix: current covariance matrix (8x8)"""
         return
 
     def set_estimated_state(self, x_estimated_state):
@@ -187,7 +188,7 @@ class KalmanFilterBase(Observer):
         self.model_type = model_type
 
         self.bInputNoise = True
-        self.bOutputNoise = False
+        self.bOutputNoise = True
 
         # set system noise parameters
         if self.bInputNoise:
@@ -284,7 +285,7 @@ class NoKalmanFilter(KalmanFilterBase):
         u_with_noise = self.get_noisy_input_of_system(u)
         y_with_noise = self.get_noisy_output_of_system(x[0:3])
         y_with_noise = np.pad(y_with_noise, (0, 2), "constant")
-        return np.zeros(8), u_with_noise, y_with_noise
+        return x, u_with_noise, y_with_noise, np.zeros((8, 8))
 
     def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
         """nothing here"""
@@ -298,7 +299,7 @@ class TestKalmanFilter(KalmanFilterBase):
         x_estimated = x
         u_with_noise = self.get_noisy_input_of_system(u)
         y_with_noise = self.get_noisy_output_of_system(x[0:3])
-        return x_estimated, u_with_noise, y_with_noise
+        return x_estimated, u_with_noise, y_with_noise, np.zeros((8, 8))
 
     def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
         return
@@ -307,8 +308,6 @@ class TestKalmanFilter(KalmanFilterBase):
 class LinearKalmanFilter(KalmanFilterBase):
     """This kalman filter linearizes the model in a fixed operating point which is defined at initialisation."""
 
-    # ToDo: perhaps split up this class into two (LinearKalmanFilterSimple and LinearKalmanFilterGyro)
-    # ToDo: because of all the if statements it has already become a bit difficult to read
     def __init__(self, init_state, init_cov_matrix, model_type : ModelType, e_op, lamb_op, nOutputs, stepSize):
         ''':arg operating_point: 8-element-vector'''
         super().__init__(init_state, init_cov_matrix, model_type, nOutputs)
@@ -451,8 +450,12 @@ class LinearKalmanFilter(KalmanFilterBase):
             x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
             if self.nOutputs == 3:
                 y_with_noise = np.pad(y_with_noise, (0, 2), "constant")
-        # add operating point for real state
-        return x_estimated_state, u_with_noise, y_with_noise
+        # 4. pad covariance matrix with zeros so that it has the shape 8x8
+        if self.nStateVars == 6:
+            cov_matrix_padded = np.pad(self.cov_matrix, ((0, 2), (0, 2)), "constant")
+        elif self.nStateVars == 8:
+            cov_matrix_padded = self.cov_matrix
+        return x_estimated_state, u_with_noise, y_with_noise, cov_matrix_padded
 
 
 
@@ -536,7 +539,9 @@ class ExtKalmanFilterEasyModel(KalmanFilterBase):
         x_estimated_state = np.resize(x_estimated_state, (1, 6))[0]
         x_estimated_state = np.pad(x_estimated_state, (0, 2), "constant")
         y_with_noise = np.pad(y_with_noise, (0, 2), "constant")
-        return x_estimated_state, u_with_noise, y_with_noise
+        # 4. pad covariance matrix with zeros so that it has the shape 8x8
+        cov_matrix_padded = np.pad(self.cov_matrix, ((0, 2), (0, 2)), "constant")
+        return x_estimated_state, u_with_noise, y_with_noise, cov_matrix_padded
 
 
 class ExtKalmanFilterGyroModel(KalmanFilterBase):
@@ -623,7 +628,7 @@ class ExtKalmanFilterGyroModel(KalmanFilterBase):
         x_estimated_state = self.ekf_algorithm(np.resize(u_with_noise, (2, 1)), np.resize(y_with_noise, (5, 1)))
         # 3. add two zero elements at the end of the state vector and at the end of the y_with_noise_vector
         x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
-        return x_estimated_state, u_with_noise, y_with_noise
+        return x_estimated_state, u_with_noise, y_with_noise, self.cov_matrix
 
 
 class ExtKalmanFilterGyroModelLimits(KalmanFilterBase):
@@ -695,15 +700,11 @@ class ExtKalmanFilterGyroModelLimits(KalmanFilterBase):
         cov_matrix_before = self.cov_matrix
         #     1. Prediction
         # predict the state by integrate the time continuous system numerically
-        # ToDo: check for limits when setting the new state
-        self.heliSim.set_current_state_and_time(self.x_estimated_state.reshape((1, 8))[0],
-                                                self.heliSim.get_current_time())
         sim_state_predict = self.heliSim.calc_step(u[0][0], u[1][0], self.no_disturbance_eval)
         x_est_predict = np.resize(sim_state_predict, (8, 1))
         # predict the new covariance by linearizing and discretizing the model
         Ak, Bk, Ck, Dk = self.get_linear_discrete_matrices(x_est_before, u[0][0], u[1][0])
         cov_matrix_predict = Ak @ cov_matrix_before @ np.transpose(Ak) + Bk @ self.N @ np.transpose(Bk)
-
         #     2. Update
         # compute kalman gain
         Kl = cov_matrix_predict @ np.transpose(Ck) @ np.linalg.inv(Ck @ cov_matrix_predict @ np.transpose(Ck) + self.W)
@@ -712,6 +713,12 @@ class ExtKalmanFilterGyroModelLimits(KalmanFilterBase):
         x_est_update = x_est_predict + Kl @ (y - y_est)
         # update covariance matrix (identity matrix must have as many lines as the Kalman gain
         cov_matrix_update = (np.eye(np.size(Kl, 0)) - Kl @ Ck) @ cov_matrix_predict
+
+        # check if the update step state needs to be changed because of limit crossing
+        # if that is the case, correct the state and set the state of the simulation accordingly
+        corrected_state = self.heliSim.get_limited_state_and_change_state(x_est_update.reshape((1, 8))[0])
+        x_est_update = np.resize(corrected_state, (8, 1))
+
         self.x_estimated_state = x_est_update
         self.cov_matrix = cov_matrix_update
         # print("------")
@@ -726,7 +733,7 @@ class ExtKalmanFilterGyroModelLimits(KalmanFilterBase):
         x_estimated_state = self.ekf_algorithm(np.resize(u_with_noise, (2, 1)), np.resize(y_with_noise, (5, 1)))
         # 3. add two zero elements at the end of the state vector and at the end of the y_with_noise_vector
         x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
-        return x_estimated_state, u_with_noise, y_with_noise
+        return x_estimated_state, u_with_noise, y_with_noise, self.cov_matrix
 
 
 class ExtKalmanFilterGyroModelOnly3(KalmanFilterBase):
@@ -810,7 +817,7 @@ class ExtKalmanFilterGyroModelOnly3(KalmanFilterBase):
         # 3. add two zero elements at the end of the state vector and at the end of the y_with_noise_vector
         x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
         y_with_noise = np.pad(y_with_noise, (0, 2), "constant")
-        return x_estimated_state, u_with_noise, y_with_noise
+        return x_estimated_state, u_with_noise, y_with_noise, self.cov_matrix
 
 
 # class LinearKalmanFilter(Observer):
@@ -854,7 +861,6 @@ class ExtKalmanFilterGyroModelOnly3(KalmanFilterBase):
 #     def get_output_of_system(self, x):
 #         """Calculates the output from the current state and the Ck-Matrix + adds gaussian noise"""
 #         y = self.Ck @ x
-#         # ToDo: Werte anzeigen
 #         y[0] += np.random.normal(0, np.sqrt(self.p_noise), 1)[0]
 #         y[1] += np.random.normal(0, np.sqrt(self.e_noise), 1)[0]
 #         y[2] += np.random.normal(0, np.sqrt(self.lamb_noise), 1)[0]

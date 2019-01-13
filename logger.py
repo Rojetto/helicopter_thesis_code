@@ -18,6 +18,7 @@ xs_store = np.empty((current_size, 8))
 xs_estimated_store = np.empty((current_size, 8))
 ys_noisy_output_store = np.empty((current_size, 5))
 us_noisy_input_store = np.empty((current_size, 2))
+cov_matrix_store = np.empty((current_size, 8, 8))
 us_ff_store = np.empty((current_size, 2))
 us_controller_store = np.empty((current_size, 2))
 e_traj_store = np.empty((current_size, 5))
@@ -28,7 +29,7 @@ planner_elevation_g = 0
 
 class LoggingDataV2:
     def __init__(self, ts, xs, us_ff, us_controller, e_traj_and_derivatives, lambda_traj_and_derivatives,
-                 xs_estimated_state, us_noisy_input, ys_noisy_output):
+                 xs_estimated_state, us_noisy_input, ys_noisy_output, cov_matrix):
         self.ts = ts
         self.xs = xs
         self.us_ff = us_ff
@@ -38,6 +39,7 @@ class LoggingDataV2:
         self.xs_estimated_state = xs_estimated_state
         self.ys_noisy_output = ys_noisy_output
         self.us_noisy_input = us_noisy_input
+        self.cov_matrix = cov_matrix
 
 
 class LoggingDataV1:
@@ -55,7 +57,7 @@ def bundle_data():
 
     bundle = LoggingDataV2(ts_store[:index], xs_store[:index], us_ff_store[:index], us_controller_store[:index],
                            e_traj_store[:index], lambda_traj_store[:index], xs_estimated_store[:index],
-                           us_noisy_input_store[:index], ys_noisy_output_store[:index])
+                           us_noisy_input_store[:index], ys_noisy_output_store[:index], cov_matrix_store[:index])
 
     return bundle
 
@@ -84,7 +86,7 @@ def add_planner(planner_travel, planner_elevation):
 
 
 def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_derivatives, x_estimated_state,
-              us_noisy_input, ys_noisy_output):
+              us_noisy_input, ys_noisy_output, cov_matrix):
     global current_size, index
 
     if index == current_size:
@@ -98,6 +100,7 @@ def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_
         lambda_traj_store.resize((current_size, 5), refcheck=False)
         ys_noisy_output_store.resize((current_size, 5), refcheck=False)
         us_noisy_input_store.resize((current_size, 2), refcheck=False)
+        cov_matrix_store.resize((current_size, 8, 8), refcheck=False)
 
     ts_store[index] = t
     xs_store[index] = x
@@ -108,6 +111,7 @@ def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_
     us_noisy_input_store[index] = us_noisy_input
     e_traj_store[index] = e_traj_and_derivatives
     lambda_traj_store[index] = lambda_traj_and_derivatives
+    cov_matrix_store[index] = cov_matrix
 
     index += 1
 
@@ -134,6 +138,7 @@ def process(bundle: LoggingDataV2):
     xs_estimated_state = bundle.xs_estimated_state
     us_noisy_input = bundle.us_noisy_input
     ys_noisy_output = bundle.ys_noisy_output
+    cov_matrix = bundle.cov_matrix
 
     # Your data processing code goes here
 
@@ -147,13 +152,13 @@ def process(bundle: LoggingDataV2):
     # ax1.grid()
     # plt.show()
 
-    # plotMoments(bundle)
+    plotMoments(bundle)
 
     plotBasics(bundle)
 
-    # plotValidation(bundle)
+    plotValidation(bundle)
 
-    # plotInputs(bundle)
+    plotInputs(bundle)
 
     plotObserver(bundle)
 
@@ -350,6 +355,24 @@ def plotObserver(bundle):
     xs_estimated_state = bundle.xs_estimated_state
     us_noisy_input = bundle.us_noisy_input
     ys_noisy_output = bundle.ys_noisy_output
+    cov_matrix = bundle.cov_matrix
+
+    fig = custom_figure("Covariance Matrix (var(p), var(e), var(lambda))")
+    plt.plot(ts, cov_matrix[:, 0, 0], label="var(p)")
+    plt.plot(ts, cov_matrix[:, 1, 1], label="var(e)")
+    plt.plot(ts, cov_matrix[:, 2, 2], label="var(lambda)")
+    plt.legend()
+
+    fig = custom_figure("Covariance Matrix (var(dp), var(de), var(dlambda))")
+    plt.plot(ts, cov_matrix[:, 3, 3], label="var(dp)")
+    plt.plot(ts, cov_matrix[:, 4, 4], label="var(de)")
+    plt.plot(ts, cov_matrix[:, 5, 5], label="var(dlambda)")
+    plt.legend()
+
+    fig = custom_figure("Covariance Matrix (var(f), var(b))")
+    plt.plot(ts, cov_matrix[:, 6, 6], label="var(f)")
+    plt.plot(ts, cov_matrix[:, 7, 7], label="var(b)")
+    plt.legend()
 
     fig = custom_figure("Estimated state of observer (p, e, lambda)")
     plt.plot(ts, xs_estimated_state[:, 0], label="p observed")

@@ -82,6 +82,7 @@ class mainWindow(QtWidgets.QMainWindow):
         # Initialize helicopter model for visualising the estimated state
         self.heliModelEst = HelicopterModelEstimated()
         self.heliModelEst.addAllActors(vtk_renderer)
+        self.heliModelEst.setState(0, 0, 0)
         # Initialize helicopter simulation
         self.heliSim = HeliSimulation(0, 0, 0, self.timeStep)
         self.disturbance = None
@@ -224,10 +225,8 @@ class mainWindow(QtWidgets.QMainWindow):
     def on_show_estimated_state_click(self):
         if self.show_estimated_state_checkbox.checkState() == 2:
             # show_estimated_state is checked
-            print("is checked")
             self.heliModelEst.setVisibility(True)
         else:
-            print("not checked")
             self.heliModelEst.setVisibility(False)
 
     def on_init_value_change(self):
@@ -305,11 +304,12 @@ class mainWindow(QtWidgets.QMainWindow):
             Vf = Vf_ff + Vf_controller
             Vb = Vb_ff + Vb_controller
             # Call observer object
-            x_estimated_state, noisy_input, noisy_output = self.observer.calc_observation(t, x, [Vf, Vb])
+            x_estimated_state, noisy_input, noisy_output, cov_matrix = self.observer.calc_observation(t, x, [Vf, Vb])
             # Log data
             if self.log_enabled:
                 logger.add_frame(t, x, [Vf_ff, Vb_ff], [Vf_controller, Vb_controller],
-                                 e_and_derivatives, lambda_and_derivatives, x_estimated_state, noisy_input, noisy_output)
+                                 e_and_derivatives, lambda_and_derivatives, x_estimated_state, noisy_input,
+                                 noisy_output, cov_matrix)
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb, current_disturbance)
             self.heliModel.setState(lamb, e, p)

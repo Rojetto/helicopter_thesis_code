@@ -224,6 +224,8 @@ class ObserverFrame(QtWidgets.QFrame):
         elif combo_idx == 4:
             print("Ext. Kalman Filter for Gyromoment Model (5-element)")
             observer = Observer.ExtKalmanFilterGyroModelLimits(np.zeros(8), np.diag([0, 0, 0, 0, 0, 0, 0, 0]), stepSize)
+            # ToDo: Implement GUI for changing this
+            observer.set_should_limit(True)
         elif combo_idx == 5:
             print("Ext. Kalman Filter for Gyromoment Model(3-element)")
             observer = Observer.ExtKalmanFilterGyroModelOnly3(np.zeros(8), np.diag([0, 0, 0, 0, 0, 0, 0, 0]))
