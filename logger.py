@@ -79,6 +79,11 @@ def open_dialog_and_store():
         pickle.dump(bundle, file)
 
 
+def load_bundle(path):
+    with open(path, "rb") as file:
+        return pickle.load(file)
+
+
 def add_planner(planner_travel, planner_elevation):
     global planner_travel_g, planner_elevation_g
     planner_travel_g = planner_travel
