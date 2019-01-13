@@ -9,7 +9,8 @@ from helicontrollers.util import compute_linear_ss
 import scipy.linalg
 from numpy.ma import cos, sin
 import ModelConstants as mc
-from HeliSimulation import getInertia
+from HeliSimulation import getInertia, HeliSimulation
+from Disturbance import NoDisturbance
 
 L1 = mc.l_p
 L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
@@ -167,6 +168,9 @@ class Observer(object):
         self.dynamic_inertia = dynamic_inertia
         print("Dynamic Inertia was set to " + str(self.dynamic_inertia))
 
+    def set_should_limit(self, should_check_limits):
+        self.should_check_limits = should_check_limits
+
 
 class KalmanFilterBase(Observer):
     """Base class for Kalman Filter. Takes care of adding noise to input and output signals.
@@ -183,7 +187,7 @@ class KalmanFilterBase(Observer):
         self.model_type = model_type
 
         self.bInputNoise = True
-        self.bOutputNoise = True
+        self.bOutputNoise = False
 
         # set system noise parameters
         if self.bInputNoise:
@@ -407,7 +411,6 @@ class LinearKalmanFilter(KalmanFilterBase):
         # compute kalman gain
         Kl = (cov_matrix_predict @ np.transpose(self.Ck) @
               np.linalg.inv(self.Ck @ cov_matrix_predict @ np.transpose(self.Ck) + self.W))
-        print(Kl)
         # update state
         if self.nOutputs == 3:
             y_est = x_est_predict[0:3,]
@@ -594,6 +597,109 @@ class ExtKalmanFilterGyroModel(KalmanFilterBase):
                                         (0, self.timeStep), np.resize(x_est_before, (1, 8))[0],
                                         method='RK45', t_eval=tt, rtol=1e-6, atol=1e-9)
         x_est_predict = np.resize(sol.y[:, -1], (8, 1))
+        # predict the new covariance by linearizing and discretizing the model
+        Ak, Bk, Ck, Dk = self.get_linear_discrete_matrices(x_est_before, u[0][0], u[1][0])
+        cov_matrix_predict = Ak @ cov_matrix_before @ np.transpose(Ak) + Bk @ self.N @ np.transpose(Bk)
+
+        #     2. Update
+        # compute kalman gain
+        Kl = cov_matrix_predict @ np.transpose(Ck) @ np.linalg.inv(Ck @ cov_matrix_predict @ np.transpose(Ck) + self.W)
+        # update state
+        y_est = np.concatenate((x_est_predict[0:3], x_est_predict[6:8]))
+        x_est_update = x_est_predict + Kl @ (y - y_est)
+        # update covariance matrix (identity matrix must have as many lines as the Kalman gain
+        cov_matrix_update = (np.eye(np.size(Kl, 0)) - Kl @ Ck) @ cov_matrix_predict
+        self.x_estimated_state = x_est_update
+        self.cov_matrix = cov_matrix_update
+        # print("------")
+        # print(cov_matrix_predict)
+        return x_est_update
+
+    def calc_observation(self, t, x, u):
+        # 1. add noise to input and output
+        u_with_noise = self.get_noisy_input_of_system(u)
+        y_with_noise = self.get_noisy_output_of_system(np.concatenate((x[0:3], x[6:8])))
+        # 2. execute ekf algorithm
+        x_estimated_state = self.ekf_algorithm(np.resize(u_with_noise, (2, 1)), np.resize(y_with_noise, (5, 1)))
+        # 3. add two zero elements at the end of the state vector and at the end of the y_with_noise_vector
+        x_estimated_state = np.resize(x_estimated_state, (1, 8))[0]
+        return x_estimated_state, u_with_noise, y_with_noise
+
+
+class ExtKalmanFilterGyroModelLimits(KalmanFilterBase):
+    """Kalman filter for the gyromoment model, using p, e, lambda, f and b as output.
+    This class takes care of the angle limits of the model."""
+
+    def __init__(self, init_state, init_cov_matrix, stepSize):
+        super().__init__(init_state, init_cov_matrix, ModelType.GYROMOMENT, 5)
+        print("Hi, this is the 'ExtKalmanFilterGyroModelLimits' class.")
+        self.heliSim = HeliSimulation(0, 0, 0, stepSize)
+        self.heliSim.set_current_state_and_time(init_state, self.heliSim.get_current_time())
+        self.timeStep = stepSize
+        self.no_disturbance_eval = np.zeros(5)
+
+    def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
+        self.heliSim.set_model_type(model_type)
+        return
+
+    def set_should_limit(self, should_check_limits):
+        # ToDo: Implement this in the ObserverFrame
+        self.should_check_limits = should_check_limits
+        self.heliSim.set_should_limit(should_check_limits)
+
+    def set_estimated_state(self, x_estimated_state):
+        '''Overload this method in order update the simulation object as well.'''
+        self.x_estimated_state = np.resize(np.array(x_estimated_state), (8, 1))
+        self.heliSim.set_current_state_and_time(x_estimated_state, self.heliSim.get_current_time())
+
+    def get_linear_discrete_matrices(self, operating_point, v_f, v_b):
+        """Linearizes and discretizes the current system model at the operating point
+        and saves it for calc_observation
+        :arg operating_point: 8-element-state vector"""
+
+        At, Bt = get_gyro_matrices(operating_point, v_f, v_b, self.dynamic_inertia)
+        Ct = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 1, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 1, 0, 0, 0, 0, 0],
+                      [0, 0, 0, 0, 0, 0, 1, 0],
+                      [0, 0, 0, 0, 0, 0, 0, 1]])
+        Dt = np.array([[0, 0],
+                      [0, 0],
+                      [0, 0],
+                      [0, 0],
+                      [0, 0]])
+
+        Ak, Bk, Ck, Dk = discretize_linear_state_space(At, Bt, Ct, Dt, self.timeStep)
+        return Ak, Bk, Ck, Dk
+
+    def rhs_time_continuous(self, t, x, v_f, v_b):
+        """Attention: think of v_f and v_b instead of v_s and v_d"""
+        p, e, lamb, dp, de, dlamb, f_speed, b_speed = x
+        J_p, J_e, J_l = getInertia(x, self.dynamic_inertia)
+
+        df_speed = - f_speed / mc.T_f + mc.K_f / mc.T_f * v_f
+        db_speed = - b_speed / mc.T_b + mc.K_b/mc.T_b * v_b
+        ddp = 1/J_p*(L1*mc.K * (f_speed - b_speed) - mc.d_p * dp + J_p * np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dlamb ** 2) \
+                + np.cos(p) * de * mc.J_m *(b_speed - f_speed) + np.sin(p) * np.cos(e) * mc.J_m * (f_speed - b_speed) * dlamb)
+        dde = 1/J_e *(L2 * np.cos(e) + L3*mc.K * np.cos(p) * (f_speed + b_speed) - mc.d_e * de - J_e * np.cos(e) * np.sin(e) * dlamb ** 2 + np.sin(p) * mc.K_m * (f_speed-b_speed) \
+                + np.cos(p) * dp * mc.J_m * (f_speed -b_speed) + np.sin(e) * np.cos(p) * dlamb * mc.J_m *(b_speed - f_speed))
+        ddlamb = 1/J_l * (L4*mc.K * np.cos(e) * np.sin(p) * (f_speed + b_speed) - mc.d_l * dlamb + np.cos(e) * np.cos(p) * mc.K_m * (b_speed-f_speed)\
+                + np.sin(p) * np.cos(e) * dp * mc.J_m *(f_speed - b_speed) + np.sin(p) * np.cos(e) * dlamb * mc.J_m *(f_speed - b_speed))
+        return np.array([dp, de, dlamb, ddp, dde, ddlamb, df_speed, db_speed])
+
+    def ekf_algorithm(self, u, y):
+        """Computes the estimated state using the ekf algorithm.
+        :arg u: input signal with noise (Dimension: 2x1)
+        :arg y: output signal with noise (Dimension: 3x1)"""
+        x_est_before = self.x_estimated_state
+        cov_matrix_before = self.cov_matrix
+        #     1. Prediction
+        # predict the state by integrate the time continuous system numerically
+        # ToDo: check for limits when setting the new state
+        self.heliSim.set_current_state_and_time(self.x_estimated_state.reshape((1, 8))[0],
+                                                self.heliSim.get_current_time())
+        sim_state_predict = self.heliSim.calc_step(u[0][0], u[1][0], self.no_disturbance_eval)
+        x_est_predict = np.resize(sim_state_predict, (8, 1))
         # predict the new covariance by linearizing and discretizing the model
         Ak, Bk, Ck, Dk = self.get_linear_discrete_matrices(x_est_before, u[0][0], u[1][0])
         cov_matrix_predict = Ak @ cov_matrix_before @ np.transpose(Ak) + Bk @ self.N @ np.transpose(Bk)

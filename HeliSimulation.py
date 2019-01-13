@@ -436,6 +436,7 @@ class HeliSimulation(object):
         return self.currentTime
 
     def set_current_state_and_time(self, state, sim_time=0.0):
+        """state = p, e, lamb, dp, de, dlamb, f_speed, b_speed = x"""
         self.currentTime = sim_time
         self.currentState = np.array(state)
         # reset state machine
@@ -452,7 +453,7 @@ class HeliSimulation(object):
     def set_should_limit(self, should_check_limits):
         self.should_check_limits = should_check_limits
 
-    def set_dynamic_inertia_torque(self, dynamic_intertia_torque):
-        self.dynamic_inertia_torque = dynamic_intertia_torque
+    def set_dynamic_inertia_torque(self, dynamic_inertia_torque):
+        self.dynamic_inertia_torque = dynamic_inertia_torque
         # print("Dynamic intertia torque: " + str(self.dynamic_inertia_torque))
 

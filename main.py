@@ -18,7 +18,7 @@ from ModelFrame import ModelFrame
 from TrajectoryFrame import TrajectoryFrame
 from DisturbanceFrame import DisturbanceFrame
 from FeedforwardFrame import FeedforwardFrame
-from OberserverFrame import ObserverFrame
+from ObserverFrame import ObserverFrame
 from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
 from helicontrollers.TimeVariantController import TimeVariantController

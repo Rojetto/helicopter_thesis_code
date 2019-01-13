@@ -144,7 +144,7 @@ class ObserverFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.observer_combo)
         self.observer_combo.currentIndexChanged.connect(self.on_observer_combo_select)
-        self.observer_combo.setCurrentIndex(0)
+        self.observer_combo.setCurrentIndex(4)
 
     def on_observer_combo_select(self):
         self.observer_frame_stack.setCurrentIndex(self.observer_combo.currentIndex())
@@ -223,7 +223,7 @@ class ObserverFrame(QtWidgets.QFrame):
             observer = Observer.NoKalmanFilter(np.zeros(6), np.diag(np.zeros(6)))
         elif combo_idx == 4:
             print("Ext. Kalman Filter for Gyromoment Model (5-element)")
-            observer = Observer.ExtKalmanFilterGyroModel(np.zeros(8), np.diag([0, 0, 0, 0, 0, 0, 0, 0]))
+            observer = Observer.ExtKalmanFilterGyroModelLimits(np.zeros(8), np.diag([0, 0, 0, 0, 0, 0, 0, 0]), stepSize)
         elif combo_idx == 5:
             print("Ext. Kalman Filter for Gyromoment Model(3-element)")
             observer = Observer.ExtKalmanFilterGyroModelOnly3(np.zeros(8), np.diag([0, 0, 0, 0, 0, 0, 0, 0]))
