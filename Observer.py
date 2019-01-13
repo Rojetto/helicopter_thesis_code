@@ -307,7 +307,7 @@ class LinearKalmanFilter(KalmanFilterBase):
     # ToDo: because of all the if statements it has already become a bit difficult to read
     def __init__(self, init_state, init_cov_matrix, model_type : ModelType, e_op, lamb_op, nOutputs, stepSize):
         ''':arg operating_point: 8-element-vector'''
-        super().__init__(init_state, init_cov_matrix, model_type, 3)
+        super().__init__(init_state, init_cov_matrix, model_type, nOutputs)
         if np.size(init_cov_matrix, 0) != np.size(init_state, 0):
             raise Exception("dim(init_x) = " + str(np.size(init_state)) + " dim(init_cov_matrix) = " +
                             str(np.size(init_cov_matrix)))
@@ -427,12 +427,12 @@ class LinearKalmanFilter(KalmanFilterBase):
         self.cov_matrix = cov_matrix_update
         # print("------")
         # print(cov_matrix_predict)
-        return x_est_update
+        return x_estimated_state
 
     def calc_observation(self, t, x, u):
         # 1. add noise to input and output
         u_with_noise = self.get_noisy_input_of_system(u)
-        if self.nOutputs == 6:
+        if self.nOutputs == 5:
             y_with_noise = self.get_noisy_output_of_system(np.concatenate((x[0:3], x[6:8])))
         elif self.nOutputs == 3:
             y_with_noise = self.get_noisy_output_of_system(x[0:3])

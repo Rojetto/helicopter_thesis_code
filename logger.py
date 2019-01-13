@@ -402,11 +402,11 @@ def plotObserver(bundle):
     ax1.plot(ts, xs[:, 7], label="b without noise")
     ax1.legend(loc=2)
 
-    fig = custom_figure("Noise of observed signal")
-    plt.plot(ts, xs_estimated_state[:, 0] - xs[:, 0], label="p_est - p")
-    plt.plot(ts, xs_estimated_state[:, 1] - xs[:, 1], label="e_est - e")
-    plt.plot(ts, xs_estimated_state[:, 2] - xs[:, 2], label="lambda_est - lambda")
-    plt.legend()
+    # fig = custom_figure("Noise of observed signal")
+    # plt.plot(ts, xs_estimated_state[:, 0] - xs[:, 0], label="p_est - p")
+    # plt.plot(ts, xs_estimated_state[:, 1] - xs[:, 1], label="e_est - e")
+    # plt.plot(ts, xs_estimated_state[:, 2] - xs[:, 2], label="lambda_est - lambda")
+    # plt.legend()
 
     # Calculate the variance of the kalman filter signals for verifying correct noise generation
     vf_var = np.var(us_noisy_input[:, 0] - (us_ff[:, 0] + us_controller[:, 0]))

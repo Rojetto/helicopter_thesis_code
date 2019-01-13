@@ -106,7 +106,7 @@ class ObserverFrame(QtWidgets.QFrame):
         self.observer_frame_stack.addWidget(test_kalman_frame)
 
         # Extended Kalman Filter for easy model
-        self.observer_combo.insertItem(3, "Extended Kalman Filter for Easy Model")
+        self.observer_combo.insertItem(3, "Extended Kalman Filter for Simple Model")
         ext_easy_kalman_frame = QtWidgets.QFrame()
         ext_easy_kalman_layout = QtWidgets.QFormLayout()
         ext_easy_kalman_frame.setLayout(ext_easy_kalman_layout)
