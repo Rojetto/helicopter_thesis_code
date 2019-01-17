@@ -8,8 +8,8 @@ from ModelConstants import ModelType
 from helicontrollers.util import compute_linear_ss
 import scipy.linalg
 from numpy.ma import cos, sin
-import ModelConstants as mc
-from HeliSimulation import getInertia, HeliSimulation
+import InaccurateModelConstants as mc
+from HeliKalmanSimulation import getInertia, HeliKalmanSimulation
 from Disturbance import NoDisturbance
 
 L1 = mc.l_p
@@ -189,6 +189,7 @@ class KalmanFilterBase(Observer):
 
         self.bInputNoise = True
         self.bOutputNoise = True
+
 
         # set system noise parameters
         if self.bInputNoise:
@@ -638,7 +639,7 @@ class ExtKalmanFilterGyroModelLimits(KalmanFilterBase):
     def __init__(self, init_state, init_cov_matrix, stepSize):
         super().__init__(init_state, init_cov_matrix, ModelType.GYROMOMENT, 5)
         print("Hi, this is the 'ExtKalmanFilterGyroModelLimits' class.")
-        self.heliSim = HeliSimulation(0, 0, 0, stepSize)
+        self.heliSim = HeliKalmanSimulation(0, 0, 0, stepSize)
         self.heliSim.set_current_state_and_time(init_state, self.heliSim.get_current_time())
         self.timeStep = stepSize
         self.no_disturbance_eval = np.zeros(5)
