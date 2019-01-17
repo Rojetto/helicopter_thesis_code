@@ -64,7 +64,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.timeStep = 1.0 / 60.0  # s
         self.total_t = 0
         self.sim_running = False
-        self.log_enabled = False
+        self.log_enabled = True
 
         # Open separate window for joystick widget
         joystick_window = QtWidgets.QMainWindow(self)
@@ -165,6 +165,7 @@ class mainWindow(QtWidgets.QMainWindow):
         logger_layout = QtWidgets.QHBoxLayout()
         main_simulation_controls_layout.addLayout(logger_layout)
         self.log_checkbox = QtWidgets.QCheckBox("Log")
+        self.log_checkbox.setChecked(self.log_enabled)
         log_show_button = QtWidgets.QPushButton("Show")
         log_show_button.clicked.connect(self.on_log_show_button)
         log_store_button = QtWidgets.QPushButton("Store")
