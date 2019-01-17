@@ -2,7 +2,6 @@ from PyQt5 import QtWidgets, QtGui
 import numpy as np
 import Planner
 from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus, DisturbanceRect, NoDisturbance
-from ModelConstants import ObserverType
 import Observer
 from ModelConstants import ModelType
 

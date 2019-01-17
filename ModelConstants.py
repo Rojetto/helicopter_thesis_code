@@ -2,9 +2,6 @@ import numpy as np
 
 from enum import Enum
 
-class ObserverType(Enum):
-    LINEAR_KALMAN = 1
-
 class ModelType(Enum):
     EASY = 1
     FRICTION = 2
