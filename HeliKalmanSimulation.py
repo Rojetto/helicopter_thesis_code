@@ -482,12 +482,15 @@ class HeliKalmanSimulation(object):
     #     return corrected_state
 
 
-    def get_limited_state_and_change_state(self, state):
+    def get_limited_state_and_change_state(self, state, model: ModelType):
         '''This method checks if the given state is out the allowed value range.
         If this is the case, then the discrete state of the simulation is set accordingly. Furthermore
         this method then returns the corrected state vector so that the kalman filter and the
         simulation keep being synchronized. Also, this function alters the continuous state vector'''
-        p, e, lamb, dp, de, dlamb, f_speed, b_speed = state
+        if model == ModelType.GYROMOMENT:
+            p, e, lamb, dp, de, dlamb, f_speed, b_speed = state
+        elif model == ModelType.EASY:
+            p, e, lamb, dp, de, dlamb = state
 
         # check if the new state values exceed the value range
         # if this is the case then don't set the new state variables exactly on the limits
@@ -545,7 +548,10 @@ class HeliKalmanSimulation(object):
             elif self.statLim.lamb == LimitType.LOWER_LIMIT and lamb > self.statLim.lamb_min:
                 self.statLim.lamb = LimitType.NO_LIMIT_REACHED
 
-        corrected_state = np.array([p, e, lamb, dp, de, dlamb, f_speed, b_speed])
+        if model == ModelType.GYROMOMENT:
+            corrected_state = np.array([p, e, lamb, dp, de, dlamb, f_speed, b_speed])
+        elif model == ModelType.EASY:
+            corrected_state = np.array([p, e, lamb, dp, de, dlamb, 0, 0])
         self.currentState = corrected_state
         # reset state machine
         self.statLim.p = LimitType.NO_LIMIT_REACHED

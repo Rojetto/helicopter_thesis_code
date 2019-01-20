@@ -4,9 +4,32 @@ import Planner
 from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus, DisturbanceRect, NoDisturbance
 import Observer
 from ModelConstants import ModelType
-
+import ObserverSettingsFrame
+import ObserverNoiseFrame
 
 class ObserverFrame(QtWidgets.QFrame):
+    def __init__(self):
+        # QtWidgets.QFrame.__init__(self)
+        super().__init__()
+        main_layout = QtWidgets.QVBoxLayout()
+        self.setLayout(main_layout)
+
+        settings_tabs = QtWidgets.QTabWidget()
+        main_layout.addWidget(settings_tabs)
+
+        self.observer_settings_frame = ObserverSettingsFrame.ObserverSettingsFrame()
+        self.observer_noise_frame = ObserverNoiseFrame.ObserverNoiseFrame()
+        settings_tabs.addTab(self.observer_settings_frame, "Observer General Settings")
+        settings_tabs.addTab(self.observer_noise_frame, "Observer Noise settings")
+        return
+
+    def get_observer(self, stepSize):
+        """:arg timeStep: step size of simulation
+        :return observer object """
+        noise_settings = self.observer_noise_frame.get_noise_settings()
+        return self.observer_settings_frame.get_observer(stepSize, noise_settings)
+
+class ObserverFrameOld(QtWidgets.QFrame):
     def __init__(self):
         # QtWidgets.QFrame.__init__(self)
         super().__init__()
@@ -216,7 +239,8 @@ class ObserverFrame(QtWidgets.QFrame):
             observer = Observer.TestKalmanFilter([0, 0, 0, 0, 0, 0, 0, 0], np.diag([0, 0, 0, 0, 0, 0, 0, 0]))
         elif combo_idx == 2:
             print("Ext. Kalman Filter for Easy Model")
-            observer = Observer.ExtKalmanFilterEasyModel([0, 0, 0, 0, 0, 0, 0, 0], np.diag([0, 0, 0, 0, 0, 0, 0, 0]))
+            # observer = Observer.ExtKalmanFilterEasyModel([0, 0, 0, 0, 0, 0, 0, 0], np.diag([0, 0, 0, 0, 0, 0, 0, 0]))
+            observer = Observer.ExtKalmanFilterEasyModelLimits(np.zeros(8), np.diag([0, 0, 0, 0, 0, 0, 0, 0]), stepSize)
         elif combo_idx == 3:
             print("No Kalman filter")
             observer = Observer.NoKalmanFilter(np.zeros(6), np.diag(np.zeros(6)))

@@ -74,7 +74,7 @@ class mainWindow(QtWidgets.QMainWindow):
         joystick_widget = JoystickWidget()
         joystick_window.setCentralWidget(joystick_widget)
         joystick_window.resize(400, 400)
-        joystick_window.show()
+        # joystick_window.show()
 
         # Initialize helicopter model
         self.heliModel = HelicopterModel()
@@ -201,7 +201,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.feedforward_method = None
         self.feedforward_model = None
         self.observer = None
-        self.observer_initial_value = None
+        self.observer_initial_value = np.zeros(8)
 
         # Get the current trajectory planner
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
@@ -249,7 +249,10 @@ class mainWindow(QtWidgets.QMainWindow):
         self.observer.set_system_model_and_step_size(self.heliSim.get_model_type(), self.timeStep)
         self.observer.set_dynamic_inertia(self.heliSim.dynamic_inertia_torque)
         if self.observer_initial_value is not None:
-            self.observer.set_estimated_state(self.observer_initial_value)
+            # get estimated state and JUST change the angles
+            est_state = self.observer.get_estimated_state()
+            est_state[0:3] = self.observer_initial_value[0:3]
+            self.observer.set_estimated_state(est_state)
         self.feedforward_method,  self.feedforward_model = self.feedforward_frame.get_feedforward_method_and_model()
 
         self.sim_running = True
