@@ -202,7 +202,7 @@ class KalmanFilterBase(Observer):
         # Backup, if noise is disabled and then again enabled
         self.input_noise_variance = input_noise_variance
         self.output_noise_variance = output_noise_variance
-        self.no_output_noise_variance = (0.001 / 180 * np.pi) ** 2
+        self.no_output_noise_variance = (0.00001 / 180 * np.pi) ** 2
 
         self.input_variance = input_variance
         self.output_variance = output_variance
@@ -378,7 +378,7 @@ class TestKalmanFilter(KalmanFilterBase):
 class LinearKalmanFilterWithLimits(KalmanFilterBase):
     """This kalman filter linearizes the model in a fixed operating point which is defined at initialisation."""
 
-    def __init__(self, init_state, init_cov_matrix, model_type : ModelType, e_op, lamb_op, nOutputs, stepSize,
+    def __init__(self, init_state, init_cov_matrix, model_type : ModelType, e_op, nOutputs, stepSize,
                  input_variance=(0.25/50) ** 2, output_variance=(0.5 / 180 * np.pi) ** 2,
                  input_noise_variance=(0.25/50) ** 2, output_noise_variance=(0.5 / 180 * np.pi) ** 2):
         ''':arg operating_point: 8-element-vector'''
@@ -389,6 +389,10 @@ class LinearKalmanFilterWithLimits(KalmanFilterBase):
                             str(np.size(init_cov_matrix)))
         self.timeStep = stepSize
         vf_op, vb_op = get_operating_point_inputs(e_op, model_type)
+        # the lambda op value has no influence on the linear matrices.
+        # because of it wasn't my intention to give the possibility to enter a really flexible operating point
+        # i will just set it to 0 and remove it from the gui
+        lamb_op = 0
         self.operating_point = np.array([0, e_op, lamb_op, 0, 0, 0, vf_op * mc.K_f, vb_op * mc.K_b])
         self.model_type = model_type
         self.nOutputs = nOutputs
@@ -511,7 +515,7 @@ class LinearKalmanFilterWithLimits(KalmanFilterBase):
         if self.should_check_limits:
             # check if the update step state needs to be changed because of limit crossing
             # if that is the case, correct the state and set the state of the simulation accordingly
-            corrected_state = self.heliSim.get_limited_state_and_change_state(np.transpose(x_estimated_state)[0],
+            corrected_state = self.heliSim.get_limited_state_and_change_state_without_sim(np.transpose(x_estimated_state)[0],
                                                                               self.model_type)
             x_estimated_state = np.resize(corrected_state, (self.nStateVars, 1))
         self.x_estimated_state = x_estimated_state

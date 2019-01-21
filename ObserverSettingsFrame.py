@@ -30,12 +30,12 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
         linear_kalman_frame.setLayout(linear_kalman_layout)
 
         # 1. Operational Point
-        self.linear_kalman_lamb_op = QtWidgets.QDoubleSpinBox()
-        self.linear_kalman_lamb_op.setMinimum(-9999)
+        # self.linear_kalman_lamb_op = QtWidgets.QDoubleSpinBox()
+        # self.linear_kalman_lamb_op.setMinimum(-9999)
         self.linear_kalman_e_op = QtWidgets.QDoubleSpinBox()
         self.linear_kalman_e_op.setMinimum(-9999)
 
-        linear_kalman_layout.addRow(QtWidgets.QLabel("Lambda operational point in degree"), self.linear_kalman_lamb_op)
+        # linear_kalman_layout.addRow(QtWidgets.QLabel("Lambda operational point in degree"), self.linear_kalman_lamb_op)
         linear_kalman_layout.addRow(QtWidgets.QLabel("e operational point in degree"), self.linear_kalman_e_op)
 
         # 2. initial value
@@ -283,7 +283,7 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
         if combo_idx == 0:
             print("Linear Kalman Filter")
             # 1. Operational Point
-            lamb_op = self.linear_kalman_lamb_op.value() * np.pi / 180
+            # lamb_op = self.linear_kalman_lamb_op.value() * np.pi / 180
             e_op = self.linear_kalman_e_op.value() * np.pi / 180
 
             # 2. Initial values
@@ -342,7 +342,6 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
                                                dp_cov_init, de_cov_init, dlamb_cov_init])
 
             observer = Observer.LinearKalmanFilterWithLimits(init_state_vector, init_cov_matrix, model_type, e_op,
-                                                             lamb_op,
                                                    nOutputs, stepSize, input_matrix_variance, output_matrix_variance,
                                                    input_noise_variance, output_noise_variance)
 

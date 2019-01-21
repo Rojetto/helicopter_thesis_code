@@ -493,8 +493,6 @@ class HeliKalmanSimulation(object):
             p, e, lamb, dp, de, dlamb = state
 
         # check if the new state values exceed the value range
-        # if this is the case then don't set the new state variables exactly on the limits
-        # because then the event system wouldn't work anymore as expected
         if self.should_check_limits:
             #   Check for angle being reached
             # pitch angle
@@ -553,10 +551,59 @@ class HeliKalmanSimulation(object):
         elif model == ModelType.EASY:
             corrected_state = np.array([p, e, lamb, dp, de, dlamb, 0, 0])
         self.currentState = corrected_state
-        # reset state machine
-        self.statLim.p = LimitType.NO_LIMIT_REACHED
-        self.statLim.e = LimitType.NO_LIMIT_REACHED
-        self.statLim.lamb = LimitType.NO_LIMIT_REACHED
+        return corrected_state
+
+    def get_limited_state_and_change_state_without_sim(self, state, model: ModelType):
+        '''This method checks if the given state is out the allowed value range. In contrast to
+        get_limited_state_and_change_state() this method is for the linear kalman filter which does not use
+        the calc_step-method.'''
+        if model == ModelType.GYROMOMENT:
+            p, e, lamb, dp, de, dlamb, f_speed, b_speed = state
+        elif model == ModelType.EASY:
+            p, e, lamb, dp, de, dlamb = state
+
+        # check if the new state values exceed the value range
+        if self.should_check_limits:
+            #   Check for angle being reached
+            # pitch angle
+            if p > self.statLim.p_max:
+                # equivalent to event_pmax
+                p = self.statLim.p_max
+                dp = 0
+                self.statLim.p = LimitType.UPPER_LIMIT
+            elif p < self.statLim.p_min:
+                # equivalent to event_pmin
+                p = self.statLim.p_min
+                dp = 0
+                self.statLim.p = LimitType.LOWER_LIMIT
+            # elevation angle
+            if e > self.statLim.e_max:
+                # equivalent to event_emax
+                e = self.statLim.e_max
+                de = 0
+                self.statLim.e = LimitType.UPPER_LIMIT
+            elif e < self.statLim.e_min:
+                # equivalent to event_emin
+                e = self.statLim.e_min
+                de = 0
+                self.statLim.e = LimitType.LOWER_LIMIT
+            # travel angle
+            if lamb > self.statLim.lamb_max:
+                # equivalent to event_lambmax
+                lamb = self.statLim.lamb_max
+                dlamb = 0
+                self.statLim.lamb = LimitType.UPPER_LIMIT
+            elif lamb < self.statLim.lamb_min:
+                # equivalent to event_lambmin
+                lamb = self.statLim.lamb_min
+                dlamb = 0
+                self.statLim.lamb = LimitType.LOWER_LIMIT
+
+        if model == ModelType.GYROMOMENT:
+            corrected_state = np.array([p, e, lamb, dp, de, dlamb, f_speed, b_speed])
+        elif model == ModelType.EASY:
+            corrected_state = np.array([p, e, lamb, dp, de, dlamb, 0, 0])
+        self.currentState = corrected_state
         return corrected_state
 
 
