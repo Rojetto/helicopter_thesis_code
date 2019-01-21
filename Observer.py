@@ -200,10 +200,13 @@ class KalmanFilterBase(Observer):
         self.bInputNoise = True
         self.bOutputNoise = True
         # Backup, if noise is disabled and then again enabled
-        # ToDo: Implement possibility to disable noise and also change the corresponding matrices
         self.input_noise_variance = input_noise_variance
         self.output_noise_variance = output_noise_variance
-        self.no_output_noise_variance = (0.00001 / 180 * np.pi) ** 2
+        self.no_output_noise_variance = (0.001 / 180 * np.pi) ** 2
+
+        self.input_variance = input_variance
+        self.output_variance = output_variance
+        self.nOutputs = nOutputs
 
         # set system noise parameters
         if self.bInputNoise:
@@ -238,7 +241,32 @@ class KalmanFilterBase(Observer):
 
         return
 
-    def set_input_noise(self, bInputNoise):
+    def toggle_input_variance(self, toggle):
+        if toggle:
+            self.N = np.diag([self.input_variance, self.input_variance])
+        else:
+            self.N = np.diag([0, 0])
+
+    def toggle_output_variance(self, toggle):
+        if toggle:
+            if self.nOutputs == 3:
+                # W is the covariance matrix of the output signals. 3 outputs ==> W is a 3x3 matrix
+                self.W = np.diag([self.output_variance, self.output_variance, self.output_variance])
+            elif self.nOutputs == 5:
+                # 5 Output signals ==> W is a 5x5 matrix
+                self.W = np.diag([self.output_variance, self.output_variance, self.output_variance,
+                                  self.output_variance, self.output_variance])
+        else:
+            if self.nOutputs == 3:
+                # W is the covariance matrix of the output signals. 3 outputs ==> W is a 3x3 matrix
+                self.W = np.diag([self.no_output_noise_variance, self.no_output_noise_variance, self.no_output_noise_variance])
+            elif self.nOutputs == 5:
+                # 5 Output signals ==> W is a 5x5 matrix
+                self.W = np.diag([self.no_output_noise_variance, self.no_output_noise_variance, self.no_output_noise_variance,
+                                  self.no_output_noise_variance, self.no_output_noise_variance])
+
+
+    def toggle_input_noise(self, bInputNoise):
         '''Dis-/Enables the input noise. Doesn't modify the N-Matrix'''
         self.bInputNoise = bInputNoise
         if self.bInputNoise:
@@ -248,7 +276,7 @@ class KalmanFilterBase(Observer):
             self.vf_var = 0
             self.vb_var = 0
 
-    def set_output_noise(self, bOutputNoise):
+    def toggle_output_noise(self, bOutputNoise):
         '''Dis-/Enables the output noise. Doesn't modify the W-Matrix'''
         self.bOutputNoise = bOutputNoise
         if self.bOutputNoise:

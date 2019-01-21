@@ -277,7 +277,7 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
     def get_observer(self, stepSize, noise_settings):
         """:arg timeStep: step size of simulation
         :return observer object """
-        input_matrix_variance, output_matrix_variance, input_noise_variance, output_noise_variance = noise_settings
+        input_matrix_variance, output_matrix_variance, input_noise_variance, output_noise_variance, bdisable_input_noise, bdisable_output_noise, bdisable_N_matrix, bdisable_W_matrix = noise_settings
         combo_idx = self.observer_combo.currentIndex()
         # the chosen combo entry defines the type of planner that is returned
         if combo_idx == 0:
@@ -425,6 +425,23 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
             observer = Observer.NoKalmanFilter(np.zeros(6), np.diag(np.zeros(6)))
         else:
             raise NotImplementedError("This option of the combo box is not implemented yet.")
+
+        # disable noise or enable it
+        if bdisable_input_noise:
+            print("Disable input noise")
+            observer.toggle_input_noise(False)
+
+        if bdisable_output_noise:
+            print("Disable output noise")
+            observer.toggle_output_noise(False)
+
+        if bdisable_N_matrix:
+            print("Disable N-Matrix")
+            observer.toggle_input_variance(False)
+
+        if bdisable_W_matrix:
+            print("Disable W-Matrix")
+            observer.toggle_output_variance(False)
 
         return observer
 

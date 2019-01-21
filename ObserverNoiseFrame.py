@@ -122,8 +122,8 @@ class ObserverNoiseFrame(QtWidgets.QFrame):
         groupbox_noise_layout.addWidget(QtWidgets.QLabel("W variance in °^2 resp. (1/s)^2 * " + str(self.W_factor)), 1, 0)
         groupbox_noise_layout.addWidget(noise_W_widget, 1, 1)
 
-        self.noise_disable_input_checkbox = QtWidgets.QCheckBox("Input Noise")
-        self.noise_disable_output_checkbox = QtWidgets.QCheckBox("Output Noise")
+        self.noise_disable_input_checkbox = QtWidgets.QCheckBox("Disable Input Noise")
+        self.noise_disable_output_checkbox = QtWidgets.QCheckBox("Disable Output Noise")
         groupbox_noise_layout.addWidget(self.noise_disable_input_checkbox, 2, 0)
         groupbox_noise_layout.addWidget(self.noise_disable_output_checkbox, 3, 0)
 
@@ -190,7 +190,16 @@ class ObserverNoiseFrame(QtWidgets.QFrame):
         output_matrix_variance = output_matrix_variance * (np.pi/180)**2
         output_noise_variance = output_noise_variance * (np.pi/180)**2
 
-        return input_matrix_variance, output_matrix_variance, input_noise_variance, output_noise_variance
+        # check if input or output noise should be disabled
+        bdisable_input_noise = self.noise_disable_input_checkbox.checkState() == 2
+        bdisable_output_noise = self.noise_disable_output_checkbox.checkState() == 2
+
+        # check if N- or W-Matrix is zero
+        bdisable_N_matrix = self.kalman_disable_input_checkbox.checkState() == 2
+        bdisable_W_matrix = self.kalman_disable_output_checkbox.checkState() == 2
+
+        return [input_matrix_variance, output_matrix_variance, input_noise_variance, output_noise_variance,
+                bdisable_input_noise, bdisable_output_noise, bdisable_N_matrix, bdisable_W_matrix]
 
     def on_set_matrix_values_from_noise(self):
         self.kalman_matrices_N_spinbox.setValue(self.noise_N_spinbox.value())
