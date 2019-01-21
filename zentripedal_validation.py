@@ -5,6 +5,8 @@ from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from scipy.optimize import fsolve
+import sympy as sp
+import control as ctr
 
 validation_enabled = False
 dl = 100
@@ -201,10 +203,82 @@ def printValnoInput():
     ax.set(title='ddp', xlabel='dlambda', ylabel='p', zlabel='ddp')
 
 
+def analyzeSystem(Vs_op,Vd_op,p_op,e_op,dl_op):
+    """
+    Computes linear state space matrices A and B for the full model (without any simplifications) at operating point
+    x_op. This state space model contains all 8 (!) state variables.
+
+    :return: A, B
+    """
+
+    x_op = np.array([p_op,e_op,0,0,0,dl_op])
+    #x_op = np.array([1, 1, 1, 1, 1, 1])
+    u_op = np.array([0.5*(Vs_op+Vd_op),0.5*(Vs_op-Vd_op)])
+    #u_op = np.array([0,0])
+
+    p, e, l = sp.symbols("p e \\lambda")
+    dp, de, dl = sp.symbols("\\dot{p} \\dot{e} \\dot{\\lambda}")
+    Vf, Vb = sp.symbols("V_f V_b")
+
+    x = sp.Matrix([p, e, l, dp, de, dl])
+    u = sp.Matrix([Vf, Vb])
+    op_sub = list(zip(x, x_op)) + list(zip(u, u_op))
+
+    dp_rhs = dp
+    de_rhs = de
+    dl_rhs = dl
+    ddp_rhs = 1/(2*mc.m_p*mc.l_p**2) * (2*mc.m_p*mc.l_p**2*sp.cos(p)*sp.sin(p)*(de**2-sp.cos(e)**2*dl**2)
+                                        - mc.d_p * dp
+                                        + mc.l_p*(Vf-Vb)
+                                        )
+    dde_rhs = 1/(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2+mc.l_p**2*sp.sin(p)**2))*(
+        - sp.cos(e)*sp.sin(e)*(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2-mc.l_p**2*sp.sin(p)**2))*dl**2
+        - mc.d_e*de
+        + mc.g*(mc.m_c*mc.l_c-2*mc.m_p*mc.l_h)*sp.cos(e)
+        + mc.l_h*sp.cos(p)*(Vf+Vb)
+    )
+    ddl_rhs = 1/(mc.m_c*(mc.l_c*sp.cos(e))**2+2*mc.m_p*((mc.l_h*sp.cos(e))**2+(mc.l_p*sp.sin(p)*sp.sin(e))**2+(mc.l_p*sp.cos(p))**2))*(
+        mc.l_h*sp.cos(e)*sp.sin(p)*(Vf+Vb)
+        - mc.d_l*dl
+    )
+
+    ss_rhs = sp.Matrix([dp_rhs, de_rhs, dl_rhs, ddp_rhs, dde_rhs, ddl_rhs])
+    A_symbolic = ss_rhs.jacobian(x)
+    B_symbolic = ss_rhs.jacobian(u)
+
+
+    A = A_symbolic.subs(op_sub)
+    B = B_symbolic.subs(op_sub)
+
+    print(A.shape)
+
+    #print(np.linalg.eigvals(np.array(A.tolist(), dtype=float)))
+
+
+    #C = np.array([[1,0,0,0,0,0]])
+    C = np.zeros((1,6))
+    D = np.zeros((1,2))
+
+    A = np.array(A).astype(np.float64)
+    print(A.shape)
+    B = np.array(B).astype(np.float64)
+    print(B.shape)
+
+    sys = ctr.StateSpace(A,B,C,D)
+
+    print(sys)
+
+    poles = ctr.pole(sys)
+
+    print(poles)
+
+    return
+    #return np.array(A).astype(np.float64), np.array(B).astype(np.float64)
 
 if __name__ == '__main__':
-    printValInput()
-    printValnoInput()
+    #printValInput()
+    #printValnoInput()
+    analyzeSystem(*convV(calcInputs_numeric(dl=dl, e=e, rad=False)),e,dl)
 
-    plt.show()
+    #plt.show()
 
