@@ -74,7 +74,7 @@ class mainWindow(QtWidgets.QMainWindow):
         joystick_widget = JoystickWidget()
         joystick_window.setCentralWidget(joystick_widget)
         joystick_window.resize(400, 400)
-        # joystick_window.show()
+        joystick_window.show()
 
         # Initialize helicopter model
         self.heliModel = HelicopterModel()
