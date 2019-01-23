@@ -12,7 +12,8 @@ validation_enabled = False
 dl = 100
 e = 25
 
-
+dl_r =dl / 180 * np.pi
+e_r = e/ 180 * np.pi
 
 
 def n_solve(functions,variables):
@@ -210,9 +211,10 @@ def analyzeSystem(Vs_op,Vd_op,p_op,e_op,dl_op):
 
     :return: A, B
     """
+    print(Vs_op,Vd_op,p_op,e_op,dl_op)
 
     x_op = np.array([p_op,e_op,0,0,0,dl_op])
-    #x_op = np.array([1, 1, 1, 1, 1, 1])
+    #x_op = np.array([0, -np.pi/2, 0, 0, 0, 0])
     u_op = np.array([0.5*(Vs_op+Vd_op),0.5*(Vs_op-Vd_op)])
     #u_op = np.array([0,0])
 
@@ -250,19 +252,28 @@ def analyzeSystem(Vs_op,Vd_op,p_op,e_op,dl_op):
     A = A_symbolic.subs(op_sub)
     B = B_symbolic.subs(op_sub)
 
-    print(A.shape)
+
 
     #print(np.linalg.eigvals(np.array(A.tolist(), dtype=float)))
 
+    C = np.array([[1, 0, 0, 0, 0, 0],
+                  [0, 1, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 1, 0, 0],
+                  [0, 0, 0, 0, 1, 0],
+                  [0, 0, 0, 0, 0, 1]]).astype(np.float64)
 
-    #C = np.array([[1,0,0,0,0,0]])
-    C = np.zeros((1,6))
-    D = np.zeros((1,2))
+    D = np.zeros((6,2)).astype(np.float64)
+
 
     A = np.array(A).astype(np.float64)
-    print(A.shape)
+
     B = np.array(B).astype(np.float64)
+
+    print(A.shape)
     print(B.shape)
+    print(C.shape)
+    print(D.shape)
 
     sys = ctr.StateSpace(A,B,C,D)
 
@@ -278,7 +289,7 @@ def analyzeSystem(Vs_op,Vd_op,p_op,e_op,dl_op):
 if __name__ == '__main__':
     #printValInput()
     #printValnoInput()
-    analyzeSystem(*convV(calcInputs_numeric(dl=dl, e=e, rad=False)),e,dl)
+    analyzeSystem(*convV(calcInputs_numeric(dl=dl_r, e=e_r)),e_r,dl_r)
 
     #plt.show()
 
