@@ -11,7 +11,7 @@ class FeedbackLinearizationController(AbstractController):
         self.friction_centripetal = True
         self.rotor_speed_controller = True
         self.ke = [20, 6]
-        self.kl = [4, 3]
+        self.kl = [1, 0.8]
         self.kp = [150, 20]
         self.k_rotor = [5, 0]
 
