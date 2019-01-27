@@ -1057,8 +1057,10 @@ class ExtKalmanFilterGyroModelLimits(KalmanFilterBase):
 
         # check if the update step state needs to be changed because of limit crossing
         # if that is the case, correct the state and set the state of the simulation accordingly
+        # ToDo: Debug this function for glitches. Somehow the observer ignores the pitch limit
         corrected_state = self.heliSim.get_limited_state_and_change_state(x_est_update.reshape((1, 8))[0],
-                                                                          ModelType.GYROMOMENT)
+                                                                           ModelType.GYROMOMENT)
+        # corrected_state = x_est_update
         x_est_update = np.resize(corrected_state, (8, 1))
 
         self.x_estimated_state = x_est_update

@@ -247,7 +247,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.disturbance = self.disturbance_frame.get_disturbance()
         self.observer = self.observer_frame.get_observer(self.timeStep)
         self.observer.set_system_model_and_step_size(self.heliSim.get_model_type(), self.timeStep)
-        self.observer.set_dynamic_inertia(self.heliSim.dynamic_inertia_torque)
+        # self.observer.set_dynamic_inertia(self.heliSim.dynamic_inertia_torque)
         if self.observer_initial_value is not None:
             # get estimated state and JUST change the angles
             est_state = self.observer.get_estimated_state()

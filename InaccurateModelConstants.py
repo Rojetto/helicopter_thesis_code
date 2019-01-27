@@ -51,12 +51,12 @@ def scrambleParameters(lower_boundary, upper_boundary):
     return
 
 # l_a = ? (not given in Fig. 7)
-l_p = 0.18 #m
-l_h = 0.65
-l_c = 0.52
-m_p = 0.5 * 0.771 #kg
+l_p = real_mc.l_p #m
+l_h = real_mc.l_h
+l_c = real_mc.l_c
+m_p = real_mc.m_p #kg
 m_c_max = 2 * l_h/l_c * m_p
-m_c = 0.9  # arbitrary, but has to be smaller than m_c_max
+m_c = real_mc.m_c  # arbitrary, but has to be smaller than m_c_max
 
 # motor characteristics
 m_m = 0.2 * m_p
@@ -64,19 +64,19 @@ r_m = l_p/8
 J_m = 0.5 * m_m * r_m**2
 
 
-d_p = 0.048  # dissipation coefficient in Nms
-d_e = 0.053
-d_l = 0.274
+d_p = real_mc.d_p  # dissipation coefficient in Nms
+d_e = real_mc.d_e
+d_l = real_mc.d_l
 
 # PT1 charakteristics for ROTOR SPEED
-T_f = 0.1
-T_b = 0.1
-K_f = 1
-K_b = 1
-K = 1
-K_m = 0.5
+T_f = real_mc.T_f
+T_b = real_mc.T_b
+K_f = real_mc.K_f
+K_b = real_mc.K_b
+K = real_mc.K
+K_m = real_mc.K_m
 
-g = 9.81  # m/s^2
+g = real_mc.g  # m/s^2
 
 # These values are not used by the kalman filter and also shouldn't be used by it
 # vtk_l_a = 10*l_h
