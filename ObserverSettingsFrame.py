@@ -112,7 +112,7 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
         self.observer_frame_stack.addWidget(linear_kalman_frame)
 
         # Extended Kalman Filter
-        self.observer_combo.insertItem(2, "Extended Kalman Frame")
+        self.observer_combo.insertItem(2, "Extended Kalman Filter")
         ext_kalman_frame = QtWidgets.QFrame()
         ext_kalman_layout = QtWidgets.QFormLayout()
         ext_kalman_frame.setLayout(ext_kalman_layout)
@@ -268,7 +268,7 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
             self.ext_kalman_dynamic_inertia_checkbox.setChecked(False)
             self.ext_kalman_dynamic_inertia_checkbox.setDisabled(True)
         elif model_name == "gyromoment":
-            # self.ext_kalman_nOutputs_combo.setCurrentIndex(1)
+            self.ext_kalman_nOutputs_combo.setCurrentIndex(1)
             self.ext_kalman_nOutputs_combo.setDisabled(False)
             self.ext_kalman_dynamic_inertia_checkbox.setDisabled(False)
         else:
