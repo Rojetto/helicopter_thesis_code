@@ -407,8 +407,6 @@ class HeliKalmanSimulation(object):
         :param current_disturbance: np-array with current disturbance for p, e, lambda, f and b
         [0] ==> p, [1] ==> e, [2] ==> lambda, [3] ==> f, [4] ==> b
         """
-        J_p, J_e, J_l = getInertia(self.currentState, self.dynamic_inertia_torque)
-        print("K-rhs_no_limits: J_p = " + str(J_p) + ", J_e = " + str(J_e) + ", J_l = " + str(J_l))
         # start = time.time()
         # print("====> calcStep() t = " + str(self.currentTime))
         v_s = v_f + v_b
