@@ -400,6 +400,35 @@ class HeliKalmanSimulation(object):
         return event_blacklist
 
 
+    def event_system_patch(self):
+        """Since the introduction of the rotorspeed model, the event detection system does not work
+        anymore as expected. debugging has shown, that probably the system needs to be replaced by a different
+        conecept. This function is just a small patch for preventing the limits from being crossed."""
+        p, e, lamb, dp, de, dlamb, f, b = self.currentState
+
+        if p > self.statLim.p_max:
+            p = self.statLim.p_max
+            self.statLim.p = LimitType.UPPER_LIMIT
+        elif p < self.statLim.p_min:
+            p = self.statLim.p_min
+            self.statLim.p = LimitType.LOWER_LIMIT
+
+        if e > self.statLim.e_max:
+            e = self.statLim.e_max
+            self.statLim.e = LimitType.UPPER_LIMIT
+        elif e < self.statLim.e_min:
+            e = self.statLim.e_min
+            self.statLim.e = LimitType.LOWER_LIMIT
+
+        if lamb > self.statLim.lamb_max:
+            lamb = self.statLim.lamb_max
+            self.statLim.lamb = LimitType.UPPER_LIMIT
+        elif lamb < self.statLim.lamb_min:
+            lamb = self.statLim.lamb_min
+            self.statLim.lamb = LimitType.LOWER_LIMIT
+        return
+
+
     def calc_step(self, v_f, v_b, current_disturbance):
         """Returns the state of the system after the next time step
         :param v_f: voltage of the propeller right at back (of Fig.7) / first endeffector
@@ -407,6 +436,7 @@ class HeliKalmanSimulation(object):
         :param current_disturbance: np-array with current disturbance for p, e, lambda, f and b
         [0] ==> p, [1] ==> e, [2] ==> lambda, [3] ==> f, [4] ==> b
         """
+        self.event_system_patch()
         # start = time.time()
         # print("====> calcStep() t = " + str(self.currentTime))
         v_s = v_f + v_b
@@ -491,6 +521,11 @@ class HeliKalmanSimulation(object):
             p, e, lamb, dp, de, dlamb, f_speed, b_speed = state
         elif model == ModelType.EASY:
             p, e, lamb, dp, de, dlamb = state
+
+        # print("-----------------")
+        # print("lim_p = " + str(self.statLim.p))
+        # print("lim_e = " + str(self.statLim.e))
+        # print("lim_lamb = " + str(self.statLim.lamb))
 
         # check if the new state values exceed the value range
         if self.should_check_limits:

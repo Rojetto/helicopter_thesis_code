@@ -66,7 +66,7 @@ class ObserverNoiseFrame(QtWidgets.QFrame):
         self.N_factor = 1000
         W_min = 0.1
         W_max = 2
-        W_init = 0.25
+        W_init = 0.5
         self.W_factor = 100
 
         # create slider with spinboxes

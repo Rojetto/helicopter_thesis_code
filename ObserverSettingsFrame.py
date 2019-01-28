@@ -190,6 +190,10 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
                                     QtWidgets.QLabel("If this is checked, the model includes dynamic inertia."))
         self.ext_kalman_dynamic_inertia_checkbox.setDisabled(True)
 
+        self.ext_kalman_model_type.setCurrentIndex(1)
+        self.ext_kalman_dynamic_inertia_checkbox.setChecked(True)
+        self.ext_kalman_should_limit_checkbox.setChecked(True)
+
         self.observer_frame_stack.addWidget(ext_kalman_frame)
 
 
@@ -240,7 +244,7 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.observer_combo)
         self.observer_combo.currentIndexChanged.connect(self.on_observer_combo_select)
-        self.observer_combo.setCurrentIndex(2)
+        self.observer_combo.setCurrentIndex(1)
 
     def on_observer_combo_select(self):
         self.observer_frame_stack.setCurrentIndex(self.observer_combo.currentIndex())
