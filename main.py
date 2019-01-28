@@ -138,7 +138,7 @@ class mainWindow(QtWidgets.QMainWindow):
 
             return h_layout, double_box
 
-        travel_layout, self.init_travel_edit = build_slider_textedit_combo(-170.0, 170.0, 0.0, self.on_init_value_change)
+        travel_layout, self.init_travel_edit = build_slider_textedit_combo(-120.0, 120.0, 0.0, self.on_init_value_change)
         initial_state_layout.addRow(QtWidgets.QLabel("Travel"), travel_layout)
         elevation_layout, self.init_elevation_edit = build_slider_textedit_combo(-70.0, 70.0, 0.0, self.on_init_value_change)
         initial_state_layout.addRow(QtWidgets.QLabel("Elevation"), elevation_layout)
