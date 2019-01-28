@@ -508,16 +508,21 @@ def plotObserver(bundle):
     # Calculate the variance of the kalman filter signals for verifying correct noise generation
     vf_var = np.var(us_noisy_input[:, 0] - (us_ff[:, 0] + us_controller[:, 0]))
     vb_var = np.var(us_noisy_input[:, 1] - (us_ff[:, 1] + us_controller[:, 1]))
-    p_var = np.var(ys_noisy_output[:, 0] - xs[:, 0])
-    e_var = np.var(ys_noisy_output[:, 1] - xs[:, 1])
-    lamb_var = np.var(ys_noisy_output[:, 2] - xs[:, 2])
+    p_var = (np.var(ys_noisy_output[:, 0] - xs[:, 0])) * (180/np.pi)**2
+    e_var = (np.var(ys_noisy_output[:, 1] - xs[:, 1]))* (180/np.pi)**2
+    lamb_var = (np.var(ys_noisy_output[:, 2] - xs[:, 2]))* (180/np.pi)**2
     print("Variance of Vf is " + str(vf_var))
     print("   ... the standard deviation is " + str(np.sqrt(vf_var)))
     print("Variance of Vb is " + str(vb_var))
     print("   ... the standard deviation is " + str(np.sqrt(vb_var)))
     print("Variance of p is " + str(p_var))
-    print("   ... in degree the standard deviation is " + str(np.sqrt(p_var) * 180 / np.pi))
+    print("   ... in degree the standard deviation is " + str(np.sqrt(p_var)))
     print("Variance of e is " + str(e_var))
-    print("   ... in degree the standard deviation is " + str(np.sqrt(e_var) * 180 / np.pi))
+    print("   ... in degree the standard deviation is " + str(np.sqrt(e_var)))
     print("Variance of lambda is " + str(lamb_var))
-    print("   ... in degree the standard deviation is " + str(np.sqrt(lamb_var) * 180 / np.pi))
+    print("   ... in degree the standard deviation is " + str(np.sqrt(lamb_var)))
+    # print("   ... in degree the standard deviation is " + str(np.sqrt(p_var) * 180 / np.pi))
+    # print("Variance of e is " + str(e_var))
+    # print("   ... in degree the standard deviation is " + str(np.sqrt(e_var) * 180 / np.pi))
+    # print("Variance of lambda is " + str(lamb_var))
+    # print("   ... in degree the standard deviation is " + str(np.sqrt(lamb_var) * 180 / np.pi))

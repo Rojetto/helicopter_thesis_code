@@ -60,14 +60,14 @@ class ObserverNoiseFrame(QtWidgets.QFrame):
         groupbox_kalman_matrices.setLayout(groupbox_kalman_layout)
 
         # set minimum and maximum values for the spinbox
-        N_min = 0.001
-        N_max = 0.02
-        N_init = 0.005
-        self.N_factor = 1000
+        N_min = 0.00001
+        N_max = 0.01
+        N_init = 0.0003
+        self.N_factor = 100000
         W_min = 0.1
-        W_max = 2
-        W_init = 0.5
-        self.W_factor = 100
+        W_max = 100
+        W_init = 1
+        self.W_factor = 10
 
         # create slider with spinboxes
         kalman_matrices_N_layout, self.kalman_matrices_N_spinbox = build_slider_textedit_combo(N_min * self.N_factor,
