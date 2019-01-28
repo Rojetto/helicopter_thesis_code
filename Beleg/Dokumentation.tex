@@ -140,7 +140,7 @@
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=1\textwidth]{images/J_e}
-		\caption{$J_\varepsilon$ in Abhängigkeit des Winkels $\varphi$}
+		\caption{$J_\varepsilon(\varphi)$ in Abhängigkeit des Winkels $\varphi$}
 		\label{fig:J_e}
 	\end{figure}
 	\subsection{Aufstellen der Bewegungsgleichung um $\lambda$}
@@ -163,16 +163,22 @@
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=1\textwidth]{images/J_l}
-		\caption{$J_\lambda$ in Abhängigkeit der Winkel $\varphi$ und $\varepsilon$}
+		\caption{$J_\lambda(\varepsilon,\varphi)$ in Abhängigkeit der Winkel $\varphi$ und $\varepsilon$}
 		\label{fig:J_l}
 	\end{figure}	
 	\subsection{Zusammenfassen der Bewegungsgleichungen}
 	Insgesamt kann das System mit wie folgt dargestellt werden:
 	\begin{align}
 	J_\varphi \ddot{\varphi} + \mu_\varphi \dot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2) &= V_d L_1\\
-	J_\varepsilon\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2 
+	J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2 
 	&= L_2 \cos \varepsilon + V_s L_3 \cos \varphi\\
-	J_\lambda \ddot{\lambda} + \mu_\lambda \dot{\lambda} &= V_s L_4 \cos \varepsilon \sin \varphi
+	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} &= V_s L_4 \cos \varepsilon \sin \varphi
+	\end{align}
+	Mit $J_\varepsilon(\varphi)$ und $	J_\lambda(\varepsilon,\varphi)$ zu:
+	\begin{align}
+	J_\lambda(\varepsilon,\varphi) &= m_c (l_c \cos \varepsilon)^2
+	+ 2 m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2+(l_p \cos \varphi)^2)\\
+	J_\varepsilon(\varphi) &= m_cl_c^2+ 2 m_p(l_h^2+l_p^2\sin^2 \varphi)
 	\end{align}
 	\subsection{Erweiterung des Systems durch Rotordrehzahlen}
 	Die Kraft jedes Rotors resultiert nun aus der Drehzahl jedes Motors, wobei diese durch einen Tiefpass 1. Ordnung beschrieben werden können.
@@ -190,15 +196,15 @@
 	\end{equation}
 	Weiterhin entstehen aus der Rotordrehzahl das jeweiliges Drehmoment $M_f$ und $M_b$ der Elektromotoren. Diese bewirken ein zusätzliches Moment auf die Drehachse um $\varepsilon$ und $\lambda$.
 	\begin{align}
-	M_{M,e} &= \sin (\varphi) (M_f - M_b) =\sin (\varphi) K_M (\omega_f-\omega_b) \\
+	M_{M,\varepsilon} &= \sin (\varphi) (M_f - M_b) =\sin (\varphi) K_M (\omega_f-\omega_b) \\
 	M_{M,\lambda} &= \cos (\varepsilon) \cos (\varphi) (M_b - M_f) =\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)
 	\end{align}
 	Das resultierende System ist daher:
 	\begin{align}
 	&J_\varphi \ddot{\varphi} + \mu_\varphi \dot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2) = K l_p (\omega_f - \omega_b)\\
-	&J_\varepsilon\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2 
+	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2 
 	= L_2 \cos \varepsilon + K l_h \cos \varphi (\omega_f + \omega_b) + \sin (\varphi) K_M (\omega_f-\omega_b)\\
-	&J_\lambda \ddot{\lambda} + \mu_\lambda \dot{\lambda} = K l_h \cos \varepsilon \sin \varphi (\omega_f + \omega_b) +\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)
+	&J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = K l_h \cos \varepsilon \sin \varphi (\omega_f + \omega_b) +\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)
 	\end{align}
 	\subsection{Erweiterung des Systems durch Kreiselträgheit}
 	Zusätzlich wirken Kreiselmomente auf die Rotoren, wenn sich die Rotationsachse der Rotoren verändert. Diese Kreiselmomente können allgemein beschreiben werden durch:
@@ -207,28 +213,28 @@
 	\end{equation}	
 	Angewandt auf Rotation um $\varphi$:
 	\begin{align}
-	&M_{Ke,p} = J_M \cos (\varphi) \dot{\varphi}(\omega_f-\omega_b)\\
-	&M_{K\lambda,p} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\varphi}(\omega_f-\omega_b)
+	&M_{K\varepsilon,\varphi} = J_M \cos (\varphi) \dot{\varphi}(\omega_f-\omega_b)\\
+	&M_{K\lambda,\varphi} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\varphi}(\omega_f-\omega_b)
 	\end{align}
 	Angewandt auf Rotation um $\varepsilon$:
 	\begin{equation}
-	M_{Kp,e} = J_M \cos (\varphi) \dot{\varepsilon}(\omega_b-\omega_f)
+	M_{K\varphi,\varepsilon} = J_M \cos (\varphi) \dot{\varepsilon}(\omega_b-\omega_f)
 	\end{equation}
 	Angewandt auf Rotation um $\lambda$:
 	\begin{align}
-	&M_{Kp,\lambda} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\lambda}(\omega_f-\omega_b)\\
-	&M_{Ke,\lambda} = J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)
+	&M_{K\varphi,\lambda} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\lambda}(\omega_f-\omega_b)\\
+	&M_{K\varepsilon,\lambda} = J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)
 	\end{align}
 	Das resultierende System ist daher:
 	\begin{align}
 	&J_\varphi \ddot{\varphi} + \mu_\varphi \dot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2) = K l_p (\omega_f - \omega_b) \\&+  J_M \cos (\varphi) \dot{\varepsilon}(\omega_b-\omega_f) +  J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)  
 	\end{align}
 	\begin{align}
-	&J_\varepsilon\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2 = L_2 \cos \varepsilon + K l_h \cos \varphi (\omega_f + \omega_b) \\
+	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2 = L_2 \cos \varepsilon + K l_h \cos \varphi (\omega_f + \omega_b) \\
 	&+ \sin (\varphi) K_M (\omega_f-\omega_b)+  J_M \cos (\varphi) \dot{\varphi}(\omega_f-\omega_b) +J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)
 	\end{align}
 	\begin{align}
-	J_\lambda \ddot{\lambda} + \mu_\lambda \dot{\lambda} = K l_h \cos \varepsilon \sin \varphi (\omega_f + \omega_b) +\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f) + J_M \sin (\varphi) \cos (\varepsilon) \dot{\varphi}(\omega_f-\omega_b)
+	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = K l_h \cos \varepsilon \sin \varphi (\omega_f + \omega_b) +\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f) + J_M \sin (\varphi) \cos (\varepsilon) \dot{\varphi}(\omega_f-\omega_b)
 	\end{align}
 	%\begin{align}
 	%&V_s K_f = F_f + F_b \\
