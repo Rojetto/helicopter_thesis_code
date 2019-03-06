@@ -1,9 +1,12 @@
-\documentclass{article}
+\documentclass[times, 10pt,twocolumn]{article} 
+\usepackage{times}
 \usepackage{geometry}
 \usepackage{fancyhdr}
 \usepackage{amsmath ,amsthm ,amssymb}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{apacite}
+\bibliographystyle{apacite}
 
 % Eigene Makros
 \DeclareMathOperator{\diag}{\mathrm{diag}}
@@ -21,13 +24,24 @@
 \DeclareMathOperator{\grad}{\mathrm{grad}}
 \renewcommand{\div}{\mathrm{div}}
 
-\title{Oberseminar Regelungstechnik \\ Regler- und Kalmanfilterentwurf für einen Helikopterversuchstand}
-\author{Tilo Stock, Clemens Bilsing, Robert Heedt}
-\date {23.11.2018}
+\pagestyle{empty}
 \begin{document}
+	\title{Oberseminar Regelungstechnik \\ Regler- und Kalmanfilterentwurf f\"ur einen 					Helikopterversuchstand}
+	\author{Tilo Stock, Clemens Bilsing, Robert Heedt}
+	\date {23.11.2018}
+
 	\maketitle
-	\tableofcontents
-	\newpage
+	\thispagestyle{empty}
+	% Das Inhaltsverzeichnis sieht in diesem Stil nicht gut aus. Soll es überhaupt dazu? 
+	% Immerhin ist ein Tagungsbericht kein Buch. 
+	% \tableofcontents
+	% \newpage
+	
+	\renewcommand\abstractname{Zusammenfassung}
+\begin{abstract}
+	Dies ist ein ziemlich abstraktiges Abstrakt.
+\end{abstract}		
+	
 	\section{Modellbildung}
 	Zur Modellbildung des Systems wurde der Lagrange-Formalismus zweiter Art angewendet. Für Systeme mit generalisiertem Potential lautet die Lagrange Gleichung 
 	\begin{equation}
@@ -245,5 +259,13 @@
 	%&V_s = 0\\
 	%&V_d = 0
 	%\end{align}
+	
+	\section{Regelung}
+	Regelungstechnik regelt. 
+	\section{Zustandsrkonstruktion}
+	Zust\"ande werden rekonstruiert.
+	
 
+\bibliography{Dokumentation}
+\nocite{ex1, ex2}
 \end{document}
