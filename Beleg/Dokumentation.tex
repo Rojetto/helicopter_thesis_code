@@ -266,7 +266,7 @@
 	Regelungstechnik regelt. 
 	
 	\newpage
-	\section{Zustandsrkonstruktion}
+	\section{Zustandsrekonstruktion}
 	\subsection{Einf\"uhrung}
 	Ein nicht unerheblicher Anteil der Regler verwendet eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
 	Selbst wenn tatsächlich alle Zustände als Messgrößen zur Verfügung stehen sollten, kann es bei starkem Messrauschen sinnvoll sein, die Messsignale mit einem Zustandsschätzer zu glätten. \\
@@ -278,7 +278,51 @@
 	\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln und den zwei Motorfrequenzen als Systemausgang
 	\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln, aber ohne den beiden Motorfrequenzen als Systemausgang
 	\end{enumerate}
-	
+	\subsubsection{Einfachstes Modell}
+	ToDo: Was ist das einfachste Modell? Welche physikalischen Effekte wurden weggelassen, welche sind da? \\
+	$\bm f(\bm x) = \begin{bmatrix}
+	\dot \varphi \\
+	\dot \varepsilon \\
+	\dot \lambda  \\
+	\dfrac{1}{J_p} \cdot L_1 V_d \\
+	\dfrac{1}{J_e} \cdot (L_2 \cdot \mathrm{cos(\varepsilon)} + L_3 V_s \mathrm{cos(\varphi)}) \\
+	\dfrac{1}{J_{\lambda}} \cdot L_4 V_s \mathrm{cos(\varepsilon)} \mathrm{sin(\varphi)} \\
+	\end{bmatrix} $ \\
+	$\bm x = \begin{bmatrix}
+	\varphi & \varepsilon & \lambda & \dot \varphi & \dot \varepsilon & \dot \lambda 
+	\end{bmatrix}^T $ \\
+	$\bm y = \begin{bmatrix}
+	\varphi & \varepsilon & \lambda 
+	\end{bmatrix}^T $ \\
+	Die Kalmansche Beobachtbarkeitsmatrix \\ $\bm O = \begin{bmatrix}
+	\bm C \\
+	... \\
+	\bm C \bm A^{n-1}
+	\end{bmatrix}$ ist in diesem Fall eine $18\times 6$-Matrix, in der die obersten 6 Zeilen die Einheitsmatrix $I_6$ bilden. Damit ist das System unabhängig vom Systemzustand lokal detektierbar, weil $\mathrm{rang} \bm O = 6 = \mathrm{n}$.
+	\subsubsection{Komplexestes Modell}
+	Das komplexeste Modell beinhaltet alle modellierten physikalischen Effekte (siehe \textit{Modellbildung}), einschließlich der dynamischen Trägheitsmomente. \\
+	$\bm f(\bm x) = \begin{bmatrix}
+	\dot \varphi \\
+	\dot \varepsilon \\
+	\dot \lambda  \\
+	f_4(\bm x) \\ 
+	f_5(\bm x) \\
+	f_6(\bm x) \\
+	f_7(\bm x) \\
+	f_8(\bm x) \\
+	\end{bmatrix} $ \\ 
+	$\bm x = \begin{bmatrix}
+	\varphi & \varepsilon & \lambda & \dot \varphi & \dot \varepsilon & \dot \lambda & \omega_f & \omega_b
+	\end{bmatrix}^T $ \\ 
+	$\bm {y_1} = \begin{bmatrix}
+	\varphi & \varepsilon & \lambda & \dot \varphi & \dot \varepsilon & \dot \lambda
+	\end{bmatrix}^T $ \\
+	$\bm {y_2} = \begin{bmatrix}
+	\varphi & \varepsilon & \lambda 
+	\end{bmatrix}^T $ \\ wobei $f_4, ..., f_8$ sehr unübersichtliche, große Ausdrücke sind. \\
+	Berechnet man nun mit dem geschilderten Vorgehen für den Ausgang $\bm{y_1}$
+	die Beobachtbarkeitsmatrix $\bm O$ , so fällt auf, dass deren erste 8 Zeilen eine Permutationsmatrix bilden. Auch dieses System ist also lokal detektierbar. 
+	Betrachtet man hingegen das System mit dem Ausgang $\bm{y_2}$, so geht der Nachweis lokaler Detektierbarkeit nicht so leicht von der Hand. 
 	\subsection{Implementierung}
 	blabla 
 	\subsection{Ausgewählte Messungen und Experimente}
