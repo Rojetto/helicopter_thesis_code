@@ -7,6 +7,7 @@
 \usepackage{hyperref}
 \usepackage[utf8]{inputenc}
 \usepackage{apacite}
+\usepackage{bm}
 \bibliographystyle{apacite}
 
 % Eigene Makros
@@ -267,11 +268,17 @@
 	\newpage
 	\section{Zustandsrkonstruktion}
 	\subsection{Einf\"uhrung}
-	Ein nicht unerheblicher Anteil der Regler verwendet eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die 3 Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
-	Selbst wenn tatsächlich alle Zustände als Messgrößen zur Verfügung stehen sollten, kann es bei starkem Messrauschen sinnvoll sein, die Messsignale zu glätten. \\
-	Im folgenden Abschnitt wird der Entwurf und die Implementierung eines erweiterten Kalman-Filters (auch \textit{EKF} genannt)  thematisiert. 
+	Ein nicht unerheblicher Anteil der Regler verwendet eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
+	Selbst wenn tatsächlich alle Zustände als Messgrößen zur Verfügung stehen sollten, kann es bei starkem Messrauschen sinnvoll sein, die Messsignale mit einem Zustandsschätzer zu glätten. \\
+	Im folgenden Abschnitt wird in diesem Zusammenhang der Entwurf und die Implementierung eines erweiterten Kalman-Filters (auch \textit{EKF} genannt)  thematisiert. 
 	\subsection{Detektierbarkeit der Modellgleichungen}
-	blabla
+	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden. Dabei wird die nichtlineare Systemgleichung  $ \bm{\dot x} = \bm{f}(\bm{x},\bm{u}) $ in einem Arbeitspunkt linearisiert, sodass das System lokal durch die Systemgleichung $ \bm{\dot x} = \bm{A} \bm{x} + \bm{B} \bm{u} $ mit den Matrizen $ \bm A = \frac{\partial{ \bm f}}{\partial{\bm x}} $ und $ \bm B = \frac{\partial{ \bm f}}{\partial{\bm u}} $ dargestellt werden kann. Im folgenden soll die lokale Detektierbarkeit für drei unterschiedliche Fälle nachgewiesen werden:
+	\begin{enumerate}
+	\item für das einfachste Modell mit den drei gemessenen Gelenkwinkeln als Systemausgang
+	\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln und den zwei Motorfrequenzen als Systemausgang
+	\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln, aber ohne den beiden Motorfrequenzen als Systemausgang
+	\end{enumerate}
+	
 	\subsection{Implementierung}
 	blabla 
 	\subsection{Ausgewählte Messungen und Experimente}
