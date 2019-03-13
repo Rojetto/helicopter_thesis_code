@@ -278,6 +278,7 @@
 	\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln und den zwei Motorfrequenzen als Systemausgang
 	\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln, aber ohne den beiden Motorfrequenzen als Systemausgang
 	\end{enumerate}
+	Zur Linearisierung des Systems sowie zur Berechnung der Kalmanschen Beobachtbarkeitsmatrix wurde das CAS von Matlab verwendet, da die Rangberechnung symbolischer Matrizen unter SymPy unzumutbar lange dauerte. Dies geschah ohne Wissen von dem Paket \textit{symbtools} von Dr. Knoll, welches einen anderen Algorithmus zur Rangbestimmung symbolischer Matrizen enthält. 
 	\subsubsection{Einfachstes Modell}
 	ToDo: Was ist das einfachste Modell? Welche physikalischen Effekte wurden weggelassen, welche sind da? \\
 	$\bm f(\bm x) = \begin{bmatrix}
@@ -321,8 +322,9 @@
 	\varphi & \varepsilon & \lambda 
 	\end{bmatrix}^T $ \\ wobei $f_4, ..., f_8$ sehr unübersichtliche, große Ausdrücke sind. \\
 	Berechnet man nun mit dem geschilderten Vorgehen für den Ausgang $\bm{y_1}$
-	die Beobachtbarkeitsmatrix $\bm O$ , so fällt auf, dass deren erste 8 Zeilen eine Permutationsmatrix bilden. Auch dieses System ist also lokal detektierbar. 
-	Betrachtet man hingegen das System mit dem Ausgang $\bm{y_2}$, so geht der Nachweis lokaler Detektierbarkeit nicht so leicht von der Hand. 
+	die Beobachtbarkeitsmatrix $\bm O$ , so fällt auf, dass deren erste 8 Zeilen eine Permutationsmatrix bilden. Auch dieses System ist also lokal detektierbar. \\
+	Betrachtet man hingegen das System mit dem Ausgang $\bm{y_2}$, so geht der Nachweis lokaler Detektierbarkeit nicht so leicht von der Hand. Die symbolische Matrix $\bm O$ enthält sehr große Ausdrücke und durch scharfes Hinsehen war es mir nicht möglich Aussagen über den Rang zu machen. Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf "sehr dünne" Singularitäten den Rang $\hat r$ (hier irgendwie Verweis auf Knoll und nochmal nachfragen, ob diese Singularitäten wirklich egal sind). \\
+	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar. Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet. 
 	\subsection{Implementierung}
 	blabla 
 	\subsection{Ausgewählte Messungen und Experimente}
