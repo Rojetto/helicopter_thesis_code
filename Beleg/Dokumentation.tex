@@ -5,6 +5,7 @@
 \usepackage{amsmath ,amsthm ,amssymb}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage[utf8]{inputenc}
 \usepackage{apacite}
 \bibliographystyle{apacite}
 
@@ -262,8 +263,19 @@
 	
 	\section{Regelung}
 	Regelungstechnik regelt. 
+	
+	\newpage
 	\section{Zustandsrkonstruktion}
-	Zust\"ande werden rekonstruiert.
+	\subsection{Einf\"uhrung}
+	Ein nicht unerheblicher Anteil der Regler verwendet eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die 3 Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
+	Selbst wenn tatsächlich alle Zustände als Messgrößen zur Verfügung stehen sollten, kann es bei starkem Messrauschen sinnvoll sein, die Messsignale zu glätten. \\
+	Im folgenden Abschnitt wird der Entwurf und die Implementierung eines erweiterten Kalman-Filters (auch \textit{EKF} genannt)  thematisiert. 
+	\subsection{Detektierbarkeit der Modellgleichungen}
+	blabla
+	\subsection{Implementierung}
+	blabla 
+	\subsection{Ausgewählte Messungen und Experimente}
+	Zur Validierung des Kalman-Filters wurden verschiedene Messungen durchgeführt. Im folgenden soll ...
 	
 
 \bibliography{Dokumentation}
