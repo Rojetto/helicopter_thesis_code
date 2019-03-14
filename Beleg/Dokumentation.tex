@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage[utf8]{inputenc}
+\usepackage{comment}
 \usepackage{apacite}
 \usepackage{bm}
 \bibliographystyle{apacite}
@@ -268,9 +269,9 @@
 	\newpage
 	\section{Zustandsrekonstruktion}
 	\subsection{Einf\"uhrung}
-	Ein nicht unerheblicher Anteil der Regler verwendet eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
+	Einige Regler verwenden eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
 	Selbst wenn tatsächlich alle Zustände als Messgrößen zur Verfügung stehen sollten, kann es bei starkem Messrauschen sinnvoll sein, die Messsignale mit einem Zustandsschätzer zu glätten. \\
-	Im folgenden Abschnitt wird in diesem Zusammenhang der Entwurf und die Implementierung eines erweiterten Kalman-Filters (auch \textit{EKF} genannt)  thematisiert. 
+	Im folgenden Abschnitt wird in diesem Zusammenhang der Entwurf und die Implementierung eines diskreten, erweiterten Kalman-Filters (auch \textit{EKF} genannt)  thematisiert. 
 	\subsection{Detektierbarkeit der Modellgleichungen}
 	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden. Dabei wird die nichtlineare Systemgleichung  $ \bm{\dot x} = \bm{f}(\bm{x},\bm{u}) $ in einem Arbeitspunkt linearisiert, sodass das System lokal durch die Systemgleichung $ \bm{\dot x} = \bm{A} \bm{x} + \bm{B} \bm{u} $ mit den Matrizen $ \bm A = \frac{\partial{ \bm f}}{\partial{\bm x}} $ und $ \bm B = \frac{\partial{ \bm f}}{\partial{\bm u}} $ dargestellt werden kann. Im folgenden soll die lokale Detektierbarkeit für drei unterschiedliche Fälle nachgewiesen werden:
 	\begin{enumerate}
@@ -280,7 +281,7 @@
 	\end{enumerate}
 	Zur Linearisierung des Systems sowie zur Berechnung der Kalmanschen Beobachtbarkeitsmatrix wurde das CAS von Matlab verwendet, da die Rangberechnung symbolischer Matrizen unter SymPy unzumutbar lange dauerte. Dies geschah ohne Wissen von dem Paket \textit{symbtools} von Dr. Knoll, welches einen anderen Algorithmus zur Rangbestimmung symbolischer Matrizen enthält. 
 	\subsubsection{Einfachstes Modell}
-	ToDo: Was ist das einfachste Modell? Welche physikalischen Effekte wurden weggelassen, welche sind da? \\
+	Das einfachste Modell folgt aus den Gleichungen 24-26, wenn die Coriolis- und Zentripetalkräfte vereinfacht als sehr klein bzw. 0 angenommen werden. \\
 	$\bm f(\bm x) = \begin{bmatrix}
 	\dot \varphi \\
 	\dot \varepsilon \\
@@ -303,6 +304,17 @@
 	\subsubsection{Komplexestes Modell}
 	Das komplexeste Modell beinhaltet alle modellierten physikalischen Effekte (siehe \textit{Modellbildung}), einschließlich der dynamischen Trägheitsmomente. \\
 	$\bm f(\bm x) = \begin{bmatrix}
+	\dot \varphi &
+	\dot \varepsilon &
+	\dot \lambda  &
+	f_4(\bm x) &
+	f_5(\bm x) &
+	f_6(\bm x) &
+	f_7(\bm x) &
+	f_8(\bm x) &
+	\end{bmatrix} $ \\ 
+	\begin{comment}
+	$\bm f(\bm x) = \begin{bmatrix}
 	\dot \varphi \\
 	\dot \varepsilon \\
 	\dot \lambda  \\
@@ -312,6 +324,7 @@
 	f_7(\bm x) \\
 	f_8(\bm x) \\
 	\end{bmatrix} $ \\ 
+	\end{comment}
 	$\bm x = \begin{bmatrix}
 	\varphi & \varepsilon & \lambda & \dot \varphi & \dot \varepsilon & \dot \lambda & \omega_f & \omega_b
 	\end{bmatrix}^T $ \\ 
@@ -323,10 +336,17 @@
 	\end{bmatrix}^T $ \\ wobei $f_4, ..., f_8$ sehr unübersichtliche, große Ausdrücke sind. \\
 	Berechnet man nun mit dem geschilderten Vorgehen für den Ausgang $\bm{y_1}$
 	die Beobachtbarkeitsmatrix $\bm O$ , so fällt auf, dass deren erste 8 Zeilen eine Permutationsmatrix bilden. Auch dieses System ist also lokal detektierbar. \\
-	Betrachtet man hingegen das System mit dem Ausgang $\bm{y_2}$, so geht der Nachweis lokaler Detektierbarkeit nicht so leicht von der Hand. Die symbolische Matrix $\bm O$ enthält sehr große Ausdrücke und durch scharfes Hinsehen war es mir nicht möglich Aussagen über den Rang zu machen. Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf "sehr dünne" Singularitäten den Rang $\hat r$ (hier irgendwie Verweis auf Knoll und nochmal nachfragen, ob diese Singularitäten wirklich egal sind). \\
-	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar. Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet. 
+	Betrachtet man hingegen das System mit dem Ausgang $\bm{y_2}$, so geht der Nachweis lokaler Detektierbarkeit nicht so leicht von der Hand. Die symbolische Matrix $\bm O$ enthält sehr große Ausdrücke und durch scharfes Hinsehen war es mir nicht möglich Aussagen über den Rang zu machen. \\ Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf "sehr dünne" Singularitäten den Rang $\hat r$ (hier irgendwie Verweis auf Knoll und nochmal nachfragen, ob diese Singularitäten wirklich egal sind). \\
+	Da die Systemmatrix nur analytische Funktionen enthält, beinhaltet auch die Beobachtbarkeitsmatrix nur analytische Ausdrücke. 
+	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar. Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres nicht durchgeführt werden sollte\textbf{?} \\
+	
 	\subsection{Implementierung}
-	blabla 
+	Der diskrete, erweiterte Kalman-Filter lässt sich in einen Prädiktions- und einen Korrekturschritt unterteilen.  Im Prädiktionsschritt wird das nichtlineare Modell simuliert, zudem wird der Fehler der \textit{a priori} Zustandsschätzung in Form einer Kovarianzmatrix näherungsweise berechnet. Im Korrektursschritt wird die Messung des Ausgangs einbezogen, um letztendlich die \textit{a posteriori} Zustandsschätzung zu berechnen. Die Implementierung des Prädiktionsschrittes erfolgte durch das Integrieren der Differentialgleichungen mit dem RK45-Algorithmus, dazu wurde die Funktion \textit{solve\_ivp()} aus dem Paket \textit{SciPy} verwendet. Für die Berechnung der \textit{a priori} Kovarianzmatrix ist es notwendig das nichtlineare System im momentanen Punkt der Schätztrajektorie zu linearisieren und zu diskretisieren. Dazu wurde die Systemgleichung per CAS linearisiert, sodass die symbolischen Ausdrücke direkt im Python-Quellcode eingefügt werden konnten. Die Diskretisierung wurde hingegen numerisch zur Laufzeit durchgeführt, da eine analytische Lösung des Diskretisierungsintegrals nicht gefunden wurde. \\
+	Problematisch gestaltete sich in erster Linie die Berücksichtigung der Wertebegrenzung der Winkelgrößen. Konnte für diesen Zweck im Prädiktionsschritt noch die bereits entwickelte Wertebegrenzung verwendet werden, so war dies im Korrekturschritt nicht mehr möglich. 
+	
+	\begin{comment}
+	Dazu wird zuerst die Kalmanverstärkung aus der \textit{a priori} Kovarianzmatrix und der Kovarianzmatrix der Messung berechnet. Anschließend ergibt sich die \textit{a posteriori} Zustandsschätzung ähnlich zum Luenberger
+	\end{comment}
 	\subsection{Ausgewählte Messungen und Experimente}
 	Zur Validierung des Kalman-Filters wurden verschiedene Messungen durchgeführt. Im folgenden soll ...
 	
