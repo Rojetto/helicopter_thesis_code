@@ -6,6 +6,8 @@ from matplotlib.pyplot import *
 from logger import LoggingDataV2
 import pickle
 from numpy import pi
+import ModelConstants as mc
+from helicontrollers.util import L1, L2, L3, L4, Je, Jl, Jp
 
 
 def load_bundle(file_name, end_time=None):
@@ -68,6 +70,35 @@ for disturb_response in disturb_responses:
     tight_layout()
 
 
+def calc_pd(xs, e_traj, lambda_traj):
+    p = xs[:, 0]
+    e = xs[:, 1]
+    l = xs[:, 2]
+    dp = xs[:, 3]
+    de = xs[:, 4]
+    dl = xs[:, 5]
+    wf = xs[:, 6]
+    wb = xs[:, 7]
+
+    ke = [20, 6]
+    kl = [1, 0.8]
+    kp = [150, 20]
+
+    mue = mc.d_e
+    mul = mc.d_l
+    mup = mc.d_p
+
+    v1 = e_traj[:, 2] - ke[1] * (de - e_traj[:, 1]) - ke[0] * (e - e_traj[:, 0])
+    v2 = lambda_traj[:, 2] - kl[1] * (dl - lambda_traj[:, 1]) - kl[0] * (l - lambda_traj[:, 0])
+
+    u1v = 1 / L3 * (Je * v1 - L2 * np.cos(e) + mue * de + Je * np.cos(e) * np.sin(e) * dl ** 2)
+    u2v = 1 / (L4 * np.cos(e)) * (Jl * v2 + mul * dl)
+
+    pd = np.arctan(u2v / u1v)
+
+    return pd
+
+
 b: LoggingDataV2 = load_bundle("trajectory_30deg_6s", 10)
 figure("Folgeregler 6s")
 title("Folgeregelung bei 6 s Trajektorie")
@@ -76,8 +107,9 @@ ylabel("Winkel [°]")
 plot(b.ts, 180 / pi * b.xs[:, 0], label="$\\varphi$")
 plot(b.ts, 180 / pi * b.xs[:, 1], label="$\\varepsilon$")
 plot(b.ts, 180 / pi * b.xs[:, 2], label="$\\lambda$")
+plot(b.ts, 180 / pi * calc_pd(b.xs, b.e_traj_and_derivatives, b.lambda_traj_and_derivatives), label="Reglervorgabe $\\varphi^*$", linestyle="dotted", color="black")
 plot(b.ts, 180 / pi * b.e_traj_and_derivatives[:, 0], label="Trajektorie $\\varepsilon$ und $\\lambda$", linestyle="dashed", color="black")
-legend()
+legend(loc='lower right')
 grid()
 tight_layout()
 
@@ -92,20 +124,46 @@ grid()
 tight_layout()
 
 b: LoggingDataV2 = load_bundle("trajectory_30deg_4s", 10)
-figure("Folgeregler 4s")
-title("Folgeregelung bei 4 s Trajektorie")
+figure("Folgeregler 4s mit Reaktionsmoment")
+title("Folgeregelung bei 4 s Trajektorie (mit Reaktionsmoment)")
 xlabel("$t$ [s]")
 ylabel("Winkel [°]")
 plot(b.ts, 180 / pi * b.xs[:, 0], label="$\\varphi$")
 plot(b.ts, 180 / pi * b.xs[:, 1], label="$\\varepsilon$")
 plot(b.ts, 180 / pi * b.xs[:, 2], label="$\\lambda$")
+plot(b.ts, 180 / pi * calc_pd(b.xs, b.e_traj_and_derivatives, b.lambda_traj_and_derivatives), label="Reglervorgabe $\\varphi^*$", linestyle="dotted", color="black")
 plot(b.ts, 180 / pi * b.e_traj_and_derivatives[:, 0], label="Trajektorie $\\varepsilon$ und $\\lambda$", linestyle="dashed", color="black")
 legend()
 grid()
 tight_layout()
 
-figure("Folgefehler 4s")
-title("Folgefehler bei 4 s Trajektorie")
+figure("Folgefehler 4s mit Reaktionsmoment")
+title("Folgefehler bei 4 s Trajektorie (mit Reaktionsmoment)")
+xlabel("$t$ [s]")
+ylabel("Winkel [°]")
+plot(b.ts, 180 / pi * (b.xs[:, 1] - b.e_traj_and_derivatives[:, 0]), label="$\\varepsilon - \\varepsilon_d$")
+plot(b.ts, 180 / pi * (b.xs[:, 2] - b.e_traj_and_derivatives[:, 0]), label="$\\lambda - \\lambda_d$")
+legend()
+grid()
+tight_layout()
+
+
+b: LoggingDataV2 = load_bundle("trajectory_30deg_4s_no_reaction", 10)
+figure("Folgeregler 4s ohne Reaktionsmoment")
+title("Folgeregelung bei 4 s Trajektorie (ohne Reaktionsmoment)")
+xlabel("$t$ [s]")
+ylabel("Winkel [°]")
+plot(b.ts, 180 / pi * b.xs[:, 0], label="$\\varphi$")
+plot(b.ts, 180 / pi * b.xs[:, 1], label="$\\varepsilon$")
+plot(b.ts, 180 / pi * b.xs[:, 2], label="$\\lambda$")
+plot(b.ts, 180 / pi * calc_pd(b.xs, b.e_traj_and_derivatives, b.lambda_traj_and_derivatives), label="Reglervorgabe $\\varphi^*$", linestyle="dotted", color="black")
+plot(b.ts, 180 / pi * b.e_traj_and_derivatives[:, 0], label="Trajektorie $\\varepsilon$ und $\\lambda$", linestyle="dashed", color="black")
+legend()
+grid()
+tight_layout()
+
+figure("Folgefehler 4s ohne Reaktionsmoment")
+title("Folgefehler bei 4 s Trajektorie (ohne Reaktionsmoment)")
 xlabel("$t$ [s]")
 ylabel("Winkel [°]")
 plot(b.ts, 180 / pi * (b.xs[:, 1] - b.e_traj_and_derivatives[:, 0]), label="$\\varepsilon - \\varepsilon_d$")
