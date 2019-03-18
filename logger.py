@@ -351,16 +351,27 @@ def plotBasics(bundle):
 
 
 def plotObserver(bundle):
-    ts = bundle.ts
-    xs = bundle.xs
-    us_ff = bundle.us_ff
-    us_controller = bundle.us_controller
-    e_traj_and_derivatives = bundle.e_traj_and_derivatives
-    lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
-    xs_estimated_state = bundle.xs_estimated_state
-    us_noisy_input = bundle.us_noisy_input
-    ys_noisy_output = bundle.ys_noisy_output
-    cov_matrix = bundle.cov_matrix
+    # ts = bundle.ts
+    # xs = bundle.xs
+    # us_ff = bundle.us_ff
+    # us_controller = bundle.us_controller
+    # e_traj_and_derivatives = bundle.e_traj_and_derivatives
+    # lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
+    # xs_estimated_state = bundle.xs_estimated_state
+    # us_noisy_input = bundle.us_noisy_input
+    # ys_noisy_output = bundle.ys_noisy_output
+    # cov_matrix = bundle.cov_matrix
+
+    ts = bundle.ts[1:]
+    xs = bundle.xs[1:]
+    us_ff = bundle.us_ff[1:]
+    us_controller = bundle.us_controller[1:]
+    e_traj_and_derivatives = bundle.e_traj_and_derivatives[1:]
+    lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives[1:]
+    xs_estimated_state = bundle.xs_estimated_state[0:-1]
+    us_noisy_input = bundle.us_noisy_input[:-1]
+    ys_noisy_output = bundle.ys_noisy_output[:-1]
+    cov_matrix = bundle.cov_matrix[:-1]
 
     def rad2deg(rad):
         return rad * 180 / np.pi
@@ -509,8 +520,10 @@ def plotObserver(bundle):
     vf_var = np.var(us_noisy_input[:, 0] - (us_ff[:, 0] + us_controller[:, 0]))
     vb_var = np.var(us_noisy_input[:, 1] - (us_ff[:, 1] + us_controller[:, 1]))
     p_var = (np.var(ys_noisy_output[:, 0] - xs[:, 0])) * (180/np.pi)**2
-    e_var = (np.var(ys_noisy_output[:, 1] - xs[:, 1]))* (180/np.pi)**2
+    e_var = (np.var(ys_noisy_output[:, 1] - xs[:, 1])) * (180/np.pi)**2
     lamb_var = (np.var(ys_noisy_output[:, 2] - xs[:, 2]))* (180/np.pi)**2
+    f_var = np.var(ys_noisy_output[:, 3] - xs[:, 6])
+    b_var = np.var(ys_noisy_output[:, 4] - xs[:, 7])
     print("Variance of Vf is " + str(vf_var))
     print("   ... the standard deviation is " + str(np.sqrt(vf_var)))
     print("Variance of Vb is " + str(vb_var))
@@ -526,3 +539,45 @@ def plotObserver(bundle):
     # print("   ... in degree the standard deviation is " + str(np.sqrt(e_var) * 180 / np.pi))
     # print("Variance of lambda is " + str(lamb_var))
     # print("   ... in degree the standard deviation is " + str(np.sqrt(lamb_var) * 180 / np.pi))
+    print("Variance of f  is " + str(f_var) + " standard deviation = " + str(np.sqrt(f_var)))
+    print("Variance of b is " + str(b_var) + " standard deviation = " + str(np.sqrt(b_var)))
+    print("Variance of f (degree) is " + str(f_var * (180/np.pi)**2) + " standard deviation = " + str(np.sqrt(f_var * (180/np.pi)**2)))
+    print("Variance of b (degree) is " + str(b_var * (180/np.pi)**2) + " standard deviation = " + str(np.sqrt(b_var * (180/np.pi)**2)))
+
+    # Berechne den Verlauf der Varianz am Ende
+    time_start = 12
+    # get index of time start value
+    time_index = -1
+    for idx, val in enumerate(ts):
+        if val >= time_start:
+            time_index = idx
+            break
+
+    if time_index == -1:
+        print("could not get specific time index")
+        return
+
+    # get var in degree
+    final_p_hat_var = np.var(xs[:, 0] - xs_estimated_state[:, 0]) * (180/np.pi)**2
+    final_e_hat_var = np.var(xs[:, 1] - xs_estimated_state[:, 1]) * (180/np.pi)**2
+    final_lamb_hat_var = np.var(xs[:, 2] - xs_estimated_state[:, 2]) * (180/np.pi)**2
+
+    final_dp_hat_var = np.var(xs[:, 3] - xs_estimated_state[:, 3]) * (180 / np.pi) ** 2
+    final_de_hat_var = np.var(xs[:, 4] - xs_estimated_state[:, 4]) * (180 / np.pi) ** 2
+    final_dlamb_hat_var = np.var(xs[:, 5] - xs_estimated_state[:, 5]) * (180 / np.pi) ** 2
+
+    final_f_hat_var = np.var(xs[:, 6] - xs_estimated_state[:, 6])
+    final_b_hat_var = np.var(xs[:, 7] - xs_estimated_state[:, 7])
+
+    #print it
+    print("final_p_hat_var(degree) " + str(final_p_hat_var) + ", standard deviation = " + str(np.sqrt(final_p_hat_var)))
+    print("final_e_hat_var(degree) " + str(final_e_hat_var) + ", standard deviation = " + str(np.sqrt(final_e_hat_var)))
+    print("final_lamb_hat_var(degree) " + str(final_lamb_hat_var) + ", standard deviation = " + str(np.sqrt(final_lamb_hat_var)))
+
+    print("final_dp_hat_var(degree) " + str(final_dp_hat_var) + ", standard deviation = " + str(np.sqrt(final_dp_hat_var)))
+    print("final_de_hat_var(degree) " + str(final_de_hat_var) + ", standard deviation = " + str(np.sqrt(final_de_hat_var)))
+    print("final_dlamb_hat_var(degree) " + str(final_dlamb_hat_var) + ", standard deviation = " + str(np.sqrt(final_dlamb_hat_var)))
+
+    print("final_f_hat_var " + str(final_f_hat_var) + ", standard deviation = " + str(np.sqrt(final_f_hat_var)))
+    print("final_b_hat_var " + str(final_b_hat_var) + ", standard deviation = " + str(np.sqrt(final_b_hat_var)))
+    return
