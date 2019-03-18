@@ -158,7 +158,7 @@ class TrajectoryFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.trajectory_combo)
         self.trajectory_combo.currentIndexChanged.connect(self.on_trajectory_combo_select)
-        self.trajectory_combo.setCurrentIndex(0)
+        self.trajectory_combo.setCurrentIndex(2)
 
     def on_trajectory_combo_select(self):
         # print("combo select: " + str(self.trajectory_combo.currentIndex()))

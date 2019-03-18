@@ -157,15 +157,15 @@ def process(bundle: LoggingDataV2):
     # ax1.grid()
     # plt.show()
 
-    plotMoments(bundle)
+    # plotMoments(bundle)
 
     plotBasics(bundle)
 
-    plotValidation(bundle)
+    # plotValidation(bundle)
 
-    plotInputs(bundle)
+    # plotInputs(bundle)
 
-    plotObserver(bundle)
+    # plotObserver(bundle)
 
     plt.show()
 
@@ -348,6 +348,33 @@ def plotBasics(bundle):
     plt.plot(ts, xs[:, 4] / np.pi * 180.0)
     plt.plot(ts, xs[:, 5] / np.pi * 180.0)
     plt.legend(['dp', 'de', 'dlambda'])
+
+    fig = custom_figure("Motorumdrehungen")
+    plt.plot(ts, xs[:, 6], "-.", label=r"f (1/s)")
+    plt.plot(ts, xs[:, 7], "-.", label=r"b (1/s)")
+    plt.xlabel("Zeit (s)")
+    plt.ylabel("Motorumdrehungen")
+    plt.title("Motorumdrehungen")
+    plt.legend()
+
+    fig = custom_figure("Motorumdrehungen umgerechnet")
+    plt.plot(ts, xs[:, 6] + xs[:, 7], "-.", label=r"f+b (1/s)")
+    plt.plot(ts, xs[:, 6] - xs[:, 7], "-.", label=r"f-b (1/s)")
+    plt.xlabel("Zeit (s)")
+    plt.ylabel("Motorumdrehungen")
+    plt.title("Motorumdrehungen")
+    plt.legend()
+
+    fig = custom_figure("Motorspannungen")
+    ax1 = fig.add_subplot(111)
+    ax1.plot(ts, us_ff[:, 0] + us_controller[:, 0], label=r"Vf ohne Rauschen (V)")
+    ax1.plot(ts, us_ff[:, 1] + us_controller[:, 1], label=r"Vf ohne Rauschen (V)")
+    plt.xlabel("Zeit (s)")
+    plt.ylabel("Motorspannung")
+    plt.title("Systemeingang mit und ohne Rauschen")
+    ax1.legend(loc=1)
+
+
 
 
 def plotObserver(bundle):

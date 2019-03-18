@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.integrate
+import copy
 import ModelConstants as mc
 from enum import Enum
 import time
@@ -317,6 +318,7 @@ class HeliSimulation(object):
             self.statLim.p = LimitType.NO_LIMIT_REACHED
         if event.__name__ == "event_edt0":
             self.statLim.e = LimitType.NO_LIMIT_REACHED
+            print("[switch_state] leaving e limit")
         if event.__name__ == "event_lambdt0":
             self.statLim.lamb = LimitType.NO_LIMIT_REACHED
         return [p, e, lamb, dp, de, dlamb, f_speed, b_speed]
@@ -386,6 +388,7 @@ class HeliSimulation(object):
             if eddt >= 0:
                 event_blacklist.append(event_emin)
                 self.statLim.e = LimitType.NO_LIMIT_REACHED
+                print("[process_limit_state_machine] Leaving lower limit of e")
         if self.statLim.lamb == LimitType.UPPER_LIMIT:
             if lambddt <= 0:
                 # print("leave lambmax @ processLimitStateMachine()")
@@ -407,8 +410,8 @@ class HeliSimulation(object):
         :param current_disturbance: np-array with current disturbance for p, e, lambda, f and b
         [0] ==> p, [1] ==> e, [2] ==> lambda, [3] ==> f, [4] ==> b
         """
-        J_p, J_e, J_l = getInertia(self.currentState, self.dynamic_inertia_torque)
-        print("S-rhs_no_limits: J_p = " + str(J_p) + ", J_e = " + str(J_e) + ", J_l = " + str(J_l))
+        # J_p, J_e, J_l = getInertia(self.currentState, self.dynamic_inertia_torque)
+        # print("S-rhs_no_limits: J_p = " + str(J_p) + ", J_e = " + str(J_e) + ", J_l = " + str(J_l))
         # start = time.time()
         # print("====> calcStep() t = " + str(self.currentTime))
         v_s = v_f + v_b
@@ -418,7 +421,23 @@ class HeliSimulation(object):
         EventParams.model_type = self.model_type
         EventParams.current_disturbance = current_disturbance
         EventParams.dynamic_inertia_torque = self.dynamic_inertia_torque
-        event_blacklist = self.process_limit_state_machine(v_s, v_d, current_disturbance)
+        # ###PATCH
+        if self.model_type == ModelType.ROTORSPEED or self.model_type == ModelType.GYROMOMENT:
+            # if we are simulating the models with f and b, we do NOT need to consider that the second derivative
+            # of p,e,lambda is discontinuous
+            event_blacklist = []
+            # save state and signs of second derivative in order to find malfunctions of the event system later
+            statlim_before = copy.copy(self.statLim)
+            _1, _2, _3, pddt_before, eddt_before, lambddt_before, _4, _5 = self.rhs_no_limits(self.currentTime,
+                                                                                              self.currentState, v_s, v_d,
+                                                                                              current_disturbance)
+            if self.statLim.e == LimitType.LOWER_LIMIT and eddt_before > 0:
+                print("something went horribly wrong with e")
+        else:
+            # if we are simulating the models without f and b, we need to consider that the second derivative
+            # of p,e,lambda is discontinuous
+            event_blacklist = self.process_limit_state_machine(v_s, v_d, current_disturbance)
+        # ### PATCH END
         # if the event_list is empty, no events can be triggered that limit the angles
         # because process_limit_state_machine() does not limit anything it can still be called
         if self.should_check_limits:
@@ -430,6 +449,80 @@ class HeliSimulation(object):
         self.currentState = self.simulate_segment(self.currentTime, self.currentTime + self.timeStep,
                                                   self.currentState, v_s, v_d, current_disturbance, event_list)
         self.currentTime += self.timeStep
+
+        # ###PATCH
+        if self.model_type == ModelType.ROTORSPEED or self.model_type == ModelType.GYROMOMENT:
+            # first problem: qddt goes around 0 and confuses the zero crossing detection
+            # ===> detect and reset
+
+            # we can set v_s and v_d to zero because they have no influence on the second derivatives
+            # in these model types
+            _1, _2, _3, pddt_after, eddt_after, lambddt_after, _4, _5 = self.rhs_no_limits(self.currentTime,
+                                                                                              self.currentState, 0,
+                                                                                              0,
+                                                                                              current_disturbance)
+            # lets check if limits were left although signs of *ddt didnt change
+            if self.statLim.p == LimitType.NO_LIMIT_REACHED and statlim_before.p != LimitType.NO_LIMIT_REACHED:
+                if np.sign(pddt_before) == np.sign(pddt_after):
+                    # there was a malfunction in the event system. reset this coordinate
+                    self.statLim.p = statlim_before.p
+                    dp = 0
+                    if statlim_before.p == LimitType.UPPER_LIMIT:
+                        p = self.statLim.p_max
+                    elif statlim_before.p == LimitType.LOWER_LIMIT:
+                        p = self.statLim.p_min
+                    # save it to the state
+                    self.currentState[0] = p
+                    self.currentState[3] = dp
+            if self.statLim.e == LimitType.NO_LIMIT_REACHED and statlim_before.e != LimitType.NO_LIMIT_REACHED:
+                if np.sign(eddt_before) == np.sign(eddt_after):
+                    # there was a malfunction in the event system. reset this coordinate
+                    print("malfunction in e limit detection")
+                    self.statLim.e = statlim_before.e
+                    de = 0
+                    if statlim_before.e == LimitType.UPPER_LIMIT:
+                        e = self.statLim.e_max
+                    elif statlim_before.e == LimitType.LOWER_LIMIT:
+                        e = self.statLim.e_min
+                    # save it to the state
+                    self.currentState[1] = e
+                    self.currentState[4] = de
+            if self.statLim.lamb == LimitType.NO_LIMIT_REACHED and statlim_before.lamb != LimitType.NO_LIMIT_REACHED:
+                if np.sign(lambddt_before) == np.sign(lambddt_after):
+                    # there was a malfunction in the event system. reset this coordinate
+                    self.statLim.lamb = statlim_before.lamb
+                    dlamb = 0
+                    if statlim_before.lamb == LimitType.UPPER_LIMIT:
+                        lamb = self.statLim.lamb_max
+                    elif statlim_before.lamb == LimitType.LOWER_LIMIT:
+                        lamb = self.statLim.lamb_min
+                    # save it to the state
+                    self.currentState[2] = lamb
+                    self.currentState[5] = dlamb
+
+            # second problem: a limit was set although qddt drags in the different direction
+            if self.statLim.p != LimitType.NO_LIMIT_REACHED and statlim_before.p == LimitType.NO_LIMIT_REACHED:
+                if self.statLim.p == LimitType.UPPER_LIMIT and pddt_after < 0:
+                    print("detected qddt drags away from the limit")
+                    self.statLim.p = LimitType.NO_LIMIT_REACHED
+                if self.statLim.p == LimitType.LOWER_LIMIT and pddt_after > 0:
+                    print("detected qddt drags away from the limit")
+                    self.statLim.p = LimitType.NO_LIMIT_REACHED
+            if self.statLim.e != LimitType.NO_LIMIT_REACHED and statlim_before.e == LimitType.NO_LIMIT_REACHED:
+                if self.statLim.e == LimitType.UPPER_LIMIT and eddt_after < 0:
+                    print("detected qddt drags away from the limit")
+                    self.statLim.e = LimitType.NO_LIMIT_REACHED
+                if self.statLim.e == LimitType.LOWER_LIMIT and eddt_after > 0:
+                    print("detected qddt drags away from the limit")
+                    self.statLim.e = LimitType.NO_LIMIT_REACHED
+            if self.statLim.lamb != LimitType.NO_LIMIT_REACHED and statlim_before.lamb == LimitType.NO_LIMIT_REACHED:
+                if self.statLim.lamb == LimitType.UPPER_LIMIT and lambddt_after < 0:
+                    print("detected qddt drags away from the limit")
+                    self.statLim.lamb = LimitType.NO_LIMIT_REACHED
+                if self.statLim.lamb == LimitType.LOWER_LIMIT and lambddt_after > 0:
+                    print("detected qddt drags away from the limit")
+                    self.statLim.lamb = LimitType.NO_LIMIT_REACHED
+        # ### PATCH END
         return self.currentState
 
     def get_current_state(self):
@@ -484,76 +577,76 @@ class HeliSimulation(object):
     #     return corrected_state
 
 
-    def get_limited_state_and_change_state(self, state):
-        '''This method checks if the given state is out the allowed value range.
-        If this is the case, then the discrete state of the simulation is set accordingly. Furthermore
-        this method then returns the corrected state vector so that the kalman filter and the
-        simulation keep being synchronized. Also, this function alters the continuous state vector'''
-        p, e, lamb, dp, de, dlamb, f_speed, b_speed = state
-
-        # check if the new state values exceed the value range
-        # if this is the case then don't set the new state variables exactly on the limits
-        # because then the event system wouldn't work anymore as expected
-        if self.should_check_limits:
-            #   Check for angle being reached
-            # pitch angle
-            if p > self.statLim.p_max and self.statLim.p != LimitType.UPPER_LIMIT:
-                # equivalent to event_pmax
-                p = self.statLim.p_max
-                dp = 0
-                self.statLim.p = LimitType.UPPER_LIMIT
-            elif p < self.statLim.p_min and self.statLim.p != LimitType.LOWER_LIMIT:
-                # equivalent to event_pmin
-                p = self.statLim.p_min
-                dp = 0
-                self.statLim.p = LimitType.LOWER_LIMIT
-            # elevation angle
-            if e > self.statLim.e_max and self.statLim.e != LimitType.UPPER_LIMIT:
-                # equivalent to event_emax
-                e = self.statLim.e_max
-                de = 0
-                self.statLim.e = LimitType.UPPER_LIMIT
-            elif e < self.statLim.e_min and self.statLim.e != LimitType.LOWER_LIMIT:
-                # equivalent to event_emin
-                e = self.statLim.e_min
-                de = 0
-                self.statLim.e = LimitType.LOWER_LIMIT
-            # travel angle
-            if lamb > self.statLim.lamb_max and self.statLim.lamb != LimitType.UPPER_LIMIT:
-                # equivalent to event_lambmax
-                lamb = self.statLim.lamb_max
-                dlamb = 0
-                self.statLim.lamb = LimitType.UPPER_LIMIT
-            elif lamb < self.statLim.lamb_min and self.statLim.lamb != LimitType.LOWER_LIMIT:
-                # equivalent to event_lambmin
-                lamb = self.statLim.lamb_min
-                dlamb = 0
-                self.statLim.lamb = LimitType.LOWER_LIMIT
-
-            # check for leaving limit range
-            # pitch angle
-            if self.statLim.p == LimitType.UPPER_LIMIT and p < self.statLim.p_max:
-                self.statLim.p = LimitType.NO_LIMIT_REACHED
-            elif self.statLim.p == LimitType.LOWER_LIMIT and p > self.statLim.p_min:
-                self.statLim.p = LimitType.NO_LIMIT_REACHED
-            # elevation angle
-            if self.statLim.e == LimitType.UPPER_LIMIT and e < self.statLim.e_max:
-                self.statLim.e = LimitType.NO_LIMIT_REACHED
-            elif self.statLim.e == LimitType.LOWER_LIMIT and e > self.statLim.e_min:
-                self.statLim.e = LimitType.NO_LIMIT_REACHED
-            # travel angle
-            if self.statLim.lamb == LimitType.UPPER_LIMIT and lamb < self.statLim.lamb_max:
-                self.statLim.lamb = LimitType.NO_LIMIT_REACHED
-            elif self.statLim.lamb == LimitType.LOWER_LIMIT and lamb > self.statLim.lamb_min:
-                self.statLim.lamb = LimitType.NO_LIMIT_REACHED
-
-        corrected_state = np.array([p, e, lamb, dp, de, dlamb, f_speed, b_speed])
-        self.currentState = corrected_state
-        # reset state machine
-        self.statLim.p = LimitType.NO_LIMIT_REACHED
-        self.statLim.e = LimitType.NO_LIMIT_REACHED
-        self.statLim.lamb = LimitType.NO_LIMIT_REACHED
-        return corrected_state
+    # def get_limited_state_and_change_state(self, state):
+    #     '''This method checks if the given state is out the allowed value range.
+    #     If this is the case, then the discrete state of the simulation is set accordingly. Furthermore
+    #     this method then returns the corrected state vector so that the kalman filter and the
+    #     simulation keep being synchronized. Also, this function alters the continuous state vector'''
+    #     p, e, lamb, dp, de, dlamb, f_speed, b_speed = state
+    #
+    #     # check if the new state values exceed the value range
+    #     # if this is the case then don't set the new state variables exactly on the limits
+    #     # because then the event system wouldn't work anymore as expected
+    #     if self.should_check_limits:
+    #         #   Check for angle being reached
+    #         # pitch angle
+    #         if p > self.statLim.p_max and self.statLim.p != LimitType.UPPER_LIMIT:
+    #             # equivalent to event_pmax
+    #             p = self.statLim.p_max
+    #             dp = 0
+    #             self.statLim.p = LimitType.UPPER_LIMIT
+    #         elif p < self.statLim.p_min and self.statLim.p != LimitType.LOWER_LIMIT:
+    #             # equivalent to event_pmin
+    #             p = self.statLim.p_min
+    #             dp = 0
+    #             self.statLim.p = LimitType.LOWER_LIMIT
+    #         # elevation angle
+    #         if e > self.statLim.e_max and self.statLim.e != LimitType.UPPER_LIMIT:
+    #             # equivalent to event_emax
+    #             e = self.statLim.e_max
+    #             de = 0
+    #             self.statLim.e = LimitType.UPPER_LIMIT
+    #         elif e < self.statLim.e_min and self.statLim.e != LimitType.LOWER_LIMIT:
+    #             # equivalent to event_emin
+    #             e = self.statLim.e_min
+    #             de = 0
+    #             self.statLim.e = LimitType.LOWER_LIMIT
+    #         # travel angle
+    #         if lamb > self.statLim.lamb_max and self.statLim.lamb != LimitType.UPPER_LIMIT:
+    #             # equivalent to event_lambmax
+    #             lamb = self.statLim.lamb_max
+    #             dlamb = 0
+    #             self.statLim.lamb = LimitType.UPPER_LIMIT
+    #         elif lamb < self.statLim.lamb_min and self.statLim.lamb != LimitType.LOWER_LIMIT:
+    #             # equivalent to event_lambmin
+    #             lamb = self.statLim.lamb_min
+    #             dlamb = 0
+    #             self.statLim.lamb = LimitType.LOWER_LIMIT
+    #
+    #         # check for leaving limit range
+    #         # pitch angle
+    #         if self.statLim.p == LimitType.UPPER_LIMIT and p < self.statLim.p_max:
+    #             self.statLim.p = LimitType.NO_LIMIT_REACHED
+    #         elif self.statLim.p == LimitType.LOWER_LIMIT and p > self.statLim.p_min:
+    #             self.statLim.p = LimitType.NO_LIMIT_REACHED
+    #         # elevation angle
+    #         if self.statLim.e == LimitType.UPPER_LIMIT and e < self.statLim.e_max:
+    #             self.statLim.e = LimitType.NO_LIMIT_REACHED
+    #         elif self.statLim.e == LimitType.LOWER_LIMIT and e > self.statLim.e_min:
+    #             self.statLim.e = LimitType.NO_LIMIT_REACHED
+    #         # travel angle
+    #         if self.statLim.lamb == LimitType.UPPER_LIMIT and lamb < self.statLim.lamb_max:
+    #             self.statLim.lamb = LimitType.NO_LIMIT_REACHED
+    #         elif self.statLim.lamb == LimitType.LOWER_LIMIT and lamb > self.statLim.lamb_min:
+    #             self.statLim.lamb = LimitType.NO_LIMIT_REACHED
+    #
+    #     corrected_state = np.array([p, e, lamb, dp, de, dlamb, f_speed, b_speed])
+    #     self.currentState = corrected_state
+    #     # reset state machine
+    #     self.statLim.p = LimitType.NO_LIMIT_REACHED
+    #     self.statLim.e = LimitType.NO_LIMIT_REACHED
+    #     self.statLim.lamb = LimitType.NO_LIMIT_REACHED
+    #     return corrected_state
 
 
     def set_model_type(self, modelType):

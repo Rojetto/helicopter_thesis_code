@@ -244,7 +244,7 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addWidget(self.observer_combo)
         self.observer_combo.currentIndexChanged.connect(self.on_observer_combo_select)
-        self.observer_combo.setCurrentIndex(1)
+        self.observer_combo.setCurrentIndex(2)
 
     def on_observer_combo_select(self):
         self.observer_frame_stack.setCurrentIndex(self.observer_combo.currentIndex())
