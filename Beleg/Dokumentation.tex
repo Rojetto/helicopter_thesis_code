@@ -31,8 +31,8 @@
 \begin{document}
 	\title{Oberseminar Regelungstechnik \\ Regler- und Kalmanfilterentwurf f\"ur einen 					Helikopterversuchstand}
 	\author{Tilo Stock, Clemens Bilsing, Robert Heedt}
-	\date {23.11.2018}
-
+	\date {29.03.2019}
+	
 	\maketitle
 	\thispagestyle{empty}
 	% Das Inhaltsverzeichnis sieht in diesem Stil nicht gut aus. Soll es überhaupt dazu? 
@@ -41,189 +41,124 @@
 	% \newpage
 	
 	\renewcommand\abstractname{Zusammenfassung}
-\begin{abstract}
-	Dies ist ein ziemlich abstraktiges Abstrakt.
-\end{abstract}		
+	\begin{abstract}
+		%Dies ist ein ziemlich abstraktiges Abstrakt.
+		In dieser Projektarbeit wurde für das nachfolgend abgebildete Helikopterexperiment vollständig modelliert und verschiedene Reglerstrategien zur Arbeitspunkt- und Folgeregelung untersucht. Weiterhin wurde zur Zustandsrekonstruktion ein Kalmanfilter entworfen. Alle Ergebnisse wurden in einer interaktiven Simulationsumgebung implementiert und visualisiert.
+		
+		\begin{figure}[ht]
+			\centering
+			\includegraphics[width=0.4\textwidth]{images/Versuchstand}
+			\caption{Versuchsstand des Helikopterexperiments}
+			\label{Versuchstand}
+		\end{figure}
+	\end{abstract}		
 	
 	\section{Modellbildung}
-	Zur Modellbildung des Systems wurde der Lagrange-Formalismus zweiter Art angewendet. Für Systeme mit generalisiertem Potential lautet die Lagrange Gleichung 
-	\begin{equation}
-	L = T -V
-	\end{equation}
-	wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
+	\subsection{Einführung}
+	
+	Als erster Schritt der Modellbildung wurde der komplexe Versuchstand stark vereinfacht und auf drei Punktmassen reduziert. Davon repräsentieren zwei die Motoren, welche die Propeller antreiben um Auftrieb zu erzeugen. Die dritte Punktmasse repräsentiert das Gegengewicht der Motoren. Weiterhin verfügt das System über drei Gelenke um den Helikotperkopf im Raum bewegen zu können.
+	
+	\begin{figure}[ht]
+		\centering
+		\includegraphics[width=0.5\textwidth]{images/setup}
+		\caption{Vereinfachter Versuchsstand}
+		\label{setup}
+	\end{figure}
+	Das Koordinatensystem des Modells wurde durch seine generalisierten Koordinaten folgendermaßen festgelegt: $\bm q = \begin{bmatrix}
+	\varphi & \varepsilon & \lambda 
+	\end{bmatrix}^T $
+
+	\subsection{Langrange-Formalismus}
+	
+	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
 	Mit der Betrachtung von nicht-konservativen Kräften $Q_i$ ergibt sich die Lagrange-Funktion
 	\begin{equation}\label{eq:lagrange}
 	\diff{}{t} \partiell{L}{\dot{q_i}} - \partiell{L}{q_i}=Q_i
 	\end{equation}
-	Wobei das Koordinatensystem des Modells $q_i$ festgelegt wurde als
-	\begin{equation}
-	q = \begin{pmatrix}
-	\varphi\\\varepsilon\\\lambda
-	\end{pmatrix}
-	\end{equation}
-	\subsection{Bestimmung der kinetischen- und potentiellen Energien}
-	Zur Bestimmung der kinetischen Energie $T$ wurde die Rotation jeder einzelnen Masse um jede Koordinatenachse betrachtet und aufsummiert.
+	Nach dem einsetzen der potentiellen und kinetischen Energien sowie der nicht-konservativen Kräfte des Systems ergeben sich folgende Bewegungsgleichungen:
 	\begin{equation}
 	\begin{split}
-	T&= m_p l_p^2\dot{\varphi}^2 + \frac{1}{2}m_cl_c^2\dot{\varepsilon}^2 
-	+ m_p(l_h^2+(l_p\sin \varphi)^2)\dot{\varepsilon}^2\\
-	&+ \frac{1}{2} m_c (l_c \cos \varepsilon)^2\dot{\lambda}^2\\
-	&+ \frac{1}{2} m_p((l_h \cos \varepsilon +l_p \sin \varphi \sin \varepsilon)^2+(l_p \cos \varphi)^2)\dot{\lambda}^2\\
-	&+ \frac{1}{2} m_p((l_h \cos \varepsilon -l_p \sin \varphi \sin \varepsilon)^2+(l_p \cos \varphi)^2)\dot{\lambda}^2
+	&J_\varphi \ddot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2)\\  &+ \mu_\varphi \dot{\varphi} = V_d L_1
 	\end{split}
-	\end{equation}
-	Was vereinfacht werden kann zu
-	\begin{equation}
-	\begin{split}
-	T&= m_p l_p^2\dot{\varphi}^2 \\
-	&+ \frac{1}{2}m_cl_c^2\dot{\varepsilon}^2 
-	+ m_p(l_h^2+(l_p\sin \varphi)^2)\dot{\varepsilon}^2\\
-	&+ \frac{1}{2} m_c (l_c \cos \varepsilon)^2\dot{\lambda}^2\\
-	&+ m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2+(l_p \cos \varphi)^2)\dot{\lambda}^2
-	\end{split}
-	\end{equation}
-	Die potentielle Energie $V$ lautet
-	\begin{equation}
-	V = -m_c l_c g \sin \varepsilon + 2 m_p l_h g \sin \varepsilon
-	\end{equation}
-	Wodurch sich die Lagrange Funktion $L$ ergibt zu 
-	\begin{equation}
-	\begin{split}
-	L = T - V&= m_p l_p^2\dot{\varphi}^2 + \frac{1}{2}m_cl_c^2\dot{\varepsilon}^2 
-	+ m_p(l_h^2+(l_p\sin \varphi)^2)\dot{\varepsilon}^2\\
-	&+ \frac{1}{2} m_c (l_c \cos \varepsilon)^2\dot{\lambda}^2\\
-	&+ m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2+(l_p \cos \varphi)^2)\dot{\lambda}^2\\
-	&+ m_c l_c g \sin \varepsilon - 2 m_p l_h g \sin \varepsilon
-	\end{split}
-	\end{equation}
-	\subsection{Bestimmung der nicht-konservativen Kräfte}
-	Die durch die Rotation der Rotoren sowie durch Gleitreibung entstehen nicht-konservative Kräfte, welche wie folgt vereinfacht\footnote{Die Darstellung von $Q_e$ und $Q_\lambda$ ist vereinfacht worden, damit $(F_f + F_b)$ ausgeklammert werden konnte.} dargestellt werden können:
-	\begin{align}
-	Q_\varphi &= (F_f - F_b)l_p - \mu_\varphi \dot{\varphi} \\
-	Q_\varepsilon &= (F_f + F_b)l_h  \cos \varphi - \mu_\varepsilon \dot{\varepsilon}\\
-	Q_\lambda &= (F_f + F_b)l_h \cos \varepsilon \sin \varphi - \mu_\lambda \dot{\lambda}
-	\end{align}
-	\subsection{Aufstellen der Bewegungsgleichung um $\varphi$}
-	\begin{align}
-	\partiell{L}{\dot{\varphi}} &= 2m_p l_p^2 \dot{\varphi}\\
-	\diff{}{t} \partiell{L}{\dot{\varphi}} &= 2m_p l_p^2 \ddot{\varphi}
-	\end{align}
-	\begin{equation}
-	\begin{split}
-	\partiell{L}{\varphi} &= \partiell{}{\varphi} (m_p l_p^2 \dot{\varepsilon}^2 \sin^2 (\varphi) 
-	+ m_p l_p^2 \sin^2 (\varepsilon) \dot{\lambda}^2 \sin^2 (\varphi)
-	+ m_p l_p^2 \dot{\lambda}^2 \cos^2 \varphi)\\
-	&= 2 m_p l_p^2 \dot{\varepsilon}^2 \cos \varphi \sin \varphi + 2 m_p l_p^2 \sin^2 (\varepsilon) \dot{\lambda}^2 \cos \varphi \sin \varphi 
-	- 2 m_p l_p^2 \dot{\lambda}^2 \cos \varphi \sin \varphi\\
-	&= 2 m_p l_p^2 \cos \varphi \sin \varphi (\dot{\varepsilon}^2+ \sin^2 (\varepsilon) \dot{\lambda}^2- \dot{\lambda}^2)\\
-	&= 2 m_p l_p^2 \cos \varphi \sin \varphi (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2)
-	\end{split}
-	\end{equation}
-	Eingesetzt in \eqref{eq:lagrange} ergibt:
-	\begin{equation}
-	\underbrace{2m_p l_p^2}_{J_\varphi} \ddot{\varphi} -  \underbrace{2 m_p l_p^2}_{J_\varphi} \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2) = (F_f - F_b)l_p - \mu_\varphi \dot{\varphi} = V_d \underbrace{K_f l_p}_{L_1} - \mu_\varphi \dot{\varphi}
-	\end{equation}
-	\subsection{Aufstellen der Bewegungsgleichung um $\varepsilon$}
-	\begin{equation}
-	\partiell{L}{\dot{\varepsilon}} = 2(\frac{1}{2}m_cl_c^2
-	+ m_p(l_h^2+(l_p\sin \varphi)^2))\dot{\varepsilon}
-	\end{equation}
-	\begin{equation}
-	\diff{}{t}\partiell{L}{\dot{\varepsilon}} = (m_cl_c^2
-	+ 2 m_p(l_h^2+l_p^2\sin^2 \varphi))\ddot{\varepsilon}
 	\end{equation}
 	\begin{equation}
 	\begin{split}
-	\partiell{L}{\varepsilon} &= \partiell{}{\varepsilon}(\frac{1}{2} m_c l_c^2 \dot{\lambda}^2 \cos^2 (\varepsilon) + m_p \dot{\lambda}^2 (l_h^2 \cos^2 (\varepsilon) + l_p^2 \sin^2 (\varphi) \sin^2 (\varepsilon))
-	+ m_c l_c g \sin \varepsilon - 2 m_p l_h g \sin \varepsilon)\\
-	&= -m_c l_c^2 \dot{\lambda}^2 \cos \varepsilon \sin \varepsilon + 2 m_p \dot{\lambda}^2 \cos \varepsilon \sin \varepsilon (-l_h^2  + l_p^2 \sin^2 (\varphi) ) + g(m_c l_c - 2 m_p l_h) \cos \varepsilon\\
-	&= \cos \varepsilon \sin \varepsilon  (-m_c l_c^2 + 2 m_p (l_p^2 \sin^2 (\varphi) -l_h^2  )) \dot{\lambda}^2+ g(m_c l_c - 2 m_p l_h) \cos \varepsilon
+	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\ 
+	&= L_2 \cos \varepsilon + V_s L_3 \cos \varphi
 	\end{split}
 	\end{equation}
-	Eingesetzt in \eqref{eq:lagrange} ergibt:
 	\begin{equation}
-	\begin{split}
-	&(m_cl_c^2+ 2 m_p(l_h^2+l_p^2\sin^2 \varphi))\ddot{\varepsilon} - \cos \varepsilon \sin \varepsilon (-m_c l_c^2 + 2 m_p (l_p^2 \sin^2 (\varphi) -l_h^2  ))\dot{\lambda}^2 \\
-	& - g(m_c l_c - 2 m_p l_h) \cos \varepsilon = (F_f + F_b)l_h  \cos \varphi - \mu_\varepsilon \dot{\varepsilon}
-	\end{split}
+	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = V_s L_4 \cos \varepsilon \sin \varphi
 	\end{equation}
+	Mit $J_i$ .. Trägheitsmoment um Achse $i$; $V_s$ .. Summe der Rotorspannung $V_f + V_b$; $V_d$ .. Differenz der Rotorspannungen $V_f - V_b$; $L_i$ .. Längenkonstante; $\mu_i$ .. Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
 	
-	\begin{equation}
-	\begin{split}
-	&\overbrace{(m_cl_c^2+ 2 m_p(l_h^2+l_p^2\sin^2 \varphi))}^{J_\varepsilon}\ddot{e} + \cos \varepsilon \sin \varepsilon \overbrace{(m_c l_c^2 + 2 m_p ( l_h^2 -l_p^2 \sin^2 (\varphi) ))}^{\approx J_\varepsilon} \dot{\lambda}^2 \\
-	&= \underbrace{g(m_c l_c - 2 m_p l_h)}_{L_2} \cos \varepsilon + V_s \underbrace{ K_f l_h}_{L_3}  \cos \varphi  - \mu_\varepsilon \dot{\varepsilon}
-	\end{split}
-	\end{equation}
-	\begin{figure}[ht]
-		\centering
-		\includegraphics[width=1\textwidth]{images/J_e}
-		\caption{$J_\varepsilon(\varphi)$ in Abhängigkeit des Winkels $\varphi$}
-		\label{fig:J_e}
-	\end{figure}
-	\subsection{Aufstellen der Bewegungsgleichung um $\lambda$}
-	\begin{equation}
-	\partiell{L}{\dot{\lambda}} = (m_c (l_c \cos \varepsilon)^2
-	+ 2 m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2+(l_p \cos \varphi)^2))\dot{\lambda}
-	\end{equation}
-	\begin{equation}
-	\diff{}{t}\partiell{L}{\dot{\lambda}} = (m_c (l_c \cos \varepsilon)^2
-	+ 2 m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2+(l_p \cos \varphi)^2))\ddot{\lambda}
-	\end{equation}
-	\begin{equation}
-	\partiell{L}{\lambda} = 0
-	\end{equation}
-	Eingesetzt in \eqref{eq:lagrange} ergibt:
-	\begin{equation}
-	\underbrace{(m_c (l_c \cos \varepsilon)^2
-	+ 2 m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2+(l_p \cos \varphi)^2))}_{J_\lambda}\ddot{\lambda} =  V_s \underbrace{K_f l_h}_{L_4} \cos \varepsilon \sin \varphi - \mu_\lambda \dot{\lambda}
-	\end{equation}
-	\begin{figure}[ht]
-		\centering
-		\includegraphics[width=1\textwidth]{images/J_l}
-		\caption{$J_\lambda(\varepsilon,\varphi)$ in Abhängigkeit der Winkel $\varphi$ und $\varepsilon$}
-		\label{fig:J_l}
-	\end{figure}	
-	\subsection{Zusammenfassen der Bewegungsgleichungen}
-	Insgesamt kann das System mit wie folgt dargestellt werden:
-	\begin{align}
-	J_\varphi \ddot{\varphi} + \mu_\varphi \dot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2) &= V_d L_1\\
-	J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2 
-	&= L_2 \cos \varepsilon + V_s L_3 \cos \varphi\\
-	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} &= V_s L_4 \cos \varepsilon \sin \varphi
-	\end{align}
-	Mit $J_\varepsilon(\varphi)$ und $	J_\lambda(\varepsilon,\varphi)$ zu:
-	\begin{align}
-	J_\lambda(\varepsilon,\varphi) &= m_c (l_c \cos \varepsilon)^2
-	+ 2 m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2+(l_p \cos \varphi)^2)\\
-	J_\varepsilon(\varphi) &= m_cl_c^2+ 2 m_p(l_h^2+l_p^2\sin^2 \varphi)
-	\end{align}
-	\subsection{Erweiterung des Systems durch Rotordrehzahlen}
-	Die Kraft jedes Rotors resultiert nun aus der Drehzahl jedes Motors, wobei diese durch einen Tiefpass 1. Ordnung beschrieben werden können.
+%	\subsection{Langrange-Formalismus (long)}
+%	
+%	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
+%	Mit der Betrachtung von nicht-konservativen Kräften $Q_i$ ergibt sich die Lagrange-Funktion
+%	\begin{equation}\label{eq:lagrange}
+%	\diff{}{t} \partiell{L}{\dot{q_i}} - \partiell{L}{q_i}=Q_i
+%	\end{equation}
+%	Zur Bestimmung der kinetischen Energie $T$ wurde die Rotation jeder einzelnen Masse um jede Koordinatenachse betrachtet und aufsummiert. Zusammengefasst ergibt sich
+%	\begin{equation}
+%	\begin{split}
+%	T&= m_p l_p^2\dot{\varphi}^2 \\
+%	&+ \frac{1}{2}m_cl_c^2\dot{\varepsilon}^2 
+%	+ m_p(l_h^2+(l_p\sin \varphi)^2)\dot{\varepsilon}^2\\
+%	&+ \frac{1}{2} m_c (l_c \cos \varepsilon)^2\dot{\lambda}^2\\
+%	&+ m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2\\
+%	&+(l_p \cos \varphi)^2)\dot{\lambda}^2
+%	\end{split}
+%	\end{equation}	
+%	Die potentielle Energie $V$ lautet
+%	\begin{equation}
+%	V = -m_c l_c g \sin \varepsilon + 2 m_p l_h g \sin \varepsilon
+%	\end{equation}
+%	Die durch die Rotation der Rotoren sowie durch Gleitreibung entstehen nicht-konservative Kräfte, welche wie folgt vereinfacht dargestellt werden können:
+%	\begin{align}
+%	Q_\varphi &= (F_f - F_b)l_p - \mu_\varphi \dot{\varphi} \\
+%	Q_\varepsilon &= (F_f + F_b)l_h  \cos \varphi - \mu_\varepsilon \dot{\varepsilon}\\
+%	Q_\lambda &= (F_f + F_b)l_h \cos \varepsilon \sin \varphi - \mu_\lambda \dot{\lambda}
+%	\end{align}
+%	Eingesetzt in \eqref{eq:lagrange} wurde durch zeitliche und räumliche Ableitung nach jeder generalisierten Koordinate folgende Bewegungsgleichungen bestimmt:
+%	\begin{equation}
+%	\begin{split}
+%	&J_\varphi \ddot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2)\\  &+ \mu_\varphi \dot{\varphi} = V_d L_1
+%	\end{split}
+%	\end{equation}
+%	\begin{equation}
+%	\begin{split}
+%	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\ 
+%	&= L_2 \cos \varepsilon + V_s L_3 \cos \varphi
+%	\end{split}
+%	\end{equation}
+%	\begin{equation}
+%	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = V_s L_4 \cos \varepsilon \sin \varphi
+%	\end{equation}
+%	Mit $J_i$ .. Trägheitsmoment um Achse $i$; $V_s$ .. Summe der Rotorspannung $V_f + V_b$; $V_d$ .. Differenz der Rotorspannungen $V_f - V_b$; $L_i$ .. Längenkonstante; $\mu_i$ .. Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
+	
+	\subsection{Motordynamik}
+	
+	Weiterhin wurde das Modell um die Rotordrehzahlen $\omega$ der Motoren erweitert. Diese ergeben sich aus der jeweiligen Motorspannung $V$ mittels Tiefpass 1. Ordnung. 
 	\begin{align}
 	T_f \dot{\omega_f} + \omega_f &= K_f V_f\\
 	T_b \dot{\omega_b} + \omega_b &= K_b V_b
 	\end{align}
-	Dabei beschreibt $\omega_f$ und $\omega_b$ die Drehzahl der beiden Motoren und $T_f$ sowie $T_b$ deren Zeitkonstante.
-	Damit kann die auf das System resultierende Kraft beschrieben werden durch:
-	\begin{equation}
-	F_s = F_f + F_b = K (\omega_f + \omega_b)
-	\end{equation}
-	\begin{equation}
-	F_b = F_f - F_b = K (\omega_f - \omega_b)
-	\end{equation}
-	Weiterhin entstehen aus der Rotordrehzahl das jeweiliges Drehmoment $M_f$ und $M_b$ der Elektromotoren. Diese bewirken ein zusätzliches Moment auf die Drehachse um $\varepsilon$ und $\lambda$.
+	
+	\begin{figure}[ht]
+	\centering
+	\includegraphics[width=0.5\textwidth]{images/setup_mom}
+	\caption{Reaktionsmomente der Gelenke}
+	\label{setup_mom}
+	\end{figure}
+	Weiterhin entsteht ein Reaktionsmoment der Motoren auf die Gelenke. Um diesen parasitären Effekt zu minimieren wurde angenommen, dass die Rotoren standardmäßig entgegengesetzt rotieren. Die entstandenen Reaktionsmomente können beschrieben werden durch:
 	\begin{align}
-	M_{M,\varepsilon} &= \sin (\varphi) (M_f - M_b) =\sin (\varphi) K_M (\omega_f-\omega_b) \\
-	M_{M,\lambda} &= \cos (\varepsilon) \cos (\varphi) (M_b - M_f) =\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)
+	M_{M,\varepsilon} &=\sin (\varphi) K_M (\omega_f-\omega_b) \\
+	M_{M,\lambda} &=\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)
 	\end{align}
-	Das resultierende System ist daher:
-	\begin{align}
-	&J_\varphi \ddot{\varphi} + \mu_\varphi \dot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2) = K l_p (\omega_f - \omega_b)\\
-	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2 
-	= L_2 \cos \varepsilon + K l_h \cos \varphi (\omega_f + \omega_b) + \sin (\varphi) K_M (\omega_f-\omega_b)\\
-	&J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = K l_h \cos \varepsilon \sin \varphi (\omega_f + \omega_b) +\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)
-	\end{align}
-	\subsection{Erweiterung des Systems durch Kreiselträgheit}
+	
+	\subsection{Kreiseleffekte}
+	
 	Zusätzlich wirken Kreiselmomente auf die Rotoren, wenn sich die Rotationsachse der Rotoren verändert. Diese Kreiselmomente können allgemein beschreiben werden durch:
 	\begin{equation}
 	\vec{M} = \vec{\Omega} \times \vec{L}
@@ -242,26 +177,10 @@
 	&M_{K\varphi,\lambda} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\lambda}(\omega_f-\omega_b)\\
 	&M_{K\varepsilon,\lambda} = J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)
 	\end{align}
-	Das resultierende System ist daher:
-	\begin{align}
-	&J_\varphi \ddot{\varphi} + \mu_\varphi \dot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2) = K l_p (\omega_f - \omega_b) \\&+  J_M \cos (\varphi) \dot{\varepsilon}(\omega_b-\omega_f) +  J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)  
-	\end{align}
-	\begin{align}
-	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2 = L_2 \cos \varepsilon + K l_h \cos \varphi (\omega_f + \omega_b) \\
-	&+ \sin (\varphi) K_M (\omega_f-\omega_b)+  J_M \cos (\varphi) \dot{\varphi}(\omega_f-\omega_b) +J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)
-	\end{align}
-	\begin{align}
-	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = K l_h \cos \varepsilon \sin \varphi (\omega_f + \omega_b) +\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f) + J_M \sin (\varphi) \cos (\varepsilon) \dot{\varphi}(\omega_f-\omega_b)
-	\end{align}
-	%\begin{align}
-	%&V_s K_f = F_f + F_b \\
-	%&V_d K_f = F_f - F_b
-	%\end{align}
-	%\begin{align}
-	%&\dot{\lambda} = const \\
-	%&V_s = 0\\
-	%&V_d = 0
-	%\end{align}
+	
+	\subsection{Modellvalidierung}
+	
+	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dazu wurde vor allem auf die Validierung des einfachsten Modells eingegangen, welches durch den Langrange-Formalismus bestimmt wurde. Dazu wurde in einem Experiment die Winkelgeschwindigkeit des Helikopterkopfes extern eingestellt ($\dot{\lambda} = const$) und die Propeller ausgestellt ($V_f = V_b = 0$). Dazu wurde analytisch die Ruhelage der andren Gelenkwinkel in Abhängigkeit von $\dot{\lambda}$ berechnet und mit der Simulation verglichen. Interessant ist dabei, dass sich der Helikopterkopf durch die wirkenden Zentripetalkräfte nach einiger Zeit immer horizontal ausrichtet.
 	
 	\section{Regelung}
 	Regelungstechnik regelt. 
@@ -275,9 +194,9 @@
 	\subsection{Detektierbarkeit der Modellgleichungen}
 	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden. Dabei wird die nichtlineare Systemgleichung  $$ \bm{\dot x} = \bm{f}(\bm{x},\bm{u}), \bm y = \bm{g}(\bm{x}, \bm u) $$ in einem Arbeitspunkt linearisiert, sodass das System lokal als lineare Näherung durch die Systemgleichung $$ \bm{\dot x} = \bm{A} \bm{x} + \bm{B} \bm{u}, \bm y = \bm C \bm x + \bm D \bm u $$ mit den Matrizen $ \bm A = \frac{\partial{ \bm f}}{\partial{\bm x}}, \bm B = \frac{\partial{ \bm f}}{\partial{\bm u}} , \bm C = \frac{\partial{ \bm g}}{\partial{\bm x}}$ und $\bm D = \frac{\partial{ \bm g}}{\partial{\bm u}}$ dargestellt werden kann. Im folgenden soll die lokale Detektierbarkeit für drei unterschiedliche Fälle nachgewiesen werden:
 	\begin{enumerate}
-	\item für das einfachste Modell mit den drei gemessenen Gelenkwinkeln als Systemausgang
-	\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln und den zwei Motorfrequenzen als Systemausgang
-	\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln, aber ohne den beiden Motorfrequenzen als Systemausgang
+		\item für das einfachste Modell mit den drei gemessenen Gelenkwinkeln als Systemausgang
+		\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln und den zwei Motorfrequenzen als Systemausgang
+		\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln, aber ohne den beiden Motorfrequenzen als Systemausgang
 	\end{enumerate}
 	Zur Linearisierung des Systems sowie zur Berechnung der Kalmanschen Beobachtbarkeitsmatrix wurde das CAS von Matlab verwendet, da die Rangberechnung symbolischer Matrizen unter \textit{SymPy} unzumutbar lange dauerte. Dies geschah ohne Wissen von dem Paket \textit{symbtools} von Dr. Knoll, welches einen anderen Algorithmus zur Rangbestimmung symbolischer Matrizen enthält. 
 	\subsubsection{Einfachstes Modell}
@@ -360,17 +279,17 @@
 	\subsection{Validierung des Kalman-Filters und Experimente}
 	Zur Validierung des Kalman-Filters wurden verschiedene Experimente durchgeführt. Solange es keine Parameterabweichungen gibt und der Rauschanteil nicht unverhältnismäßig hoch ist, zeigt der Kalman ein sehr gutes Konvergenzverhalten. Experimente mit Parameterabweichungen $\pm$ 20\% führen jedoch zu kleinen stationären Schätzfehlern. Im Anhang (?) können sie entsprechende Experimentaufnahmen finden.
 	
-
-\begin{comment}
-\begin{figure}
-  \includegraphics[width=\linewidth]{images/Estimated_state_of_observer_(dp,_de,_dlambda).png}
-  \caption{Graph of Kalman-Filter reconstructing}
-  \label{fig:boat1}
-  
-Figure \ref{fig:boat1} shows a boat.
-\end{figure}
-\end{comment}
-
-\bibliography{Dokumentation}
-\nocite{ex1, ex2}
+	
+	\begin{comment}
+	\begin{figure}
+	\includegraphics[width=\linewidth]{images/Estimated_state_of_observer_(dp,_de,_dlambda).png}
+	\caption{Graph of Kalman-Filter reconstructing}
+	\label{fig:boat1}
+	
+	Figure \ref{fig:boat1} shows a boat.
+	\end{figure}
+	\end{comment}
+	
+	\bibliography{Dokumentation}
+	\nocite{ex1, ex2}
 \end{document}
