@@ -227,9 +227,7 @@
 	\dot \varepsilon &
 	\dot \lambda  &
 	f_4(\bm x) &
-	f_5(\bm x) &
-	f_6(\bm x) &
-	f_7(\bm x) &
+	... &
 	f_8(\bm x) &
 	\end{bmatrix} $ \\ 
 	\begin{comment}
@@ -248,7 +246,7 @@
 	\varphi & \varepsilon & \lambda & \dot \varphi & \dot \varepsilon & \dot \lambda & \omega_f & \omega_b
 	\end{bmatrix}^T $ \\ 
 	$\bm {y_1} = \begin{bmatrix}
-	\varphi & \varepsilon & \lambda & \dot \varphi & \dot \varepsilon & \dot \lambda
+	\varphi & \varepsilon & \lambda & \omega_f & \omega_b
 	\end{bmatrix}^T $ \\
 	$\bm {y_2} = \begin{bmatrix}
 	\varphi & \varepsilon & \lambda 
@@ -262,7 +260,7 @@
 	\end{comment}
 	Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf "sehr dünne" Singularitäten den Rang $\hat r$ (\cite{ex3}, Anhang B.4). \\
 	Da die Systemmatrix nur analytische Funktionen enthält, beinhaltet auch die Beobachtbarkeitsmatrix nur analytische Ausdrücke. 
-	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar. Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres nicht durchgeführt werden sollte\textbf{?} \\
+	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar. Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres vorerst nicht durchgeführt werden sollte. \\
 	
 	\subsection{Implementierung}
 	Der diskrete, erweiterte Kalman-Filter lässt sich in einen Prädiktions- und einen Korrekturschritt unterteilen.  Im Prädiktionsschritt wird das nichtlineare Modell simuliert, zudem wird der Fehler der \textit{a priori} Zustandsschätzung in Form einer Kovarianzmatrix näherungsweise berechnet. Im Korrektursschritt wird die Messung des Ausgangs einbezogen, um letztendlich die \textit{a posteriori} Zustandsschätzung zu berechnen. Die Implementierung des Prädiktionsschrittes erfolgte durch das Integrieren der Differentialgleichungen mit dem RK45-Algorithmus. Dazu wurde die Funktion \textit{solve\_ivp()} aus dem Paket \textit{SciPy} verwendet. \\ Für die Berechnung der \textit{a priori} Kovarianzmatrix ist es notwendig das nichtlineare System im momentanen Punkt der Schätztrajektorie zu linearisieren und zu diskretisieren. Zur Linearisierung der Systemgleichung wurde ein CAS verwendet, sodass die symbolischen Ausdrücke direkt im Python-Quellcode eingefügt werden konnten. \\ Zur nachfolgenden Diskretisierung des Systems müssen die Ausdrücke $A^* = e^{A T_s}, B^* = \int_{0}^{T_s} e^{A \tau} d\tau$ mit $T_s$ als Zeitschrittweite berechnet werden. 
@@ -277,7 +275,7 @@
 	Zur Visualisierung der Dynamik des Kalman-Filters, wurde zudem eine rötlich-transparente 3D-Animation implementiert.
 	
 	\subsection{Validierung des Kalman-Filters und Experimente}
-	Zur Validierung des Kalman-Filters wurden verschiedene Experimente durchgeführt. Solange es keine Parameterabweichungen gibt und der Rauschanteil nicht unverhältnismäßig hoch ist, zeigt der Kalman ein sehr gutes Konvergenzverhalten. Experimente mit Parameterabweichungen $\pm$ 20\% führen jedoch zu kleinen stationären Schätzfehlern. Im Anhang (?) können sie entsprechende Experimentaufnahmen finden.
+	Zur Validierung des Kalman-Filters wurden verschiedene Experimente durchgeführt. Solange es keine Parameterabweichungen gibt und der Rauschanteil nicht unverhältnismäßig hoch ist, zeigt der Kalman ein sehr gutes Konvergenzverhalten. Experimente mit Parameterabweichungen $\pm$ 20\% führen jedoch zu kleinen stationären Schätzfehlern.
 	
 
 \begin{comment}
