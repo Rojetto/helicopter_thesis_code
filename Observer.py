@@ -995,7 +995,7 @@ class ExtKalmanFilterGyroModelLimits(KalmanFilterBase):
         self.no_disturbance_eval = np.zeros(5)
 
     def set_system_model_and_step_size(self, model_type: ModelType, stepSize):
-        # ToDo: hardcore this model. This class is only for the gyro model, it's not necessary to set this model
+        # ToDo: This class is only for the gyro model, it's not necessary to set this model
         #   in this function
         # self.heliSim.set_model_type(model_type)
         return
@@ -1055,9 +1055,6 @@ class ExtKalmanFilterGyroModelLimits(KalmanFilterBase):
         # update covariance matrix (identity matrix must have as many lines as the Kalman gain
         cov_matrix_update = (np.eye(np.size(Kl, 0)) - Kl @ Ck) @ cov_matrix_predict
 
-        # check if the update step state needs to be changed because of limit crossing
-        # if that is the case, correct the state and set the state of the simulation accordingly
-        # ToDo: Debug this function for glitches. Somehow the observer ignores the pitch limit
         corrected_state = self.heliSim.get_limited_state_and_change_state(x_est_update.reshape((1, 8))[0],
                                                                            ModelType.GYROMOMENT)
         # corrected_state = x_est_update

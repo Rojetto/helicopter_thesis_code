@@ -165,7 +165,7 @@ def process(bundle: LoggingDataV2):
 
     # plotInputs(bundle)
 
-    # plotObserver(bundle)
+    plotObserver(bundle)
 
     plt.show()
 
