@@ -32,7 +32,7 @@
 	\title{Oberseminar Regelungstechnik \\ Regler- und Kalmanfilterentwurf f\"ur einen 					Helikopterversuchstand}
 	\author{Tilo Stock, Clemens Bilsing, Robert Heedt}
 	\date {29.03.2019}
-	
+
 	\maketitle
 	\thispagestyle{empty}
 	% Das Inhaltsverzeichnis sieht in diesem Stil nicht gut aus. Soll es überhaupt dazu? 
@@ -44,20 +44,20 @@
 	\begin{abstract}
 		%Dies ist ein ziemlich abstraktiges Abstrakt.
 		In dieser Projektarbeit wurde für das nachfolgend abgebildete Helikopterexperiment vollständig modelliert und verschiedene Reglerstrategien zur Arbeitspunkt- und Folgeregelung untersucht. Weiterhin wurde zur Zustandsrekonstruktion ein Kalmanfilter entworfen. Alle Ergebnisse wurden in einer interaktiven Simulationsumgebung implementiert und visualisiert.
-		
+
 		\begin{figure}[ht]
 			\centering
 			\includegraphics[width=0.4\textwidth]{images/Versuchstand}
 			\caption{Versuchsstand des Helikopterexperiments}
 			\label{Versuchstand}
 		\end{figure}
-	\end{abstract}		
+	\end{abstract}
 	
 	\section{Modellbildung}
 	\subsection{Einführung}
-	
-	Als erster Schritt der Modellbildung wurde der komplexe Versuchstand stark vereinfacht und auf drei Punktmassen reduziert. Davon repräsentieren zwei die Motoren, welche die Propeller antreiben um Auftrieb zu erzeugen. Die dritte Punktmasse repräsentiert das Gegengewicht der Motoren. Weiterhin verfügt das System über drei Gelenke um den Helikotperkopf im Raum bewegen zu können.
-	
+
+	Als erster Schritt der Modellbildung wurde der komplexe Versuchstand stark vereinfacht und auf drei Punktmassen reduziert. Davon repräsentieren zwei die Motoren, welche die Propeller antreiben um Auftrieb zu erzeugen. Die dritte Punktmasse repräsentiert das Gegengewicht der Motoren. Weiterhin verfügt das System über drei Gelenke um den Helikopterkopf im Raum bewegen zu können.
+
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.5\textwidth]{images/setup}
@@ -65,11 +65,11 @@
 		\label{setup}
 	\end{figure}
 	Das Koordinatensystem des Modells wurde durch seine generalisierten Koordinaten folgendermaßen festgelegt: $\bm q = \begin{bmatrix}
-	\varphi & \varepsilon & \lambda 
+	\varphi & \varepsilon & \lambda
 	\end{bmatrix}^T $
 
 	\subsection{Langrange-Formalismus}
-	
+
 	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
 	Mit der Betrachtung von nicht-konservativen Kräften $Q_i$ ergibt sich die Lagrange-Funktion
 	\begin{equation}\label{eq:lagrange}
@@ -83,7 +83,7 @@
 	\end{equation}
 	\begin{equation}
 	\begin{split}
-	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\ 
+	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\
 	&= L_2 \cos \varepsilon + V_s L_3 \cos \varphi
 	\end{split}
 	\end{equation}
@@ -91,9 +91,9 @@
 	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = V_s L_4 \cos \varepsilon \sin \varphi
 	\end{equation}
 	Mit $J_i$ .. Trägheitsmoment um Achse $i$; $V_s$ .. Summe der Rotorspannung $V_f + V_b$; $V_d$ .. Differenz der Rotorspannungen $V_f - V_b$; $L_i$ .. Längenkonstante; $\mu_i$ .. Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
-	
+
 %	\subsection{Langrange-Formalismus (long)}
-%	
+%
 %	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
 %	Mit der Betrachtung von nicht-konservativen Kräften $Q_i$ ergibt sich die Lagrange-Funktion
 %	\begin{equation}\label{eq:lagrange}
@@ -103,13 +103,13 @@
 %	\begin{equation}
 %	\begin{split}
 %	T&= m_p l_p^2\dot{\varphi}^2 \\
-%	&+ \frac{1}{2}m_cl_c^2\dot{\varepsilon}^2 
+%	&+ \frac{1}{2}m_cl_c^2\dot{\varepsilon}^2
 %	+ m_p(l_h^2+(l_p\sin \varphi)^2)\dot{\varepsilon}^2\\
 %	&+ \frac{1}{2} m_c (l_c \cos \varepsilon)^2\dot{\lambda}^2\\
 %	&+ m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2\\
 %	&+(l_p \cos \varphi)^2)\dot{\lambda}^2
 %	\end{split}
-%	\end{equation}	
+%	\end{equation}
 %	Die potentielle Energie $V$ lautet
 %	\begin{equation}
 %	V = -m_c l_c g \sin \varepsilon + 2 m_p l_h g \sin \varepsilon
@@ -128,7 +128,7 @@
 %	\end{equation}
 %	\begin{equation}
 %	\begin{split}
-%	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\ 
+%	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\
 %	&= L_2 \cos \varepsilon + V_s L_3 \cos \varphi
 %	\end{split}
 %	\end{equation}
@@ -136,15 +136,15 @@
 %	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = V_s L_4 \cos \varepsilon \sin \varphi
 %	\end{equation}
 %	Mit $J_i$ .. Trägheitsmoment um Achse $i$; $V_s$ .. Summe der Rotorspannung $V_f + V_b$; $V_d$ .. Differenz der Rotorspannungen $V_f - V_b$; $L_i$ .. Längenkonstante; $\mu_i$ .. Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
-	
+
 	\subsection{Motordynamik}
-	
-	Weiterhin wurde das Modell um die Rotordrehzahlen $\omega$ der Motoren erweitert. Diese ergeben sich aus der jeweiligen Motorspannung $V$ mittels Tiefpass 1. Ordnung. 
+
+	Weiterhin wurde das Modell um die Rotordrehzahlen $\omega$ der Motoren erweitert. Diese ergeben sich aus der jeweiligen Motorspannung $V$ mittels Tiefpass 1. Ordnung.
 	\begin{align}
 	T_f \dot{\omega_f} + \omega_f &= K_f V_f\\
 	T_b \dot{\omega_b} + \omega_b &= K_b V_b
 	\end{align}
-	
+
 	\begin{figure}[ht]
 	\centering
 	\includegraphics[width=0.5\textwidth]{images/setup_mom}
@@ -156,9 +156,9 @@
 	M_{M,\varepsilon} &=\sin (\varphi) K_M (\omega_f-\omega_b) \\
 	M_{M,\lambda} &=\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)
 	\end{align}
-	
+
 	\subsection{Kreiseleffekte}
-	
+
 	Zusätzlich wirken Kreiselmomente auf die Rotoren, wenn sich die Rotationsachse der Rotoren verändert. Diese Kreiselmomente können allgemein beschreiben werden durch:
 	\begin{equation}
 	\vec{M} = \vec{\Omega} \times \vec{L}
@@ -177,15 +177,15 @@
 	&M_{K\varphi,\lambda} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\lambda}(\omega_f-\omega_b)\\
 	&M_{K\varepsilon,\lambda} = J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)
 	\end{align}
-	
+
 	\subsection{Modellvalidierung}
-	
+
 	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dazu wurde vor allem auf die Validierung des einfachsten Modells eingegangen, welches durch den Langrange-Formalismus bestimmt wurde. Dazu wurde in einem Experiment die Winkelgeschwindigkeit des Helikopterkopfes extern eingestellt ($\dot{\lambda} = const$) und die Propeller ausgestellt ($V_f = V_b = 0$). Dazu wurde analytisch die Ruhelage der andren Gelenkwinkel in Abhängigkeit von $\dot{\lambda}$ berechnet und mit der Simulation verglichen. Interessant ist dabei, dass sich der Helikopterkopf durch die wirkenden Zentripetalkräfte nach einiger Zeit immer horizontal ausrichtet.
 	
 	\section{Regelung}
 	Regelungstechnik regelt. 
 	
-	\newpage
+	\newpage % um zu überprüfen, ob ich schon 2 Seiten geschrieben habe
 	\section{Zustandsrekonstruktion}
 	\subsection{Einf\"uhrung}
 	Einige Regler verwenden eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
@@ -260,7 +260,7 @@
 	\begin{comment}
 	Die symbolische Matrix $\bm O$ enthält sehr große Ausdrücke und durch scharfes Hinsehen war es mir nicht möglich Aussagen über den Rang zu machen. \\ 
 	\end{comment}
-	Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf "sehr dünne" Singularitäten den Rang $\hat r$ (hier irgendwie Verweis auf Knoll und nochmal nachfragen, ob diese Singularitäten wirklich egal sind). \\
+	Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf "sehr dünne" Singularitäten den Rang $\hat r$ (\cite{ex3}, Anhang B.4). \\
 	Da die Systemmatrix nur analytische Funktionen enthält, beinhaltet auch die Beobachtbarkeitsmatrix nur analytische Ausdrücke. 
 	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar. Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres nicht durchgeführt werden sollte\textbf{?} \\
 	
@@ -279,17 +279,17 @@
 	\subsection{Validierung des Kalman-Filters und Experimente}
 	Zur Validierung des Kalman-Filters wurden verschiedene Experimente durchgeführt. Solange es keine Parameterabweichungen gibt und der Rauschanteil nicht unverhältnismäßig hoch ist, zeigt der Kalman ein sehr gutes Konvergenzverhalten. Experimente mit Parameterabweichungen $\pm$ 20\% führen jedoch zu kleinen stationären Schätzfehlern. Im Anhang (?) können sie entsprechende Experimentaufnahmen finden.
 	
-	
-	\begin{comment}
-	\begin{figure}
-	\includegraphics[width=\linewidth]{images/Estimated_state_of_observer_(dp,_de,_dlambda).png}
-	\caption{Graph of Kalman-Filter reconstructing}
-	\label{fig:boat1}
-	
-	Figure \ref{fig:boat1} shows a boat.
-	\end{figure}
-	\end{comment}
-	
-	\bibliography{Dokumentation}
-	\nocite{ex1, ex2}
+
+\begin{comment}
+\begin{figure}
+  \includegraphics[width=\linewidth]{images/Estimated_state_of_observer_(dp,_de,_dlambda).png}
+  \caption{Graph of Kalman-Filter reconstructing}
+  \label{fig:boat1}
+  
+Figure \ref{fig:boat1} shows a boat.
+\end{figure}
+\end{comment}
+
+\bibliography{Dokumentation}
+\nocite{ex3}
 \end{document}
