@@ -26,7 +26,6 @@ from helicontrollers.TimeVariantController import TimeVariantController
 from HelicopterModel import HelicopterModel
 from HelicopterModelEstimated import HelicopterModelEstimated
 from HeliSimulation import HeliSimulation
-from HeliKalman import HeliKalmanFilter
 from MyQVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 import sys
@@ -88,7 +87,6 @@ class mainWindow(QtWidgets.QMainWindow):
         self.disturbance = None
         # Initialize controller and kalman filter
         self.current_controller = None
-        self.kalmanObj = HeliKalmanFilter()
         controller_list = [ManualController(), InteractiveController(joystick_widget), PolePlacementController(),
                            LqrController(), DirectPidController(),
                            CascadePidController(), TimeVariantController(), QuasistaticFlatnessController(),

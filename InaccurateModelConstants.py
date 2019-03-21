@@ -80,8 +80,8 @@ g = real_mc.g  # m/s^2
 import numpy as np
 
 from enum import Enum
-import ModelConstants as real_mc
-import random
+# import ModelConstants as real_mc
+# import random
 
 # this should be implemented by the ModelConstants.py. otherwise you cant compare both enum classes
 # class ModelType(Enum):
