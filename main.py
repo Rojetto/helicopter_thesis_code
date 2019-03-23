@@ -26,7 +26,6 @@ from helicontrollers.TimeVariantController import TimeVariantController
 from HelicopterModel import HelicopterModel
 from HelicopterModelEstimated import HelicopterModelEstimated
 from HeliSimulation import HeliSimulation
-from HeliKalman import HeliKalmanFilter
 from MyQVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 import sys
@@ -88,7 +87,6 @@ class mainWindow(QtWidgets.QMainWindow):
         self.disturbance = None
         # Initialize controller and kalman filter
         self.current_controller = None
-        self.kalmanObj = HeliKalmanFilter()
         controller_list = [ManualController(), InteractiveController(joystick_widget), PolePlacementController(),
                            LqrController(), DirectPidController(),
                            CascadePidController(), TimeVariantController(), QuasistaticFlatnessController(),
@@ -317,6 +315,9 @@ class mainWindow(QtWidgets.QMainWindow):
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb, current_disturbance)
             self.heliModel.setState(lamb, e, p)
+            # This Kalman filter visualization is always one step behind the main simulation.
+            # This was corrected in the logger, but was not in this visualization because for the human eye
+            # it doesn't make such a big difference
             self.heliModelEst.setState(x_estimated_state[2], x_estimated_state[1], x_estimated_state[0])
         else:
             if not val.validation_enabled:
