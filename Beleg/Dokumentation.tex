@@ -29,6 +29,7 @@
 \newcommand{\abs}[1]{\left|#1\right|}
 \newcommand{\skalprod}[2]{\langle#1,#2\rangle}
 \DeclareMathOperator{\grad}{\mathrm{grad}}
+\DeclareMathOperator{\sgn}{\mathrm{sgn}}
 \renewcommand{\div}{\mathrm{div}}
 
 \pagestyle{empty}
@@ -273,12 +274,28 @@
 	\subsection{Folgeregelung}
 	\subsubsection{Flachheitsbasierter Ansatz}
 	Ein vereinfachtes Systemmodell
+% 	\begin{subequations}
+% 		\begin{align}
+% J_\varphi \ddot{\varphi} &= L_1 \omega_d\\
+% J_\varepsilon \ddot{\varepsilon} &= L_2 \cos (\varepsilon) + L_3 \omega_s \cos (\varphi)\\
+% J_\lambda \ddot \lambda &= L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
+% 		\end{align}
+% 	\end{subequations}
 	\begin{subequations}
-		\begin{align}
-J_\varphi \ddot{\varphi} &= L_1 \omega_d\\
-J_\varepsilon \ddot{\varepsilon} &= L_2 \cos (\varepsilon) + L_3 \omega_s \cos (\varphi)\\
-J_\lambda \ddot \lambda &= L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
-		\end{align}
+			\begin{multline}
+J_\varphi \ddot{\varphi} +\mu_\varphi \dot \varphi\\
+- J_\varphi \cos(\varphi) \sin(\varphi) (\dot \varepsilon^2-\cos^2(\varepsilon) \dot \lambda^2) = L_1 \omega_d
+\label{eq:flat1}
+			\end{multline}
+			\begin{multline}
+J_\varepsilon \ddot{\varepsilon} + \mu_\varepsilon \dot\varepsilon + J_\varepsilon \cos(\varepsilon) \sin(\varepsilon) \dot\lambda^2 - L_2 \cos (\varepsilon)\\
+ = L_3 \omega_s \cos (\varphi)
+\label{eq:flat2}
+			\end{multline}
+			\begin{equation}
+J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda = L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
+\label{eq:flat3}
+			\end{equation}
 	\end{subequations}
 	besitzt den flachen Ausgang
 	\(
@@ -304,12 +321,41 @@ J_\lambda \ddot \lambda &= L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
 		\varepsilon^{(4)} = \varepsilon_d^{(4)} - \sum_{i=0}^3 k_i (\varepsilon^{(i)} - \varepsilon_d^{(i)})
 	\]
 	zu berechnen, die dazu führt, dass \(\varepsilon(t)\) dem Verlauf \(\varepsilon_d(t)\) folgt, werden die dritten und vierten Ableitungen von \(\varepsilon\) benötigt, die in unserer Simulation nicht zur Verfügung stehen.
-	Deshalb scheiterte dieser Ansatz in der Praxis.
+	Deshalb scheiterte dieser Ansatz leider in der Praxis.
 	\subsubsection{Partielle Linearisierung durch Rückführung}
-	\begin{enumerate}
-		\item Modellgleichungen für die das geht
-		\item Prinzip erklären
-	\end{enumerate}
+	Führt man in \ref{eq:flat2} und~\ref{eq:flat3} die virtuellen Eingänge
+	\[
+		w_1 = \omega_s \cos(\varphi), \quad
+		w_2 = \omega_s \sin(\varphi)
+	\]
+	ein, können diese durch eine Eingangstransformation
+	\begin{subequations}
+		\begin{align}
+			w_1 &= \frac{J_\varepsilon v_1 + \mu_\varepsilon \dot \varepsilon + J_\varepsilon \cos(\varepsilon) \sin(\varepsilon)\dot{\lambda}^2-L_2 \cos(\varepsilon)}{L_3} \\
+			w_2 &= \frac{J_\lambda v_2 + \mu_\lambda \dot \lambda}{L_4 \cos{\varepsilon}}
+		\end{align}
+		\label{eq:linearizing_transformation}
+	\end{subequations}
+	mit einem weiteren Paar von virtuellen Eingängen \(v_1\), \(v_2\) eingangs-zustands-linearisiert werden.
+	Dabei geht man davon aus, dass \(\varphi\) als eine Stellgröße zur Verfügung steht.
+
+	Nun ist es ein Leichtes, für das lineare System
+	\begin{subequations}
+		\begin{align}
+			\ddot{\varepsilon} &= v_1\\
+			\ddot{\lambda} &= v_2
+		\end{align}
+	\end{subequations}
+	eine stabilisierende Rückführung zu entwerfen.
+	Danach kann mit \ref{eq:linearizing_transformation} zurückgerechnet werden und mit
+	\begin{subequations}
+		\begin{align}
+\omega_s &= \sqrt{w_1^2 + w_2^2}\ \sgn (w_1)\\
+\varphi_d &= \arctan \left(\frac{w_1}{w_2}\right) 
+		\end{align}
+	\end{subequations}
+	erhält man \(\omega_s\) und einen Sollwert für \(\varphi\).
+	Zuletzt wird mit einem PD-Regler über Steuerung von \(\omega_d\) in~\ref{eq:flat1} der Verlauf \(\varphi_d\) realisiert.
 	
 	\clearpage % um zu überprüfen, ob ich schon 2 Seiten geschrieben habe
 	\section{Zustandsrekonstruktion}
