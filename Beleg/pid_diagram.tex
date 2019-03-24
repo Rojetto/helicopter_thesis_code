@@ -29,7 +29,7 @@
     \node at (sum_phi |- heli_f) [draw,shape=circle] (sum_ws) {};
     \node [left=of sum_ws,draw,inner sep = 0.2 cm] (eps_pid) {PID\textsuperscript{4}};
     \node at (eps_pid |- sum_phi) [draw,inner sep = 0.2 cm] (lamb_pid) {PID\textsuperscript{5}};
-    \node [above = of eps_pid,draw,inner sep = 0.2 cm,xshift=0cm] (vs) {Vorsteuerung};
+    \node [above = 0.3 cm of eps_pid,draw,inner sep = 0.2 cm,xshift=0cm] (vs) {Vorsteuerung};
     \node [left = 0.5 cm of eps_pid,draw,shape=circle] (sum_eps) {};
     \node [left = 1.25cm of lamb_pid,draw,shape=circle] (sum_lamb) {};
     \coordinate [left = of sum_lamb] (start_lamb);
@@ -59,7 +59,7 @@
     \draw [->] (start_lamb) -- (sum_lamb) node [midway,above] (lamb_label) {$\lambda^*$};
     \draw [->] (start_eps) -- (sum_eps) node at (lamb_label |- ws_label) {$\varepsilon^*$};
 
-    \draw [double] (heli) -- ++(2,0) node [midway,above] {$x$} -- ++(0, -2.5) coordinate (base) -- (sum_lamb |- base);
+    \draw [double] (heli) -- ++(2,0) node [midway,above] {$x$} -- ++(0, -1.8) coordinate (base) -- (sum_lamb |- base);
 
     \draw [arr] (sum_eps -| sum_lamb) |- (vs);
 
