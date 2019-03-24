@@ -186,6 +186,7 @@
 
 	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dazu wurde vor allem auf die Validierung des einfachsten Modells eingegangen, welches durch den Langrange-Formalismus bestimmt wurde. Dazu wurde in einem Experiment die Winkelgeschwindigkeit des Helikopterkopfes extern eingestellt ($\dot{\lambda} = const$) und die Propeller ausgestellt ($V_f = V_b = 0$). Dazu wurde analytisch die Ruhelage der andren Gelenkwinkel in Abhängigkeit von $\dot{\lambda}$ berechnet und mit der Simulation verglichen. Interessant ist dabei, dass sich der Helikopterkopf durch die wirkenden Zentripetalkräfte nach einiger Zeit immer horizontal ausrichtet.
 	
+	\clearpage
 	\section{Regelung}
 	\subsection{Arbeitspunktregelung}
 	Aus regelungstechnischer Sicht sind besonders zwei Aufgaben interessant: zum Einen die Stabilisierung des Systems an einem definierten Arbeitspunkt, beschrieben in diesem Abschnitt, und zum Anderen die Folgeregelung, bei der die Systemzustände einem Sollverlauf folgen sollen.
@@ -197,10 +198,11 @@
 	Zur Einstellung der Ruhelage stehen als Stellgrößen die Motorspannungen \(V_f\) für den vorderen, und \(V_b\) für den hinteren Motor zur Verfügung.
 
 	Ein PID-Regler der Form
-	\begin{equation}
+	\[
 		y(t) = k_P x(t) + k_I \int_0^t x(t') \, \mathrm{d}t' +  k_D \dot{x}(t)
-	\end{equation}
+	\]
 	besitzt nur jeweils einen skalaren Eingang und Ausgang, für dieses System müssen also mehrere miteinander verschaltet werden.
+	
 	Der vollständige Regelkreis ist in Abbildung \ref{fig:pid_diagram} dargestellt.
 	PID~1 und~2 setzen Drehzahlvorgaben in Motorspannungen um, PID~3 realisiert einen internen Sollwert für \(\varphi\), und 4 und 5 die äußeren Vorgaben für \(\varepsilon\) und \(\lambda\).
 	Die Transformation
@@ -212,7 +214,8 @@
 	\end{subequations}
 	bewirkt eine teilweise Entkopplung zwischen den Einflüssen der Stellgrößen auf die Zustände, sodass allein über \(\omega_d\) der Winkel \(\varphi\) eingestellt werden kann.
 	Die Vorsteuerung ist nicht zwangsweise nötig, führt aber zu einer etwas besseren Dynamik, da die Ruhedrehzahl \(\omega_s^0 \neq 0\) für \(\varepsilon^* \neq 0\) nicht vom I-Anteil des PID~4 übernommen werden muss.
-	Die beispielhafte Parametrierung in \ref{tab:pid_parameters} ist in der Lage, Anfangsfehler von ca. \ang{30} in den Winkeln, sowie kleine Störmomente auszugleichen.
+	
+	Mit der beispielhaften Parametrierung in \ref{tab:pid_parameters} sind die Regler in der Lage, Anfangsfehler von ca. \ang{30} in den Winkeln, sowie kleine Störmomente auszugleichen.
 	% Noch iwie Messwerte oder Diagramme?
 	\begin{figure*}
 		\centering
@@ -241,7 +244,7 @@
 	\begin{equation}
 		\dot{\vect x} = \vect f(\vect x, \vect u)
 	\end{equation}
-	zuerst analytisch linearisiert und am Arbeitspunkt ausgewertet, sodass man die Systemmatrizen
+	zuerst analytisch linearisiert und am Arbeitspunkt \(\vect{x}^*\), \(\vect{u}^*\) ausgewertet, sodass man die Systemmatrizen
 	\begin{subequations}
 		\begin{align}
 			\vect{A} &= \left. \partiell{\vect f}{\vect x}\right\vert_\mathrm{AP}\\
@@ -250,32 +253,65 @@
 	\end{subequations}
 	für das lineare Entwurfssystem in Zustandsraumdarstellung
 	\begin{equation}
-		\dot{\vect x} = \vect A \vect x + \vect B \vect u
+		\dot{\tilde{\vect{x}}} = \vect A \tilde{\vect{x}} + \vect B \tilde{\vect{u}}
 	\end{equation}
+	mit den Differenzgrößen
+	\(
+		\tilde{\vect{a}} = \vect{a} - \vect{a}^*
+	\)
 	erhält.
-	\begin{enumerate}
-		\item Vollständiges Modell wird analytisch linearisiert
-		\item Auswertung der Systemmatrizen an gewünschtem Arbeitspunkt
-		\item ermöglicht Entwurf einer konstanden Zustandsrückführung
-		\item Zwei Varianten implementiert: Polplatzierung und LQR
-		\item LQR Prinzip und Parameterwerte
-	\end{enumerate}
+
+	Um eine stabilisierende Rückführung \(\tilde{\vect{u}} = - \vect{K} \tilde{\vect{x}}\) zu entwerfen, wurden zwei Varianten implementiert.
+	Einerseits können Eigenwerte für die Systemmatrix mit Rückführung \(\vect A - \vect K \vect B\) vorgegeben werden.
+	Andererseits kann die Methode des LQR-Entwurfes genutzt werden, bei der ein Kostenfunktional
+	\[
+		J = \int^{\infty}_0 x(t)^T Q\, x(t) + u(t)^T R\, u(t)\ \mathrm dt
+	\]
+	mit diagonalen Wichtungsmatrizen \(\vect Q\) und \(\vect R\) minimiert wird.
+
+	Interessanterweise war dieser Regler auch bei großen Abweichungen, wie zum Beispiel \ang{120} in \(\lambda\), mithilfe der Winkelbeschränkung von \(\varphi\) noch in der Lage, den Arbeitspunkt zu erreichen.
 	\subsection{Folgeregelung}
 	\subsubsection{Flachheitsbasierter Ansatz}
-	\begin{enumerate}
-		\item Herleitung Flachheit an allereinfachstem Modell
-		\item kurz nennen, welche Modelle noch flach sind
-		\item flache Regelungsform
-		\item stabilisierende Dingsbums
-		\item Problem der Ableitungen
-	\end{enumerate}
+	Ein vereinfachtes Systemmodell
+	\begin{subequations}
+		\begin{align}
+J_\varphi \ddot{\varphi} &= L_1 \omega_d\\
+J_\varepsilon \ddot{\varepsilon} &= L_2 \cos (\varepsilon) + L_3 \omega_s \cos (\varphi)\\
+J_\lambda \ddot \lambda &= L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
+		\end{align}
+	\end{subequations}
+	besitzt den flachen Ausgang
+	\(
+		\vect y = (\varepsilon, \lambda)
+	\)
+	und eine Eingangsparametrierung
+	\begin{subequations}
+		\begin{align}
+			\omega_s &= \Phi_1(\varepsilon, \ddot \varepsilon, \ddot \lambda)\\
+			\omega_d &= \Phi_2(\varepsilon, \dot \varepsilon, \ddot \varepsilon, \varepsilon^{(3)}, \varepsilon^{(4)}, \ddot \lambda, \lambda^{(3)}, \lambda^{(4)})\, .
+		\end{align}
+	\end{subequations}
+	Es lässt sich zeigen, dass eine Regelungsform
+	\begin{subequations}
+		\begin{align}
+			\varepsilon^{(4)} &= \Psi_1(\omega_s, \dot{\omega}_s, \ddot{\omega}_s, \omega_d)\\
+			\ddot \lambda &= \Psi_2(\omega_s, \dot{\omega}_s, \ddot{\omega}_s, \omega_d)
+		\end{align}
+	\end{subequations}
+	existiert.
+	Um jetzt aber eine stabilisierende Rückführung
+	\[
+		\varepsilon^{(4)} = \varepsilon_d^{(4)} - \sum_{i=0}^3 k_i (\varepsilon^{(i)} - \varepsilon_d^{(i)})
+	\]
+	zu berechnen, die dazu führt, dass \(\varepsilon(t)\) dem Verlauf \(\varepsilon_d(t)\) folgt, werden die dritten und vierten Ableitungen von \(\varepsilon\) benötigt, die in unserer Simulation nicht zur Verfügung stehen.
+	Deshalb scheiterte dieser Ansatz in der Praxis.
 	\subsubsection{Partielle Linearisierung durch Rückführung}
 	\begin{enumerate}
 		\item Modellgleichungen für die das geht
 		\item Prinzip erklären
 	\end{enumerate}
 	
-	\newpage % um zu überprüfen, ob ich schon 2 Seiten geschrieben habe
+	\clearpage % um zu überprüfen, ob ich schon 2 Seiten geschrieben habe
 	\section{Zustandsrekonstruktion}
 	\subsection{Einf\"uhrung}
 	Einige Regler verwenden eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
