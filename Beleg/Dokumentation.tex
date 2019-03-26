@@ -1,4 +1,4 @@
-\documentclass[times, 10pt,twocolumn]{article} 
+\documentclass[times, 9pt,twocolumn]{article} 
 \usepackage{times}
 \usepackage{geometry}
 \usepackage{fancyhdr}
@@ -190,11 +190,11 @@
 	\clearpage
 	\section{Regelung}
 	\subsection{Arbeitspunktregelung}
-	Aus regelungstechnischer Sicht sind besonders zwei Aufgaben interessant: zum Einen die Stabilisierung des Systems an einem definierten Arbeitspunkt, beschrieben in diesem Abschnitt, und zum Anderen die Folgeregelung, bei der die Systemzustände einem Sollverlauf folgen sollen.
+	%Aus regelungstechnischer Sicht sind besonders zwei Aufgaben interessant: zum Einen die Stabilisierung des Systems an einem definierten Arbeitspunkt, beschrieben in diesem Abschnitt, und zum Anderen die Folgeregelung, bei der die Systemzustände einem Sollverlauf folgen sollen.
 	\subsubsection{Heuristisch durch PID-Regler}
-	Einfache PID-Regler sind für viele praktische Probleme in der Lage, auch ohne umfangreiche mathematische Modellierung und Berechnung, durch geschickte Handeinstellung Ruhelagen zu stabilisieren.
-	Deshalb liegt auch hier nahe, einen solchen Ansatz auszuprobieren.
-
+	%Einfache PID-Regler sind für viele praktische Probleme in der Lage, auch ohne umfangreiche mathematische Modellierung und Berechnung, durch geschickte Handeinstellung Ruhelagen zu stabilisieren.
+	%Deshalb liegt auch hier nahe, einen solchen Ansatz auszuprobieren.
+    %
 	Eine Ruhelage in diesem System ist beschrieben durch zwei frei wählbare Winkel \(\varepsilon^* \in (-\frac{\pi}{2}, \frac{\pi}{2})\) und \(\lambda^* \in (-\pi, \pi)\), außerdem gilt \(\varphi^*=0\).
 	Zur Einstellung der Ruhelage stehen als Stellgrößen die Motorspannungen \(V_f\) für den vorderen, und \(V_b\) für den hinteren Motor zur Verfügung.
 
@@ -246,12 +246,10 @@
 		\dot{\vect x} = \vect f(\vect x, \vect u)
 	\end{equation}
 	zuerst analytisch linearisiert und am Arbeitspunkt \(\vect{x}^*\), \(\vect{u}^*\) ausgewertet, sodass man die Systemmatrizen
-	\begin{subequations}
-		\begin{align}
-			\vect{A} &= \left. \partiell{\vect f}{\vect x}\right\vert_\mathrm{AP}\\
-			\vect B &= \left. \partiell{\vect f}{\vect u}\right\vert_\mathrm{AP}
-		\end{align}
-	\end{subequations}
+	\begin{equation}
+		\vect{A} = \left. \partiell{\vect f}{\vect x}\right\vert_\mathrm{AP}, \quad
+		\vect B = \left. \partiell{\vect f}{\vect u}\right\vert_\mathrm{AP}
+	\end{equation}
 	für das lineare Entwurfssystem in Zustandsraumdarstellung
 	\begin{equation}
 		\dot{\tilde{\vect{x}}} = \vect A \tilde{\vect{x}} + \vect B \tilde{\vect{u}}
@@ -301,28 +299,29 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda = L_4 \omega_s \sin (\varphi) 
 	\(
 		\vect y = (\varepsilon, \lambda)
 	\)
-	und eine Eingangsparametrierung
-	\begin{subequations}
-		\begin{align}
-			\omega_s &= \Phi_1(\varepsilon, \ddot \varepsilon, \ddot \lambda)\\
-			\omega_d &= \Phi_2(\varepsilon, \dot \varepsilon, \ddot \varepsilon, \varepsilon^{(3)}, \varepsilon^{(4)}, \ddot \lambda, \lambda^{(3)}, \lambda^{(4)})\, .
-		\end{align}
-	\end{subequations}
-	Es lässt sich zeigen, dass eine Regelungsform
+	und lässt sich in die Regelungsform
+	% \begin{subequations}
+	% 	\begin{align}
+	% 		\omega_s &= \Phi_1(\varepsilon, \ddot \varepsilon, \ddot \lambda)\\
+	% 		\omega_d &= \Phi_2(\varepsilon, \dot \varepsilon, \ddot \varepsilon, \varepsilon^{(3)}, \varepsilon^{(4)}, \ddot \lambda, \lambda^{(3)}, \lambda^{(4)})\, .
+	% 	\end{align}
+	% \end{subequations}
+	%Es lässt sich zeigen, dass eine Regelungsform
 	\begin{subequations}
 		\begin{align}
 			\varepsilon^{(4)} &= \Psi_1(\omega_s, \dot{\omega}_s, \ddot{\omega}_s, \omega_d)\\
 			\ddot \lambda &= \Psi_2(\omega_s, \dot{\omega}_s, \ddot{\omega}_s, \omega_d)
 		\end{align}
 	\end{subequations}
-	existiert.
+	%existiert.
+	transformieren.
 	Um jetzt aber eine stabilisierende Rückführung
 	\[
 		\varepsilon^{(4)} = \varepsilon_d^{(4)} - \sum_{i=0}^3 k_i (\varepsilon^{(i)} - \varepsilon_d^{(i)})
 	\]
 	zu berechnen, die dazu führt, dass \(\varepsilon(t)\) dem Verlauf \(\varepsilon_d(t)\) folgt, werden die dritten und vierten Ableitungen von \(\varepsilon\) benötigt, die in unserer Simulation nicht zur Verfügung stehen.
-	Deshalb scheiterte dieser Ansatz leider in der Praxis.
-	\subsubsection{Partielle Linearisierung durch Rückführung}
+	Um das Problem zu lösen sollten Verfahren zur Ableitungsschätzung, wie Automatisches Differenzieren, genauer untersucht werden.
+	\subsubsection{Partielle Linearisierung}
 	Führt man in \ref{eq:flat2} und~\ref{eq:flat3} die virtuellen Eingänge
 	\[
 		w_1 = \omega_s \cos(\varphi), \quad
