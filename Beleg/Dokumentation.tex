@@ -1,4 +1,5 @@
 \documentclass[times, 9pt,twocolumn]{article} 
+\usepackage{comment}
 \usepackage{times}
 \usepackage{geometry}
 \usepackage{fancyhdr}
@@ -14,6 +15,14 @@
 \usepackage{booktabs}
 \usepackage{siunitx}
 \bibliographystyle{apacite}
+
+% tikz commands because otherwise the standalone compiling doesnt work
+\usetikzlibrary{positioning}
+\usetikzlibrary{calc}
+\usetikzlibrary{arrows.meta}
+\tikzset{
+  arr/.style={{Circle[length=3pt]}->,shorten <=-1.5pt}
+}
 
 % Eigene Makros
 \DeclareMathOperator{\diag}{\mathrm{diag}}
@@ -186,7 +195,6 @@
 	\subsection{Modellvalidierung}
 
 	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dazu wurde vor allem auf die Validierung des einfachsten Modells eingegangen, welches durch den Langrange-Formalismus bestimmt wurde. Dazu wurde in einem Experiment die Winkelgeschwindigkeit des Helikopterkopfes extern eingestellt ($\dot{\lambda} = const$) und die Propeller ausgestellt ($V_f = V_b = 0$). Dazu wurde analytisch die Ruhelage der andren Gelenkwinkel in Abhängigkeit von $\dot{\lambda}$ berechnet und mit der Simulation verglichen. Interessant ist dabei, dass sich der Helikopterkopf durch die wirkenden Zentripetalkräfte nach einiger Zeit immer horizontal ausrichtet.
-	
 	\clearpage
 	\section{Regelung}
 	\subsection{Arbeitspunktregelung}
@@ -371,7 +379,7 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda = L_4 \omega_s \sin (\varphi) 
 	\end{enumerate}
 	Zur Linearisierung des Systems sowie zur Berechnung der Kalmanschen Beobachtbarkeitsmatrix wurde das CAS von Matlab verwendet, da die Rangberechnung symbolischer Matrizen unter \textit{SymPy} unzumutbar lange dauerte. Dies geschah ohne Wissen von dem Paket \textit{symbtools} von Dr. Knoll, welches einen anderen Algorithmus zur Rangbestimmung symbolischer Matrizen enthält. 
 	\subsubsection{Einfachstes Modell}
-	Das einfachste Modell folgt aus den Gleichungen 24-26, wenn die Coriolis- und Zentripetalkräfte vereinfacht als sehr klein bzw. 0 angenommen werden. \\
+	Das einfachste Modell folgt aus den Gleichungen 2-4, wenn die Zentripetal- und Reibungskräfte vereinfacht als sehr klein bzw. 0 angenommen werden. \\
 	$\bm f(\bm x) = \begin{bmatrix}
 	\dot \varphi \\
 	\dot \varepsilon \\
