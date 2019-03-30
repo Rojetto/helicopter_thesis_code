@@ -215,16 +215,15 @@
 	Der vollständige Regelkreis ist in Abbildung \ref{fig:pid_diagram} dargestellt.
 	PID~1 und~2 setzen Drehzahlvorgaben in Motorspannungen um, PID~3 realisiert einen internen Sollwert für \(\varphi\), und 4 und 5 die äußeren Vorgaben für \(\varepsilon\) und \(\lambda\).
 	Die Transformation
-	\begin{subequations}
-		\begin{align}
-		\omega_f &= \frac{\omega_s+\omega_d}{2}\\
-		\omega_b &= \frac{\omega_s-\omega_d}{2}
-		\end{align}
-	\end{subequations}
+	\begin{equation}
+		\omega_f = \frac{\omega_s+\omega_d}{2}, \quad
+		\omega_b = \frac{\omega_s-\omega_d}{2}
+	\end{equation}
 	bewirkt eine teilweise Entkopplung zwischen den Einflüssen der Stellgrößen auf die Zustände, sodass allein über \(\omega_d\) der Winkel \(\varphi\) eingestellt werden kann.
 	Die Vorsteuerung ist nicht zwangsweise nötig, führt aber zu einer etwas besseren Dynamik, da die Ruhedrehzahl \(\omega_s^0 \neq 0\) für \(\varepsilon^* \neq 0\) nicht vom I-Anteil des PID~4 übernommen werden muss.
 	
-	Mit der beispielhaften Parametrierung in \ref{tab:pid_parameters} sind die Regler in der Lage, Anfangsfehler von ca. \ang{30} in den Winkeln, sowie kleine Störmomente auszugleichen.
+	In den Simulationen waren die Regler so in der Lage, Anfangsfehler von ca. \ang{30} in den Winkeln, sowie kleine Störmomente auszugleichen.
+	%Mit der beispielhaften Parametrierung in \ref{tab:pid_parameters} sind die Regler in der Lage, Anfangsfehler von ca. \ang{30} in den Winkeln, sowie kleine Störmomente auszugleichen.
 	% Noch iwie Messwerte oder Diagramme?
 	\begin{figure*}
 		\centering
@@ -232,22 +231,22 @@
 		\caption{Struktur der Arbeitspunktregelung mit PID-Reglern}
 		\label{fig:pid_diagram}
 	\end{figure*}
-	\begin{table}
-		\centering
-		\begin{tabular}{l l l l}
-			\toprule
-			PID & $k_P$ & $k_I$ & $k_D$\\
-			\midrule
-			1 & 5 & 0 & 0\\
-			2 & 5 & 0 & 0\\
-			3 & 20 & 0 & 6\\
-			4 & 10 & 6 & 5\\
-			5 & 2 & 0,6 & 2\\
-			\bottomrule
-		\end{tabular}
-		\label{tab:pid_parameters}
-		\caption{Beispielhafte PID-Parametrierung}
-	\end{table}
+	% \begin{table}
+	% 	\centering
+	% 	\begin{tabular}{l l l l}
+	% 		\toprule
+	% 		PID & $k_P$ & $k_I$ & $k_D$\\
+	% 		\midrule
+	% 		1 & 5 & 0 & 0\\
+	% 		2 & 5 & 0 & 0\\
+	% 		3 & 20 & 0 & 6\\
+	% 		4 & 10 & 6 & 5\\
+	% 		5 & 2 & 0,6 & 2\\
+	% 		\bottomrule
+	% 	\end{tabular}
+	% 	\label{tab:pid_parameters}
+	% 	\caption{Beispielhafte PID-Parametrierung}
+	% \end{table}
 	\subsubsection{Konstante Zustandsrückführung}
 	Um auf die Methoden der linearen Regelungstechnik zurückgreifen zu können, wird das nichtlineare System
 	\begin{equation}
@@ -288,20 +287,18 @@
 % 		\end{align}
 % 	\end{subequations}
 	\begin{subequations}
-			\begin{multline}
-J_\varphi \ddot{\varphi} +\mu_\varphi \dot \varphi\\
-- J_\varphi \cos(\varphi) \sin(\varphi) (\dot \varepsilon^2-\cos^2(\varepsilon) \dot \lambda^2) = L_1 \omega_d
-\label{eq:flat1}
-			\end{multline}
-			\begin{multline}
-J_\varepsilon \ddot{\varepsilon} + \mu_\varepsilon \dot\varepsilon + J_\varepsilon \cos(\varepsilon) \sin(\varepsilon) \dot\lambda^2 - L_2 \cos (\varepsilon)\\
- = L_3 \omega_s \cos (\varphi)
-\label{eq:flat2}
-			\end{multline}
-			\begin{equation}
-J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda = L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
-\label{eq:flat3}
-			\end{equation}
+		\begin{align}
+			J_\varphi \ddot{\varphi} +\mu_\varphi \dot \varphi - M_{z,\varphi} &= L_1 \omega_d\\
+J_\varepsilon \ddot{\varepsilon} + \mu_\varepsilon \dot\varepsilon + M_{z, \varepsilon} &= L_3 \omega_s \cos (\varphi)\\
+J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
+		\end{align}
+	\end{subequations}
+	mit den Zentripetalmomenten
+	\begin{subequations}
+		\begin{align}
+			M_{z,\varphi} &= J_\varphi \cos(\varphi) \sin(\varphi) (\dot \varepsilon^2-\cos^2(\varepsilon) \dot \lambda^2)\\
+			M_{z, \varepsilon} &= J_\varepsilon \cos(\varepsilon) \sin(\varepsilon) \dot\lambda^2 - L_2 \cos (\varepsilon)
+		\end{align}
 	\end{subequations}
 	besitzt den flachen Ausgang
 	\(
