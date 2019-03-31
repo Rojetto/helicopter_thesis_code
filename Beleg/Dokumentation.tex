@@ -41,6 +41,7 @@
 \DeclareMathOperator{\grad}{\mathrm{grad}}
 \DeclareMathOperator{\sgn}{\mathrm{sgn}}
 \renewcommand{\div}{\mathrm{div}}
+\DeclareMathOperator{\rang}{rang}
 
 \pagestyle{empty}
 \begin{document}
@@ -388,78 +389,86 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	\section{Zustandsrekonstruktion}
 	\subsection{Einf\"uhrung}
 	Einige Regler verwenden eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
-	Selbst wenn tatsächlich alle Zustände als Messgrößen zur Verfügung stehen sollten, kann es bei starkem Messrauschen sinnvoll sein, die Messsignale mit einem Zustandsschätzer zu glätten. \\
-	Im folgenden Abschnitt wird in diesem Zusammenhang der Entwurf und die Implementierung eines diskreten, erweiterten Kalman-Filters (auch \textit{EKF} genannt)  thematisiert. 
+	Selbst wenn tatsächlich alle Zustände als Messgrößen zur Verfügung stehen sollten, kann es bei starkem Messrauschen sinnvoll sein, die Messsignale mit einem Zustandsschätzer zu glätten.
+
+	Im folgenden Abschnitt wird in diesem Zusammenhang der Entwurf und die Implementierung eines diskreten, Erweiterten Kalman-Filters (\textit{EKF})  thematisiert. 
 	\subsection{Detektierbarkeit der Modellgleichungen}
-	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden. Dabei wird die nichtlineare Systemgleichung  $$ \bm{\dot x} = \bm{f}(\bm{x},\bm{u}), \bm y = \bm{g}(\bm{x}, \bm u) $$ in einem Arbeitspunkt linearisiert, sodass das System lokal als lineare Näherung durch die Systemgleichung $$ \bm{\dot x} = \bm{A} \bm{x} + \bm{B} \bm{u}, \bm y = \bm C \bm x + \bm D \bm u $$ mit den Matrizen $ \bm A = \frac{\partial{ \bm f}}{\partial{\bm x}}, \bm B = \frac{\partial{ \bm f}}{\partial{\bm u}} , \bm C = \frac{\partial{ \bm g}}{\partial{\bm x}}$ und $\bm D = \frac{\partial{ \bm g}}{\partial{\bm u}}$ dargestellt werden kann. Im folgenden soll die lokale Detektierbarkeit für drei unterschiedliche Fälle nachgewiesen werden:
+	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden. Dabei werden die nichtlinearen Systemgleichungen
+	$$ \bm{\dot x} = \bm{f}(\bm{x},\bm{u}),\quad \bm y = \bm{g}(\bm{x}, \bm u) $$
+	in einem Arbeitspunkt linearisiert, sodass das System lokal als lineare Näherung durch die Systemgleichungen
+	$$ \bm{\dot x} = \bm{A} \bm{x} + \bm{B} \bm{u},\quad \bm y = \bm C \bm x + \bm D \bm u $$
+	mit den Matrizen $ \bm A = \frac{\partial{ \bm f}}{\partial{\bm x}}$, $\bm B = \frac{\partial{ \bm f}}{\partial{\bm u}}$, $\bm C = \frac{\partial{ \bm g}}{\partial{\bm x}}$ und $\bm D = \frac{\partial{ \bm g}}{\partial{\bm u}}$ dargestellt werden kann.
+	
+	Im Folgenden soll die lokale Detektierbarkeit für drei unterschiedliche Fälle nachgewiesen werden:
 	\begin{enumerate}
 		\item für das einfachste Modell mit den drei gemessenen Gelenkwinkeln als Systemausgang
 		\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln und den zwei Motorfrequenzen als Systemausgang
 		\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln, aber ohne den beiden Motorfrequenzen als Systemausgang
 	\end{enumerate}
+	
 	Zur Linearisierung des Systems sowie zur Berechnung der Kalmanschen Beobachtbarkeitsmatrix wurde das CAS von Matlab verwendet, da die Rangberechnung symbolischer Matrizen unter \textit{SymPy} unzumutbar lange dauerte. Dies geschah ohne Wissen von dem Paket \textit{symbtools} von Dr. Knoll, welches einen anderen Algorithmus zur Rangbestimmung symbolischer Matrizen enthält. 
 	\subsubsection{Einfachstes Modell}
-	Das einfachste Modell folgt aus den Gleichungen 2-4, wenn die Zentripetal- und Reibungskräfte vereinfacht als sehr klein bzw. 0 angenommen werden. \\
-	$\bm f(\bm x) = \begin{bmatrix}
+	Das einfachste Modell folgt aus den Gleichungen 2-4, wenn die Zentripetal- und Reibungskräfte vereinfacht als sehr klein bzw.\ 0 angenommen werden.
+	\begin{align*}
+	\bm f(\bm x) &= \begin{bmatrix}
 	\dot \varphi \\
 	\dot \varepsilon \\
 	\dot \lambda  \\
 	\dfrac{1}{J_p} \cdot L_1 V_d \\
 	\dfrac{1}{J_e} \cdot (L_2 \cdot \mathrm{cos(\varepsilon)} + L_3 V_s \mathrm{cos(\varphi)}) \\
 	\dfrac{1}{J_{\lambda}} \cdot L_4 V_s \mathrm{cos(\varepsilon)} \mathrm{sin(\varphi)} \\
-	\end{bmatrix} $ \\
-	$\bm x = \begin{bmatrix}
+	\end{bmatrix}\\
+	\bm x &= \begin{bmatrix}
 	\varphi & \varepsilon & \lambda & \dot \varphi & \dot \varepsilon & \dot \lambda 
-	\end{bmatrix}^T $ \\
-	$\bm y = \begin{bmatrix}
+	\end{bmatrix}^T \\
+	\bm y &= \begin{bmatrix}
 	\varphi & \varepsilon & \lambda 
-	\end{bmatrix}^T $ \\
-	Die Kalmansche Beobachtbarkeitsmatrix \\ $\bm O = \begin{bmatrix}
+	\end{bmatrix}^T
+\end{align*}
+	Die Kalmansche Beobachtbarkeitsmatrix
+	$$\bm O = \begin{bmatrix}
 	\bm C \\
-	... \\
+	\ldots \\
 	\bm C \bm A^{n-1}
-	\end{bmatrix}$ ist in diesem Fall eine $18\times 6$-Matrix, in der die obersten 6 Zeilen die Einheitsmatrix $I_6$ bilden. Damit ist das System unabhängig vom Systemzustand lokal detektierbar, weil $\mathrm{rang} \bm O = 6 = \mathrm{n}$.
+	\end{bmatrix}$$
+	ist in diesem Fall eine $18\times 6$-Matrix, in der die obersten 6 Zeilen die Einheitsmatrix $I_6$ bilden.
+	Damit ist das System unabhängig vom Systemzustand lokal detektierbar, weil $\rang \bm O = 6 = \mathrm{n}$.
 	\subsubsection{Komplexestes Modell}
-	Das komplexeste Modell beinhaltet alle modellierten physikalischen Effekte (siehe \textit{Modellbildung}), einschließlich der dynamischen Trägheitsmomente. \\
-	$\bm f(\bm x) = \begin{bmatrix}
+	Das komplexeste Modell beinhaltet alle modellierten physikalischen Effekte (siehe \textit{Modellbildung}), einschließlich der dynamischen Trägheitsmomente:
+	\begin{align*}
+	\bm f(\bm x) &= \begin{bmatrix}
 	\dot \varphi &
 	\dot \varepsilon &
 	\dot \lambda  &
 	f_4(\bm x) &
-	... &
-	f_8(\bm x) &
-	\end{bmatrix} $ \\ 
-	\begin{comment}
-	$\bm f(\bm x) = \begin{bmatrix}
-	\dot \varphi \\
-	\dot \varepsilon \\
-	\dot \lambda  \\
-	f_4(\bm x) \\ 
-	f_5(\bm x) \\
-	f_6(\bm x) \\
-	f_7(\bm x) \\
-	f_8(\bm x) \\
-	\end{bmatrix} $ \\ 
-	\end{comment}
-	$\bm x = \begin{bmatrix}
+	\ldots &
+	f_8(\bm x)
+	\end{bmatrix}^T\\
+	\bm x &= \begin{bmatrix}
 	\varphi & \varepsilon & \lambda & \dot \varphi & \dot \varepsilon & \dot \lambda & \omega_f & \omega_b
-	\end{bmatrix}^T $ \\ 
-	$\bm {y_1} = \begin{bmatrix}
+	\end{bmatrix}^T \\ 
+	\bm {y_1} &= \begin{bmatrix}
 	\varphi & \varepsilon & \lambda & \omega_f & \omega_b
-	\end{bmatrix}^T $ \\
-	$\bm {y_2} = \begin{bmatrix}
+	\end{bmatrix}^T \\
+	\bm {y_2} &= \begin{bmatrix}
 	\varphi & \varepsilon & \lambda 
-	\end{bmatrix}^T $ \\ wobei $f_4, ..., f_8$ sehr unübersichtliche, große Ausdrücke sind. \\
+	\end{bmatrix}^T
+\end{align*}
+	wobei $f_4, \ldots, f_8$ sehr unübersichtliche, große Ausdrücke sind.
+
 	Berechnet man nun mit dem geschilderten Vorgehen für den Ausgang $\bm{y_1}$
-	die Beobachtbarkeitsmatrix $\bm O$ , so fällt auf, dass deren erste 8 Zeilen eine Permutationsmatrix bilden. Auch dieses System ist folglich lokal detektierbar. \\
+	die Beobachtbarkeitsmatrix $\bm O$, so fällt auf, dass deren erste 8 Zeilen eine Permutationsmatrix bilden.
+	Auch dieses System ist folglich lokal detektierbar.
+
 	Betrachtet man hingegen das System mit dem Ausgang $\bm{y_2}$, so geht der Nachweis lokaler Detektierbarkeit nicht so leicht von der Hand. 
-	Die symbolische Matrix $\bm O$ folgt keiner ähnlichen Struktur zu den vorangegangenen Fällen.  \\
+	Die symbolische Matrix $\bm O$ folgt keiner ähnlichen Struktur zu den vorangegangenen Fällen.
 	\begin{comment}
 	Die symbolische Matrix $\bm O$ enthält sehr große Ausdrücke und durch scharfes Hinsehen war es mir nicht möglich Aussagen über den Rang zu machen. \\ 
 	\end{comment}
+
 	Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf "sehr dünne" Singularitäten den Rang $\hat r$ (\cite{ex3}, Anhang B.4). \\
 	Da die Systemmatrix nur analytische Funktionen enthält, beinhaltet auch die Beobachtbarkeitsmatrix nur analytische Ausdrücke. 
-	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar. Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres vorerst nicht durchgeführt werden sollte. \\
+	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar. Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres vorerst nicht durchgeführt werden sollte.
 	
 	\subsection{Implementierung}
 	Der diskrete, erweiterte Kalman-Filter lässt sich in einen Prädiktions- und einen Korrekturschritt unterteilen.  Im Prädiktionsschritt wird das nichtlineare Modell simuliert, zudem wird der Fehler der \textit{a priori} Zustandsschätzung in Form einer Kovarianzmatrix näherungsweise berechnet. Im Korrektursschritt wird die Messung des Ausgangs einbezogen, um letztendlich die \textit{a posteriori} Zustandsschätzung zu berechnen. Die Implementierung des Prädiktionsschrittes erfolgte durch das Integrieren der Differentialgleichungen mit dem RK45-Algorithmus. Dazu wurde die Funktion \textit{solve\_ivp()} aus dem Paket \textit{SciPy} verwendet. \\ Für die Berechnung der \textit{a priori} Kovarianzmatrix ist es notwendig das nichtlineare System im momentanen Punkt der Schätztrajektorie zu linearisieren und zu diskretisieren. Zur Linearisierung der Systemgleichung wurde ein CAS verwendet, sodass die symbolischen Ausdrücke direkt im Python-Quellcode eingefügt werden konnten. \\ Zur nachfolgenden Diskretisierung des Systems müssen die Ausdrücke $A^* = e^{A T_s}, B^* = \int_{0}^{T_s} e^{A \tau} d\tau$ mit $T_s$ als Zeitschrittweite berechnet werden. 
