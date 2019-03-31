@@ -15,6 +15,7 @@
 \usepackage{tikz}
 \usepackage{booktabs}
 \usepackage{siunitx}
+\usepackage{apacite}
 
 % tikz commands because otherwise the standalone compiling doesnt work
 \usetikzlibrary{positioning}
@@ -345,25 +346,43 @@
 	
 	\section{Zustandsrekonstruktion}
 	\subsection{Einf\"uhrung}
-	Einige Regler verwenden eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
+	Einige Regler verwenden eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotordrehzahlen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
 	Selbst wenn tatsächlich alle Zustände als Messgrößen zur Verfügung stehen sollten, kann es bei starkem Messrauschen sinnvoll sein, die Messsignale mit einem Zustandsschätzer zu glätten.
 	
 	Im folgenden Abschnitt wird in diesem Zusammenhang der Entwurf und die Implementierung eines diskreten, Erweiterten Kalman-Filters (\textit{EKF})  thematisiert. 
 	\subsection{Detektierbarkeit der Modellgleichungen}
-	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden. Dabei werden die nichtlinearen Systemgleichungen
+	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden. \\
+	\begin{comment}
+	Dabei werden die nichtlinearen Systemgleichungen
 	$$ \bm{\dot x} = \bm{f}(\bm{x},\bm{u}),\quad \bm y = \bm{g}(\bm{x}, \bm u) $$
 	in einem Arbeitspunkt linearisiert, sodass das System lokal als lineare Näherung durch die Systemgleichungen
 	$$ \bm{\dot x} = \bm{A} \bm{x} + \bm{B} \bm{u},\quad \bm y = \bm C \bm x + \bm D \bm u $$
 	mit den Matrizen $ \bm A = \frac{\partial{ \bm f}}{\partial{\bm x}}$, $\bm B = \frac{\partial{ \bm f}}{\partial{\bm u}}$, $\bm C = \frac{\partial{ \bm g}}{\partial{\bm x}}$ und $\bm D = \frac{\partial{ \bm g}}{\partial{\bm u}}$ dargestellt werden kann.
-	
+	\end{comment}
+	Das grundsätzliche Vorgehen ist dabei ähnlich wie beim Reglerentwurf in Abschnitt 2.1.2. Im Unterschied dazu, betrachtet man jedoch nicht nur die Dynamik der Zustände, sondern auch die des Systemausgangs.
+	\begin{equation}
+	\bm y = \bm{g}(\bm{x}, \bm u)
+	\end{equation}
+	Die linearisierte Ausgangsgleichung lässt sich dann mit den Matrizen
+	\begin{equation}
+	\vect{C} = \left. \partiell{\vect g}{\vect x}\right\vert_\mathrm{AP}, \quad
+	\vect D = \left. \partiell{\vect g}{\vect u}\right\vert_\mathrm{AP}
+	\end{equation}
+	folgendermaßen darstellen:
+	\begin{equation}
+	\tilde{\vect{y}} = \vect C \tilde{\vect{x}} + \vect D \tilde{\vect{u}}
+	\end{equation}
 	Im Folgenden soll die lokale Detektierbarkeit für drei unterschiedliche Fälle nachgewiesen werden:
 	\begin{enumerate}
 		\item für das einfachste Modell mit den drei gemessenen Gelenkwinkeln als Systemausgang
-		\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln und den zwei Motorfrequenzen als Systemausgang
-		\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln, aber ohne den beiden Motorfrequenzen als Systemausgang
+		\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln und den zwei Rotordrehzahlen als Systemausgang
+		\item für das komplexeste Modell mit den drei gemessenen Gelenkwinkeln, aber ohne den beiden Rotordrehzahlen als Systemausgang
 	\end{enumerate}
 	
-	Zur Linearisierung des Systems sowie zur Berechnung der Kalmanschen Beobachtbarkeitsmatrix wurde das CAS von Matlab verwendet, da die Rangberechnung symbolischer Matrizen unter \textit{SymPy} unzumutbar lange dauerte. Dies geschah ohne Wissen von dem Paket \textit{symbtools} von Dr.\ Knoll, welches einen anderen Algorithmus zur Rangbestimmung symbolischer Matrizen enthält. 
+	Zur Linearisierung des Systems sowie zur Berechnung der Kalmanschen Beobachtbarkeitsmatrix wurde das CAS von Matlab verwendet, da die Rangberechnung symbolischer Matrizen unter \textit{SymPy} unzumutbar lange dauerte. Im Nachhinein stellte sich heraus, dass das Paket \textit{symbtools} von Dr.\ Knoll eine Alternative zu Matlab gewesen wäre, da dieses Paket einen anderen Algorithmus zur Rangbestimmung symbolischer Matrizen enth\"alt als \textit{SymPy}.
+	\begin{comment}
+	Dies geschah ohne Wissen von dem Paket \textit{symbtools} von Dr.\ Knoll, welches einen anderen Algorithmus zur Rangbestimmung symbolischer Matrizen.
+	\end{comment}
 	\subsubsection{Einfachstes Modell}
 	Das einfachste Modell folgt aus den Gleichungen~\ref{eq:lagrange_result}, wenn die Zentripetal- und Reibungskräfte vereinfacht als sehr klein bzw.\ 0 angenommen werden.
 	\begin{align*}
@@ -456,7 +475,7 @@
 	Konnte für diesen Zweck im Prädiktionsschritt noch die bereits entwickelte Wertebegrenzung aus der Simulation verwendet werden, so war dies im Korrekturschritt nicht mehr möglich.
 	Als Lösung des Problems wurde nach dem Korrekturschritt eine Werteüberprüfung implementiert, die die Zustandsmaschine der Wertebegrenzung entsprechend umschaltet.
 	
-	Zur Visualisierung der Dynamik des Kalman-Filters wurde zudem eine rötlich-transparente 3D-Animation implementiert.
+	Um die Dynamik des Kalman-Filters zu visualisieren, wurde zudem eine rötlich-transparente 3D-Animation implementiert.
 	
 	\subsection{Validierung des Kalman-Filters und Experimente}
 	Zur Validierung des Kalman-Filters wurden verschiedene Experimente durchgeführt.
