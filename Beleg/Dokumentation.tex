@@ -1,4 +1,6 @@
 \documentclass[times, 9pt,twocolumn]{article} 
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
 \usepackage{comment}
 \usepackage{times}
 \usepackage{geometry}
@@ -6,7 +8,6 @@
 \usepackage{amsmath ,amsthm ,amssymb}
 \usepackage{graphicx}
 \usepackage{hyperref}
-\usepackage[utf8]{inputenc}
 \usepackage{comment}
 \usepackage{apacite}
 \usepackage{bm}
@@ -57,7 +58,8 @@
 	\renewcommand\abstractname{Zusammenfassung}
 	\begin{abstract}
 		%Dies ist ein ziemlich abstraktiges Abstrakt.
-		In dieser Projektarbeit wurde für das nachfolgend abgebildete Helikopterexperiment vollständig modelliert und verschiedene Reglerstrategien zur Arbeitspunkt- und Folgeregelung untersucht. Weiterhin wurde zur Zustandsrekonstruktion ein Kalmanfilter entworfen. Alle Ergebnisse wurden in einer interaktiven Simulationsumgebung implementiert und visualisiert.
+		In dieser Projektarbeit wurde das nachfolgend abgebildete Helikopterexperiment mathematisch modelliert und verschiedene Reglerstrategien zur Arbeitspunkt- und Folgeregelung untersucht.
+		Weiterhin wurde zur Zustandsrekonstruktion ein Kalmanfilter entworfen. Alle Ergebnisse wurden in einer interaktiven Simulationsumgebung implementiert und visualisiert.
 
 		\begin{figure}[ht]
 			\centering
@@ -84,12 +86,12 @@
 
 	\subsection{Langrange-Formalismus}
 
-	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
+	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange-Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
 	Mit der Betrachtung von nicht-konservativen Kräften $Q_i$ ergibt sich die Lagrange-Funktion
 	\begin{equation}\label{eq:lagrange}
-	\diff{}{t} \partiell{L}{\dot{q_i}} - \partiell{L}{q_i}=Q_i
+	\diff{}{t} \partiell{L}{\dot{q_i}} - \partiell{L}{q_i}=Q_i\, .
 	\end{equation}
-	Nach dem einsetzen der potentiellen und kinetischen Energien sowie der nicht-konservativen Kräfte des Systems ergeben sich folgende Bewegungsgleichungen:
+	Nach Einsetzen der potentiellen und kinetischen Energien sowie der nicht-konservativen Kräfte des Systems ergeben sich folgende Bewegungsgleichungen:
 	\begin{equation}
 	\begin{split}
 	&J_\varphi \ddot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2)\\  &+ \mu_\varphi \dot{\varphi} = V_d L_1
@@ -153,11 +155,13 @@
 
 	\subsection{Motordynamik}
 
-	Weiterhin wurde das Modell um die Rotordrehzahlen $\omega$ der Motoren erweitert. Diese ergeben sich aus der jeweiligen Motorspannung $V$ mittels Tiefpass 1. Ordnung.
+	Weiterhin wurde das Modell um die Rotordrehzahlen $\omega$ der Motoren erweitert. Diese ergeben sich aus der jeweiligen Motorspannung $V$ mittels Tiefpass 1. Ordnung:
+	\begin{subequations}
 	\begin{align}
 	T_f \dot{\omega_f} + \omega_f &= K_f V_f\\
-	T_b \dot{\omega_b} + \omega_b &= K_b V_b
+	T_b \dot{\omega_b} + \omega_b &= K_b V_b\, .
 	\end{align}
+\end{subequations}
 
 	\begin{figure}[ht]
 	\centering
@@ -166,36 +170,46 @@
 	\label{setup_mom}
 	\end{figure}
 	Weiterhin entsteht ein Reaktionsmoment der Motoren auf die Gelenke. Um diesen parasitären Effekt zu minimieren wurde angenommen, dass die Rotoren standardmäßig entgegengesetzt rotieren. Die entstandenen Reaktionsmomente können beschrieben werden durch:
+	\begin{subequations}		
 	\begin{align}
 	M_{M,\varepsilon} &=\sin (\varphi) K_M (\omega_f-\omega_b) \\
-	M_{M,\lambda} &=\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)
+	M_{M,\lambda} &=\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)\, .
 	\end{align}
+\end{subequations}
+
 
 	\subsection{Kreiseleffekte}
 
 	Zusätzlich wirken Kreiselmomente auf die Rotoren, wenn sich die Rotationsachse der Rotoren verändert. Diese Kreiselmomente können allgemein beschreiben werden durch:
 	\begin{equation}
-	\vec{M} = \vec{\Omega} \times \vec{L}
+	\vec{M} = \vec{\Omega} \times \vec{L}\, .
 	\end{equation}	
 	Angewandt auf Rotation um $\varphi$:
-	\begin{align}
-	&M_{K\varepsilon,\varphi} = J_M \cos (\varphi) \dot{\varphi}(\omega_f-\omega_b)\\
-	&M_{K\lambda,\varphi} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\varphi}(\omega_f-\omega_b)
-	\end{align}
+	\begin{subequations}
+		\begin{align}
+		&M_{K\varepsilon,\varphi} = J_M \cos (\varphi) \dot{\varphi}(\omega_f-\omega_b)\\
+		&M_{K\lambda,\varphi} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\varphi}(\omega_f-\omega_b)\, .
+		\end{align}
+	\end{subequations}
 	Angewandt auf Rotation um $\varepsilon$:
 	\begin{equation}
-	M_{K\varphi,\varepsilon} = J_M \cos (\varphi) \dot{\varepsilon}(\omega_b-\omega_f)
+	M_{K\varphi,\varepsilon} = J_M \cos (\varphi) \dot{\varepsilon}(\omega_b-\omega_f)\, .
 	\end{equation}
 	Angewandt auf Rotation um $\lambda$:
-	\begin{align}
-	&M_{K\varphi,\lambda} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\lambda}(\omega_f-\omega_b)\\
-	&M_{K\varepsilon,\lambda} = J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)
-	\end{align}
+	\begin{subequations}
+		\begin{align}
+		&M_{K\varphi,\lambda} = J_M \sin (\varphi) \cos (\varepsilon) \dot{\lambda}(\omega_f-\omega_b)\\
+		&M_{K\varepsilon,\lambda} = J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)\, .
+		\end{align}
+	\end{subequations}
 
 	\subsection{Modellvalidierung}
 
-	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dazu wurde vor allem auf die Validierung des einfachsten Modells eingegangen, welches durch den Langrange-Formalismus bestimmt wurde. Dazu wurde in einem Experiment die Winkelgeschwindigkeit des Helikopterkopfes extern eingestellt ($\dot{\lambda} = const$) und die Propeller ausgestellt ($V_f = V_b = 0$). Dazu wurde analytisch die Ruhelage der andren Gelenkwinkel in Abhängigkeit von $\dot{\lambda}$ berechnet und mit der Simulation verglichen. Interessant ist dabei, dass sich der Helikopterkopf durch die wirkenden Zentripetalkräfte nach einiger Zeit immer horizontal ausrichtet.
-	\clearpage
+	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dazu wurde vor allem auf die Validierung des einfachsten Modells eingegangen, das durch den Langrange-Formalismus bestimmt wurde.
+	Dazu wurde in einem Experiment die Winkelgeschwindigkeit des Helikopterkopfes extern eingestellt ($\dot{\lambda} = \mathrm{const}$) und die Propeller ausgestellt ($V_f = V_b = 0$).
+	Dazu wurde analytisch die Ruhelage der anderen Gelenkwinkel in Abhängigkeit von $\dot{\lambda}$ berechnet und mit der Simulation verglichen.
+	Interessant ist dabei, dass sich der Helikopterkopf durch die wirkenden Zentripetalkräfte nach einiger Zeit immer horizontal ausrichtet.
+	
 	\section{Regelung}
 	\subsection{Arbeitspunktregelung}
 	%Aus regelungstechnischer Sicht sind besonders zwei Aufgaben interessant: zum Einen die Stabilisierung des Systems an einem definierten Arbeitspunkt, beschrieben in diesem Abschnitt, und zum Anderen die Folgeregelung, bei der die Systemzustände einem Sollverlauf folgen sollen.
@@ -203,7 +217,7 @@
 	%Einfache PID-Regler sind für viele praktische Probleme in der Lage, auch ohne umfangreiche mathematische Modellierung und Berechnung, durch geschickte Handeinstellung Ruhelagen zu stabilisieren.
 	%Deshalb liegt auch hier nahe, einen solchen Ansatz auszuprobieren.
     %
-	Eine Ruhelage in diesem System ist beschrieben durch zwei frei wählbare Winkel \(\varepsilon^* \in (-\frac{\pi}{2}, \frac{\pi}{2})\) und \(\lambda^* \in (-\pi, \pi)\), außerdem gilt \(\varphi^*=0\).
+	Eine Ruhelage in diesem System wird beschrieben durch zwei frei wählbare Winkel \(\varepsilon^* \in (-\frac{\pi}{2}, \frac{\pi}{2})\) und \(\lambda^* \in (-\pi, \pi)\), außerdem gilt \(\varphi^*=0\).
 	Zur Einstellung der Ruhelage stehen als Stellgrößen die Motorspannungen \(V_f\) für den vorderen, und \(V_b\) für den hinteren Motor zur Verfügung.
 
 	Ein PID-Regler der Form
@@ -371,7 +385,6 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	Zukünftig sollte also am echten Versuchsstand getestet werden, in welcher Größenordnung dieser Effekt tatsächlich existiert oder alternativ nach einem robusten Regleransatz gesucht werden.
 
 	
-	\clearpage % um zu überprüfen, ob ich schon 2 Seiten geschrieben habe
 	\section{Zustandsrekonstruktion}
 	\subsection{Einf\"uhrung}
 	Einige Regler verwenden eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
