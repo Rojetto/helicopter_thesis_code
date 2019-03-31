@@ -46,7 +46,7 @@
 \pagestyle{empty}
 \begin{document}
 	\fontsize{10}{11}\selectfont
-	\title{Oberseminar Regelungstechnik \\ Regler- und Kalmanfilterentwurf f\"ur einen 					Helikopterversuchstand}
+	\title{Oberseminar Regelungstechnik \\ Regler- und Kalmanfilterentwurf f\"ur einen 					Helikopterversuchsstand}
 	\author{Tilo Stock, Clemens Bilsing, Robert Heedt}
 	\date {31.03.2019}
 	
@@ -74,7 +74,9 @@
 	\section{Modellbildung}
 	\subsection{Einführung}
 	
-	Als erster Schritt der Modellbildung wurde der komplexe Versuchstand stark vereinfacht und auf drei Punktmassen reduziert. Davon repräsentieren zwei die Motoren, welche die Propeller antreiben um Auftrieb zu erzeugen. Die dritte Punktmasse repräsentiert das Gegengewicht der Motoren. Weiterhin verfügt das System über drei Gelenke um den Helikopterkopf im Raum bewegen zu können.
+	Als erster Schritt der Modellbildung wurde der komplexe Versuchsstand stark vereinfacht und auf drei Punktmassen reduziert.
+	Davon repräsentieren zwei die Motoren, welche die Propeller antreiben, um Auftrieb zu erzeugen. Die dritte Punktmasse repräsentiert das Gegengewicht der Motoren.
+	Weiterhin verfügt das System über drei Gelenke, um den Helikopterkopf im Raum bewegen zu können.
 	
 	\begin{figure}[ht]
 		\centering
@@ -84,11 +86,11 @@
 	\end{figure}
 	Das Koordinatensystem des Modells wurde durch seine generalisierten Koordinaten folgendermaßen festgelegt: $\bm q = \begin{bmatrix}
 	\varphi & \varepsilon & \lambda
-	\end{bmatrix}^T $
+	\end{bmatrix}^T $.
 	
 	\subsection{Langrange-Formalismus}
 	
-	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange-Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
+	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange-Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnet.
 	Mit der Betrachtung von nicht-konservativen Kräften $Q_i$ ergibt sich die Lagrange-Funktion
 	\begin{equation}\label{eq:lagrange}
 	\diff{}{t} \partiell{L}{\dot{q_i}} - \partiell{L}{q_i}=Q_i\, .
@@ -110,7 +112,7 @@
 		\end{align}
 		\label{eq:lagrange_result}
 	\end{subequations}
-	Mit $J_i$ als Trägheitsmoment um Achse $i$; $V_s$ als Summe der Rotorspannung $V_f + V_b$; $V_d$ als Differenz der Rotorspannungen $V_f - V_b$; $L_i$ als Längenkonstante; $\mu_i$ als Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
+	mit $J_i$ als Trägheitsmoment um Achse $i$; $V_s$ als Summe der Rotorspannung $V_f + V_b$; $V_d$ als Differenz der Rotorspannungen $V_f - V_b$; $L_i$ als Längenkonstante; $\mu_i$ als Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
 	
 	\subsection{Motordynamik} \label{sssec:motor}
 	
@@ -164,7 +166,7 @@
 	
 	\subsection{Modellvalidierung}
 	
-	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dabei wurde vor allem auf die Validierung des einfachsten Modells eingegangen, das durch den Langrange-Formalismus bestimmt wurde.
+	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dabei wurde vor allem auf die Validierung des einfachsten Modells eingegangen, das durch den Lagrange-Formalismus bestimmt wurde.
 	Dazu wurde in einem Experiment die Winkelgeschwindigkeit des Helikopterkopfes extern eingestellt ($\dot{\lambda} = \mathrm{const}$) und die Propeller ausgestellt ($V_f = V_b = 0$).
 	Weiterhin wurde analytisch die Ruhelage der anderen Gelenkwinkel in Abhängigkeit von $\dot{\lambda}$ berechnet und mit der Simulation verglichen.
 	Interessant ist dabei, dass sich der Helikopterkopf durch die wirkenden Zentripetalkräfte nach einiger Zeit immer horizontal ausrichtet.
@@ -221,6 +223,7 @@
 	% 	\caption{Beispielhafte PID-Parametrierung}
 	% \end{table}
 	\subsubsection{Konstante Zustandsrückführung}
+	\label{sect:state_feedback}
 	Um auf die Methoden der linearen Regelungstechnik zurückgreifen zu können, wird das nichtlineare System
 	\begin{equation}
 	\dot{\vect x} = \vect f(\vect x, \vect u)
@@ -236,7 +239,11 @@
 	\end{equation}
 	mit den Differenzgrößen
 	\(
-	\tilde{\vect{a}} = \vect{a} - \vect{a}^*
+	\tilde{\vect{x}} = \vect{x} - \vect{x}^*
+	\)
+	und
+	\(
+	\tilde{\vect{u}} = \vect{u} - \vect{u}^*
 	\)
 	erhält.
 	
@@ -351,7 +358,7 @@
 	
 	Im folgenden Abschnitt wird in diesem Zusammenhang der Entwurf und die Implementierung eines diskreten, Erweiterten Kalman-Filters (\textit{EKF})  thematisiert. 
 	\subsection{Detektierbarkeit der Modellgleichungen}
-	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden. \\
+	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden.
 	\begin{comment}
 	Dabei werden die nichtlinearen Systemgleichungen
 	$$ \bm{\dot x} = \bm{f}(\bm{x},\bm{u}),\quad \bm y = \bm{g}(\bm{x}, \bm u) $$
@@ -359,9 +366,11 @@
 	$$ \bm{\dot x} = \bm{A} \bm{x} + \bm{B} \bm{u},\quad \bm y = \bm C \bm x + \bm D \bm u $$
 	mit den Matrizen $ \bm A = \frac{\partial{ \bm f}}{\partial{\bm x}}$, $\bm B = \frac{\partial{ \bm f}}{\partial{\bm u}}$, $\bm C = \frac{\partial{ \bm g}}{\partial{\bm x}}$ und $\bm D = \frac{\partial{ \bm g}}{\partial{\bm u}}$ dargestellt werden kann.
 	\end{comment}
-	Das grundsätzliche Vorgehen ist dabei ähnlich wie beim Reglerentwurf in Abschnitt 2.1.2. Im Unterschied dazu, betrachtet man jedoch nicht nur die Dynamik der Zustände, sondern auch die des Systemausgangs.
+
+	Das grundsätzliche Vorgehen bei der analytischen Linearisierung ist dabei ähnlich wie beim Reglerentwurf in Abschnitt \ref{sect:state_feedback}.
+	Im Unterschied dazu, betrachtet man jedoch nicht nur die Dynamik der Zustände, sondern auch die des Systemausgangs
 	\begin{equation}
-	\bm y = \bm{g}(\bm{x}, \bm u)
+	\bm y = \bm{g}(\bm{x}, \bm u)\, .
 	\end{equation}
 	Die linearisierte Ausgangsgleichung lässt sich dann mit den Matrizen
 	\begin{equation}
@@ -370,7 +379,7 @@
 	\end{equation}
 	folgendermaßen darstellen:
 	\begin{equation}
-	\tilde{\vect{y}} = \vect C \tilde{\vect{x}} + \vect D \tilde{\vect{u}}
+	\tilde{\vect{y}} = \vect C \tilde{\vect{x}} + \vect D \tilde{\vect{u}}\, .
 	\end{equation}
 	Im Folgenden soll die lokale Detektierbarkeit für drei unterschiedliche Fälle nachgewiesen werden:
 	\begin{enumerate}
@@ -408,7 +417,7 @@
 	\bm C \bm A^{n-1}
 	\end{bmatrix}$$
 	ist in diesem Fall eine $18\times 6$-Matrix, in der die obersten 6 Zeilen die Einheitsmatrix $I_6$ bilden.
-	Damit ist das System unabhängig vom Systemzustand lokal detektierbar, weil $\rang \bm O = 6 = \mathrm{n}$.
+	Damit ist das System unabhängig vom Systemzustand lokal detektierbar, weil $\rang \bm O = 6 = n$.
 	\subsubsection{Komplexestes Modell}
 	Das komplexeste Modell beinhaltet alle modellierten physikalischen Effekte (siehe \textit{Modellbildung}), einschließlich der dynamischen Trägheitsmomente:
 	\begin{align*}
@@ -445,17 +454,17 @@
 	Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf \enquote{sehr dünne} Singularitäten den Rang $\hat r$ (\cite{ex3}, Anhang B.4).
 	
 	Da die Systemmatrix nur analytische Funktionen enthält, beinhaltet auch die Beobachtbarkeitsmatrix nur analytische Ausdrücke. 
-	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar.
+	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenige bis keine Singularitäten lokal detektierbar.
 	Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres vorerst nicht durchgeführt werden sollte.
 	
 	\subsection{Implementierung}
 	Der diskrete, Erweiterte Kalman-Filter lässt sich in einen Prädiktions- und einen Korrekturschritt unterteilen. 
 	Im Prädiktionsschritt wird das nichtlineare Modell simuliert, zudem wird der Fehler der \textit{a priori} Zustandsschätzung in Form einer Kovarianzmatrix näherungsweise berechnet.
-	Im Korrektursschritt wird die Messung des Ausgangs einbezogen, um letztendlich die \textit{a posteriori} Zustandsschätzung zu berechnen.
+	Im Korrekturschritt wird die Messung des Ausgangs einbezogen, um letztendlich die \textit{a posteriori} Zustandsschätzung zu berechnen.
 	Die Implementierung des Prädiktionsschrittes erfolgte durch das Integrieren der Differentialgleichungen mit dem RK45-Algorithmus.
 	Dazu wurde die Funktion \textit{solve\_ivp()} aus dem Paket \textit{SciPy} verwendet.
 	
-	Für die Berechnung der \textit{a priori} Kovarianzmatrix ist es notwendig das nichtlineare System im momentanen Punkt der Schätztrajektorie zu linearisieren und zu diskretisieren.
+	Für die Berechnung der \textit{a priori} Kovarianzmatrix ist es notwendig, das nichtlineare System im momentanen Punkt der Schätztrajektorie zu linearisieren und zu diskretisieren.
 	Zur Linearisierung der Systemgleichung wurde ein CAS verwendet, sodass die symbolischen Ausdrücke direkt im Python-Quellcode eingefügt werden konnten.
 	
 	Zur nachfolgenden Diskretisierung des Systems müssen die Ausdrücke
