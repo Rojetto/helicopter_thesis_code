@@ -1,6 +1,7 @@
 \documentclass[10pt,twocolumn]{article} 
 \usepackage[utf8]{inputenc}
 \usepackage[ngerman]{babel}
+\usepackage[isbn=false,doi=false]{biblatex}
 \usepackage[autostyle=true,german=quotes]{csquotes}
 \usepackage{comment}
 \usepackage{lmodern}
@@ -15,9 +16,8 @@
 \usepackage{tikz}
 \usepackage{booktabs}
 \usepackage{siunitx}
-\usepackage{apacite}
 
-\bibliographystyle{apacite}
+\bibliography{Dokumentation}
 
 % tikz commands because otherwise the standalone compiling doesnt work
 \usetikzlibrary{positioning}
@@ -504,6 +504,5 @@
 	\end{figure}
 	\end{comment}
 	
-	\bibliography{Dokumentation}
-	\nocite{ex3}
+	\printbibliography
 \end{document}
