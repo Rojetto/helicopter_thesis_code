@@ -21,7 +21,7 @@
 \usetikzlibrary{calc}
 \usetikzlibrary{arrows.meta}
 \tikzset{
-  arr/.style={{Circle[length=3pt]}->,shorten <=-1.5pt}
+	arr/.style={{Circle[length=3pt]}->,shorten <=-1.5pt}
 }
 
 % Eigene Makros
@@ -47,7 +47,7 @@
 	\title{Oberseminar Regelungstechnik \\ Regler- und Kalmanfilterentwurf f\"ur einen 					Helikopterversuchstand}
 	\author{Tilo Stock, Clemens Bilsing, Robert Heedt}
 	\date {31.03.2019}
-
+	
 	\maketitle
 	\thispagestyle{empty}
 	% Das Inhaltsverzeichnis sieht in diesem Stil nicht gut aus. Soll es überhaupt dazu? 
@@ -60,32 +60,32 @@
 		%Dies ist ein ziemlich abstraktiges Abstrakt.
 		In dieser Projektarbeit wurde das nachfolgend abgebildete Helikopterexperiment mathematisch modelliert und verschiedene Reglerstrategien zur Arbeitspunkt- und Folgeregelung untersucht.
 		Weiterhin wurde zur Zustandsrekonstruktion ein Kalmanfilter entworfen. Alle Ergebnisse wurden in einer interaktiven Simulationsumgebung implementiert und visualisiert.
-
+		
 		\begin{figure}[ht]
 			\centering
 			\includegraphics[width=0.4\textwidth]{images/Versuchstand}
-			\caption{Versuchsstand des Helikopterexperiments}
+			\caption{Versuchsstand des Helikopterexperiments.}
 			\label{Versuchstand}
 		\end{figure}
 	\end{abstract}
 	
 	\section{Modellbildung}
 	\subsection{Einführung}
-
+	
 	Als erster Schritt der Modellbildung wurde der komplexe Versuchstand stark vereinfacht und auf drei Punktmassen reduziert. Davon repräsentieren zwei die Motoren, welche die Propeller antreiben um Auftrieb zu erzeugen. Die dritte Punktmasse repräsentiert das Gegengewicht der Motoren. Weiterhin verfügt das System über drei Gelenke um den Helikopterkopf im Raum bewegen zu können.
-
+	
 	\begin{figure}[ht]
 		\centering
-		\includegraphics[width=0.5\textwidth]{images/setup}
-		\caption{Vereinfachter Versuchsstand}
+		\includegraphics[width=0.5\textwidth]{images/setup_mom}
+		\caption{Vereinfachter Versuchsstand. Jeder Zylinder entspricht einem Gelenk und jeder Würfel repräsentiert eine Punktmasse. Die roten Pfeile stellen die Reaktionsmomente der Motoren und deren Auswirkung auf die Gelenke dar. (siehe 1.3 Motordynamik) }
 		\label{setup}
 	\end{figure}
 	Das Koordinatensystem des Modells wurde durch seine generalisierten Koordinaten folgendermaßen festgelegt: $\bm q = \begin{bmatrix}
 	\varphi & \varepsilon & \lambda
 	\end{bmatrix}^T $
-
+	
 	\subsection{Langrange-Formalismus}
-
+	
 	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange-Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
 	Mit der Betrachtung von nicht-konservativen Kräften $Q_i$ ergibt sich die Lagrange-Funktion
 	\begin{equation}\label{eq:lagrange}
@@ -94,94 +94,49 @@
 	Nach Einsetzen der potentiellen und kinetischen Energien sowie der nicht-konservativen Kräfte des Systems ergeben sich folgende Bewegungsgleichungen:
 	\begin{subequations}
 		\begin{align}
-			\begin{split}
+		\begin{split}
 		&J_\varphi \ddot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2)\\
 		&\qquad\qquad+ \mu_\varphi \dot{\varphi} = V_d L_1
-			\end{split}
-			\\
+		\end{split}
+		\\
 		\begin{split}		
-			&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\
-			&\qquad\qquad= L_2 \cos \varepsilon + V_s L_3 \cos \varphi
+		&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\
+		&\qquad\qquad= L_2 \cos \varepsilon + V_s L_3 \cos \varphi
 		\end{split}
 		\\
 		&J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = V_s L_4 \cos \varepsilon \sin \varphi
 		\end{align}
 		\label{eq:lagrange_result}
 	\end{subequations}
-	Mit $J_i$ .. Trägheitsmoment um Achse $i$; $V_s$ .. Summe der Rotorspannung $V_f + V_b$; $V_d$ .. Differenz der Rotorspannungen $V_f - V_b$; $L_i$ .. Längenkonstante; $\mu_i$ .. Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
-
-%	\subsection{Langrange-Formalismus (long)}
-%
-%	Um die Bewegungsgleichungen des Modells zu bestimmen bietet sich der Lagrange-Formalismus zweiter Art besonders an. Für Systeme mit generalisiertem Potential lautet die Lagrange Gleichung $L = T -V$ wobei $T$ jeweils die kinetische und $V$ die potentielle Energie des System bezeichnen.
-%	Mit der Betrachtung von nicht-konservativen Kräften $Q_i$ ergibt sich die Lagrange-Funktion
-%	\begin{equation}\label{eq:lagrange}
-%	\diff{}{t} \partiell{L}{\dot{q_i}} - \partiell{L}{q_i}=Q_i
-%	\end{equation}
-%	Zur Bestimmung der kinetischen Energie $T$ wurde die Rotation jeder einzelnen Masse um jede Koordinatenachse betrachtet und aufsummiert. Zusammengefasst ergibt sich
-%	\begin{equation}
-%	\begin{split}
-%	T&= m_p l_p^2\dot{\varphi}^2 \\
-%	&+ \frac{1}{2}m_cl_c^2\dot{\varepsilon}^2
-%	+ m_p(l_h^2+(l_p\sin \varphi)^2)\dot{\varepsilon}^2\\
-%	&+ \frac{1}{2} m_c (l_c \cos \varepsilon)^2\dot{\lambda}^2\\
-%	&+ m_p((l_h \cos \varepsilon)^2 + (l_p \sin \varphi \sin \varepsilon)^2\\
-%	&+(l_p \cos \varphi)^2)\dot{\lambda}^2
-%	\end{split}
-%	\end{equation}
-%	Die potentielle Energie $V$ lautet
-%	\begin{equation}
-%	V = -m_c l_c g \sin \varepsilon + 2 m_p l_h g \sin \varepsilon
-%	\end{equation}
-%	Die durch die Rotation der Rotoren sowie durch Gleitreibung entstehen nicht-konservative Kräfte, welche wie folgt vereinfacht dargestellt werden können:
-%	\begin{align}
-%	Q_\varphi &= (F_f - F_b)l_p - \mu_\varphi \dot{\varphi} \\
-%	Q_\varepsilon &= (F_f + F_b)l_h  \cos \varphi - \mu_\varepsilon \dot{\varepsilon}\\
-%	Q_\lambda &= (F_f + F_b)l_h \cos \varepsilon \sin \varphi - \mu_\lambda \dot{\lambda}
-%	\end{align}
-%	Eingesetzt in \eqref{eq:lagrange} wurde durch zeitliche und räumliche Ableitung nach jeder generalisierten Koordinate folgende Bewegungsgleichungen bestimmt:
-%	\begin{equation}
-%	\begin{split}
-%	&J_\varphi \ddot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2)\\  &+ \mu_\varphi \dot{\varphi} = V_d L_1
-%	\end{split}
-%	\end{equation}
-%	\begin{equation}
-%	\begin{split}
-%	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\
-%	&= L_2 \cos \varepsilon + V_s L_3 \cos \varphi
-%	\end{split}
-%	\end{equation}
-%	\begin{equation}
-%	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = V_s L_4 \cos \varepsilon \sin \varphi
-%	\end{equation}
-%	Mit $J_i$ .. Trägheitsmoment um Achse $i$; $V_s$ .. Summe der Rotorspannung $V_f + V_b$; $V_d$ .. Differenz der Rotorspannungen $V_f - V_b$; $L_i$ .. Längenkonstante; $\mu_i$ .. Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
-
-	\subsection{Motordynamik}
-
+	Mit $J_i$ als Trägheitsmoment um Achse $i$; $V_s$ als Summe der Rotorspannung $V_f + V_b$; $V_d$ als Differenz der Rotorspannungen $V_f - V_b$; $L_i$ als Längenkonstante; $\mu_i$ als Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
+	
+	\subsection{Motordynamik} \label{sssec:motor}
+	
 	Weiterhin wurde das Modell um die Rotordrehzahlen $\omega$ der Motoren erweitert. Diese ergeben sich aus der jeweiligen Motorspannung $V$ mittels Tiefpass 1. Ordnung:
 	\begin{subequations}
-	\begin{align}
-	T_f \dot{\omega_f} + \omega_f &= K_f V_f\\
-	T_b \dot{\omega_b} + \omega_b &= K_b V_b\, .
-	\end{align}
-\end{subequations}
-
-	\begin{figure}[ht]
-	\centering
-	\includegraphics[width=0.5\textwidth]{images/setup_mom}
-	\caption{Reaktionsmomente der Gelenke}
-	\label{setup_mom}
-	\end{figure}
-	Weiterhin entsteht ein Reaktionsmoment der Motoren auf die Gelenke. Um diesen parasitären Effekt zu minimieren wurde angenommen, dass die Rotoren standardmäßig entgegengesetzt rotieren. Die entstandenen Reaktionsmomente können beschrieben werden durch:
+		\begin{align}
+		T_f \dot{\omega_f} + \omega_f &= K_f V_f\\
+		T_b \dot{\omega_b} + \omega_b &= K_b V_b\, .
+		\end{align}
+	\end{subequations}
+	
+%	\begin{figure}[ht]
+%		\centering
+%		\includegraphics[width=0.5\textwidth]{images/setup_mom}
+%		\caption{Reaktionsmomente der Gelenke}
+%		\label{setup_mom}
+%	\end{figure}
+	Weiterhin entsteht ein Reaktionsmoment der Motoren auf die Gelenke, die in Abbildung 2 eingezeichnet wurden. Um diesen parasitären Effekt zu minimieren wurde angenommen, dass die Rotoren standardmäßig entgegengesetzt rotieren. Die entstandenen Reaktionsmomente können beschrieben werden durch:
 	\begin{subequations}		
-	\begin{align}
-	M_{M,\varepsilon} &=\sin (\varphi) K_M (\omega_f-\omega_b) \\
-	M_{M,\lambda} &=\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)\, .
-	\end{align}
-\end{subequations}
-
-
+		\begin{align}
+		M_{M,\varepsilon} &=\sin (\varphi) K_M (\omega_f-\omega_b) \\
+		M_{M,\lambda} &=\cos (\varepsilon) \cos (\varphi) K_M (\omega_b-\omega_f)\, .
+		\end{align}
+	\end{subequations}
+	
+	
 	\subsection{Kreiseleffekte}
-
+	
 	Zusätzlich wirken Kreiselmomente auf die Rotoren, wenn sich die Rotationsachse der Rotoren verändert. Diese Kreiselmomente können allgemein beschreiben werden durch:
 	\begin{equation}
 	\vec{M} = \vec{\Omega} \times \vec{L}\, .
@@ -204,12 +159,12 @@
 		&M_{K\varepsilon,\lambda} = J_M \cos (\varphi) \sin (\varepsilon) \dot{\lambda}(\omega_b-\omega_f)\, .
 		\end{align}
 	\end{subequations}
-
+	
 	\subsection{Modellvalidierung}
-
-	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dazu wurde vor allem auf die Validierung des einfachsten Modells eingegangen, das durch den Langrange-Formalismus bestimmt wurde.
+	
+	Es wurden einige zusätzliche Experimente implementiert um die Bewegungsgleichungen des Modells zu validieren. Dabei wurde vor allem auf die Validierung des einfachsten Modells eingegangen, das durch den Langrange-Formalismus bestimmt wurde.
 	Dazu wurde in einem Experiment die Winkelgeschwindigkeit des Helikopterkopfes extern eingestellt ($\dot{\lambda} = \mathrm{const}$) und die Propeller ausgestellt ($V_f = V_b = 0$).
-	Dazu wurde analytisch die Ruhelage der anderen Gelenkwinkel in Abhängigkeit von $\dot{\lambda}$ berechnet und mit der Simulation verglichen.
+	Weiterhin wurde analytisch die Ruhelage der anderen Gelenkwinkel in Abhängigkeit von $\dot{\lambda}$ berechnet und mit der Simulation verglichen.
 	Interessant ist dabei, dass sich der Helikopterkopf durch die wirkenden Zentripetalkräfte nach einiger Zeit immer horizontal ausrichtet.
 	
 	\section{Regelung}
@@ -218,13 +173,13 @@
 	\subsubsection{Heuristisch durch PID-Regler}
 	%Einfache PID-Regler sind für viele praktische Probleme in der Lage, auch ohne umfangreiche mathematische Modellierung und Berechnung, durch geschickte Handeinstellung Ruhelagen zu stabilisieren.
 	%Deshalb liegt auch hier nahe, einen solchen Ansatz auszuprobieren.
-    %
+	%
 	Eine Ruhelage in diesem System kann durch zwei frei wählbare Winkel \(\varepsilon^* \in (-\frac{\pi}{2}, \frac{\pi}{2})\) und \(\lambda^* \in (-\pi, \pi)\) beschrieben werden, außerdem gilt \(\varphi^*=0\).
 	Zur Einstellung der Ruhelage stehen als Stellgrößen die Motorspannungen \(V_f\) für den vorderen, und \(V_b\) für den hinteren Motor zur Verfügung.
-
+	
 	Ein PID-Regler der Form
 	\[
-		y(t) = k_P x(t) + k_I \int_0^t x(t') \, \mathrm{d}t' +  k_D \dot{x}(t)
+	y(t) = k_P x(t) + k_I \int_0^t x(t') \, \mathrm{d}t' +  k_D \dot{x}(t)
 	\]
 	besitzt nur jeweils einen skalaren Eingang und Ausgang, für dieses System müssen also mehrere miteinander verschaltet werden.
 	
@@ -232,8 +187,8 @@
 	PID~1 und~2 setzen Drehzahlvorgaben in Motorspannungen um, PID~3 realisiert einen internen Sollwert für \(\varphi\), und 4 und 5 die äußeren Vorgaben für \(\varepsilon\) und \(\lambda\).
 	Die Transformation
 	\begin{equation}
-		\omega_f = \frac{\omega_s+\omega_d}{2}, \quad
-		\omega_b = \frac{\omega_s-\omega_d}{2}
+	\omega_f = \frac{\omega_s+\omega_d}{2}, \quad
+	\omega_b = \frac{\omega_s-\omega_d}{2}
 	\end{equation}
 	bewirkt eine teilweise Entkopplung zwischen den Einflüssen der Stellgrößen auf die Zustände, sodass allein über \(\omega_d\) der Winkel \(\varphi\) eingestellt werden kann.
 	Die Vorsteuerung ist nicht zwangsweise nötig, führt aber zu einer etwas besseren Dynamik, da die Ruhedrehzahl \(\omega_s^0 \neq 0\) für \(\varepsilon^* \neq 0\) nicht vom I-Anteil des PID~4 übernommen werden muss.
@@ -266,62 +221,62 @@
 	\subsubsection{Konstante Zustandsrückführung}
 	Um auf die Methoden der linearen Regelungstechnik zurückgreifen zu können, wird das nichtlineare System
 	\begin{equation}
-		\dot{\vect x} = \vect f(\vect x, \vect u)
+	\dot{\vect x} = \vect f(\vect x, \vect u)
 	\end{equation}
 	zuerst analytisch linearisiert und am Arbeitspunkt \(\vect{x}^*\), \(\vect{u}^*\) ausgewertet, sodass man die Systemmatrizen
 	\begin{equation}
-		\vect{A} = \left. \partiell{\vect f}{\vect x}\right\vert_\mathrm{AP}, \quad
-		\vect B = \left. \partiell{\vect f}{\vect u}\right\vert_\mathrm{AP}
+	\vect{A} = \left. \partiell{\vect f}{\vect x}\right\vert_\mathrm{AP}, \quad
+	\vect B = \left. \partiell{\vect f}{\vect u}\right\vert_\mathrm{AP}
 	\end{equation}
 	für das lineare Entwurfssystem in Zustandsraumdarstellung
 	\begin{equation}
-		\dot{\tilde{\vect{x}}} = \vect A \tilde{\vect{x}} + \vect B \tilde{\vect{u}}
+	\dot{\tilde{\vect{x}}} = \vect A \tilde{\vect{x}} + \vect B \tilde{\vect{u}}
 	\end{equation}
 	mit den Differenzgrößen
 	\(
-		\tilde{\vect{a}} = \vect{a} - \vect{a}^*
+	\tilde{\vect{a}} = \vect{a} - \vect{a}^*
 	\)
 	erhält.
-
+	
 	Um eine stabilisierende Rückführung \(\tilde{\vect{u}} = - \vect{K} \tilde{\vect{x}}\) zu entwerfen, wurden zwei Varianten implementiert.
 	Einerseits können Eigenwerte für die Systemmatrix mit Rückführung \(\vect A - \vect K \vect B\) vorgegeben werden.
 	Andererseits kann die Methode des LQR-Entwurfes genutzt werden, bei der ein Kostenfunktional
 	\[
-		J = \int^{\infty}_0 x(t)^T Q\, x(t) + u(t)^T R\, u(t)\ \mathrm dt
+	J = \int^{\infty}_0 x(t)^T Q\, x(t) + u(t)^T R\, u(t)\ \mathrm dt
 	\]
 	mit diagonalen Wichtungsmatrizen \(\vect Q\) und \(\vect R\) minimiert wird.
-
+	
 	Interessanterweise war dieser Regler auch bei großen Abweichungen, wie zum Beispiel \ang{120} in \(\lambda\), mithilfe der Winkelbeschränkung von \(\varphi\) noch in der Lage, den Arbeitspunkt zu erreichen.
 	\subsection{Folgeregelung}
 	\subsubsection{Flachheitsbasierter Ansatz}
 	Ein vereinfachtes Systemmodell ohne Motordynamik und Kreiseleffekte
-% 	\begin{subequations}
-% 		\begin{align}
-% J_\varphi \ddot{\varphi} &= L_1 \omega_d\\
-% J_\varepsilon \ddot{\varepsilon} &= L_2 \cos (\varepsilon) + L_3 \omega_s \cos (\varphi)\\
-% J_\lambda \ddot \lambda &= L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
-% 		\end{align}
-% 	\end{subequations}
+	% 	\begin{subequations}
+	% 		\begin{align}
+	% J_\varphi \ddot{\varphi} &= L_1 \omega_d\\
+	% J_\varepsilon \ddot{\varepsilon} &= L_2 \cos (\varepsilon) + L_3 \omega_s \cos (\varphi)\\
+	% J_\lambda \ddot \lambda &= L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
+	% 		\end{align}
+	% 	\end{subequations}
 	\begin{subequations}
 		\begin{align}
-			J_\varphi \ddot{\varphi} +\mu_\varphi \dot \varphi - M_{z,\varphi} &= L_1 \omega_d
-			\label{eq:flat1}\\
-J_\varepsilon \ddot{\varepsilon} + \mu_\varepsilon \dot\varepsilon + M_{z, \varepsilon} &= L_3 \omega_s \cos (\varphi)
-\label{eq:flat2}\\
-J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
-\label{eq:flat3}
+		J_\varphi \ddot{\varphi} +\mu_\varphi \dot \varphi - M_{z,\varphi} &= L_1 \omega_d
+		\label{eq:flat1}\\
+		J_\varepsilon \ddot{\varepsilon} + \mu_\varepsilon \dot\varepsilon + M_{z, \varepsilon} &= L_3 \omega_s \cos (\varphi)
+		\label{eq:flat2}\\
+		J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi) \cos (\varepsilon)
+		\label{eq:flat3}
 		\end{align}
 	\end{subequations}
 	mit den Zentripetalmomenten
 	\begin{subequations}
 		\begin{align}
-			M_{z,\varphi} &= J_\varphi \cos(\varphi) \sin(\varphi) (\dot \varepsilon^2-\cos^2(\varepsilon) \dot \lambda^2)\\
-			M_{z, \varepsilon} &= J_\varepsilon \cos(\varepsilon) \sin(\varepsilon) \dot\lambda^2 - L_2 \cos (\varepsilon)
+		M_{z,\varphi} &= J_\varphi \cos(\varphi) \sin(\varphi) (\dot \varepsilon^2-\cos^2(\varepsilon) \dot \lambda^2)\\
+		M_{z, \varepsilon} &= J_\varepsilon \cos(\varepsilon) \sin(\varepsilon) \dot\lambda^2 - L_2 \cos (\varepsilon)
 		\end{align}
 	\end{subequations}
 	besitzt den flachen Ausgang
 	\(
-		\vect y = (\varepsilon, \lambda)
+	\vect y = (\varepsilon, \lambda)
 	\)
 	und lässt sich in die Regelungsform
 	% \begin{subequations}
@@ -333,15 +288,15 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	%Es lässt sich zeigen, dass eine Regelungsform
 	\begin{subequations}
 		\begin{align}
-			\varepsilon^{(4)} &= \Psi_1(\omega_s, \dot{\omega}_s, \ddot{\omega}_s, \omega_d)\\
-			\ddot \lambda &= \Psi_2(\omega_s, \dot{\omega}_s, \ddot{\omega}_s, \omega_d)
+		\varepsilon^{(4)} &= \Psi_1(\omega_s, \dot{\omega}_s, \ddot{\omega}_s, \omega_d)\\
+		\ddot \lambda &= \Psi_2(\omega_s, \dot{\omega}_s, \ddot{\omega}_s, \omega_d)
 		\end{align}
 	\end{subequations}
 	%existiert.
 	transformieren.
 	Um jetzt aber eine stabilisierende Rückführung
 	\[
-		\varepsilon^{(4)} = \varepsilon_d^{(4)} - \sum_{i=0}^3 k_i (\varepsilon^{(i)} - \varepsilon_d^{(i)})
+	\varepsilon^{(4)} = \varepsilon_d^{(4)} - \sum_{i=0}^3 k_i (\varepsilon^{(i)} - \varepsilon_d^{(i)})
 	\]
 	zu berechnen, die dazu führt, dass \(\varepsilon(t)\) dem Verlauf \(\varepsilon_d(t)\) folgt, werden die dritten und vierten zeitlichen Ableitungen von \(\varepsilon\) benötigt, die in unserer Simulation nicht zur Verfügung stehen.
 	Um das Problem zu lösen sollten Verfahren zur Ableitungsschätzung, wie Automatisches Differenzieren, genauer untersucht werden.
@@ -350,48 +305,48 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	Gehen wir also davon aus, dass ein unterlagerter Regler $\varphi$ ausreichend schnell wie gewünscht einstellt, können wir uns nachfolgend auf das Teilsystem \ref{eq:flat2}-\ref{eq:flat3} beschränken, in dem $\omega_s$ und $\varphi$ als Stellgrößen vorliegen.
 	Durch die erste Eingangstransformation
 	\begin{equation}
-		w_1 = \omega_s \cos(\varphi), \quad
-		w_2 = \omega_s \sin(\varphi)
+	w_1 = \omega_s \cos(\varphi), \quad
+	w_2 = \omega_s \sin(\varphi)
 	\end{equation}
 	treten die neuen Eingänge affin in den Systemgleichungen auf.
 	Indem $(v_1, v_2)$ als zweites Paar virtueller Eingänge definiert wird, kann mit der zweiten Eingangstransformation
 	\begin{subequations}
 		\begin{align}
-			w_1 &= \frac{J_\varepsilon v_1 + \mu_\varepsilon \dot \varepsilon + J_\varepsilon \cos(\varepsilon) \sin(\varepsilon)\dot{\lambda}^2-L_2 \cos(\varepsilon)}{L_3} \\
-			w_2 &= \frac{J_\lambda v_2 + \mu_\lambda \dot \lambda}{L_4 \cos{\varepsilon}}
+		w_1 &= \frac{J_\varepsilon v_1 + \mu_\varepsilon \dot \varepsilon + J_\varepsilon \cos(\varepsilon) \sin(\varepsilon)\dot{\lambda}^2-L_2 \cos(\varepsilon)}{L_3} \\
+		w_2 &= \frac{J_\lambda v_2 + \mu_\lambda \dot \lambda}{L_4 \cos{\varepsilon}}
 		\end{align}
 		\label{eq:linearizing_transformation}
 	\end{subequations}
 	das Teilsystem \ref{eq:flat2}~-~\ref{eq:flat3} eingangs-zustands-linearisiert werden.
-
+	
 	Nun ist es möglich, für das lineare System
 	\begin{subequations}
 		\begin{align}
-			\ddot{\varepsilon} &= v_1\\
-			\ddot{\lambda} &= v_2
+		\ddot{\varepsilon} &= v_1\\
+		\ddot{\lambda} &= v_2
 		\end{align}
 	\end{subequations}
 	eine Rückführung zu entwerfen, die Sollverläufen $\varepsilon_d$, $\lambda_d$ folgt.
 	Danach kann mit \ref{eq:linearizing_transformation} zurückgerechnet werden und mit
 	\begin{subequations}
 		\begin{align}
-\omega_s &= \sqrt{w_1^2 + w_2^2}\ \sgn (w_1)\\
-\varphi_d &= \arctan \left(\frac{w_1}{w_2}\right) 
+		\omega_s &= \sqrt{w_1^2 + w_2^2}\ \sgn (w_1)\\
+		\varphi_d &= \arctan \left(\frac{w_1}{w_2}\right) 
 		\end{align}
 	\end{subequations}
 	erhält man \(\omega_s\) und einen Sollwert für \(\varphi\).
 	Zuletzt wird mit einem PD-Regler über Steuerung von \(\omega_d\) in~\ref{eq:flat1} der Verlauf \(\varphi_d\) realisiert.
-
+	
 	In der Simulation konnten Überführungen zwischen beliebigen Arbeitspunkten mit polynomialen Trajektorien durchgeführt werden.
 	Bei zu hohen Geschwindigkeiten führten aber die nicht im Regler berücksichtigten Reaktionsmomente zu einem destabilisierenden Feedback-Effekt.
 	Zukünftig sollte also am echten Versuchsstand getestet werden, in welcher Größenordnung dieser Effekt tatsächlich existiert oder alternativ nach einem robusten Regleransatz gesucht werden.
-
+	
 	
 	\section{Zustandsrekonstruktion}
 	\subsection{Einf\"uhrung}
 	Einige Regler verwenden eine Zustandsr\"uckf\"uhrung zur Stabilisierung des Systems. Die Zust\"ande des Systems sind die drei Winkelgr\"oßen, deren Ableitungen und die Rotationsfrequenzen der beiden Motoren. Insofern diese 8 Gr\"oßen nicht direkt gemessen werden, ist eine Echtzeit-Rekonstruktion der Zustände notwendig. 
 	Selbst wenn tatsächlich alle Zustände als Messgrößen zur Verfügung stehen sollten, kann es bei starkem Messrauschen sinnvoll sein, die Messsignale mit einem Zustandsschätzer zu glätten.
-
+	
 	Im folgenden Abschnitt wird in diesem Zusammenhang der Entwurf und die Implementierung eines diskreten, Erweiterten Kalman-Filters (\textit{EKF})  thematisiert. 
 	\subsection{Detektierbarkeit der Modellgleichungen}
 	Damit der Zustandsschätzer überhaupt konvergieren kann, muss das System lokal detektierbar sein. Dies kann durch Linearisierung des Systems und durch Anwendung des Kalmanschen Beobachtbarkeitskriterium nachgewiesen werden. Dabei werden die nichtlinearen Systemgleichungen
@@ -425,7 +380,7 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	\bm y &= \begin{bmatrix}
 	\varphi & \varepsilon & \lambda 
 	\end{bmatrix}^T
-\end{align*}
+	\end{align*}
 	Die Kalmansche Beobachtbarkeitsmatrix
 	$$\bm O = \begin{bmatrix}
 	\bm C \\
@@ -454,21 +409,21 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	\bm {y_2} &= \begin{bmatrix}
 	\varphi & \varepsilon & \lambda 
 	\end{bmatrix}^T
-\end{align*}
+	\end{align*}
 	wobei $f_4, \ldots, f_8$ sehr unübersichtliche, große Ausdrücke sind.
-
+	
 	Berechnet man nun mit dem geschilderten Vorgehen für den Ausgang $\bm{y_1}$
 	die Beobachtbarkeitsmatrix $\bm O$, so fällt auf, dass deren erste 8 Zeilen eine Permutationsmatrix bilden.
 	Auch dieses System ist folglich lokal detektierbar.
-
+	
 	Betrachtet man hingegen das System mit dem Ausgang $\bm{y_2}$, so geht der Nachweis lokaler Detektierbarkeit nicht so leicht von der Hand. 
 	Die symbolische Matrix $\bm O$ folgt keiner ähnlichen Struktur zu den vorangegangenen Fällen.
 	\begin{comment}
 	Die symbolische Matrix $\bm O$ enthält sehr große Ausdrücke und durch scharfes Hinsehen war es mir nicht möglich Aussagen über den Rang zu machen. \\ 
 	\end{comment}
-
+	
 	Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf \enquote{sehr dünne} Singularitäten den Rang $\hat r$ (\cite{ex3}, Anhang B.4).
-
+	
 	Da die Systemmatrix nur analytische Funktionen enthält, beinhaltet auch die Beobachtbarkeitsmatrix nur analytische Ausdrücke. 
 	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar.
 	Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres vorerst nicht durchgeführt werden sollte.
@@ -494,12 +449,12 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	\begin{comment}
 	Prinzipiell lassen sich meines Wissens nach nur lineare Systeme symbolisch diskretisieren, wenn die Systemmatrix diagonalisierbar ist. 
 	\end{comment}
-
+	
 	Bei der Implementierung problematisch gestaltete sich in erster Linie die Berücksichtigung der Wertebegrenzung der Winkelgrößen.
 	Da das reale System Werterestriktionen unterliegt, macht es Sinn diese ebenfalls bei der Zustandsrekonstruktion zu berücksichtigen.
 	Konnte für diesen Zweck im Prädiktionsschritt noch die bereits entwickelte Wertebegrenzung aus der Simulation verwendet werden, so war dies im Korrekturschritt nicht mehr möglich.
 	Als Lösung des Problems wurde nach dem Korrekturschritt eine Werteüberprüfung implementiert, die die Zustandsmaschine der Wertebegrenzung entsprechend umschaltet.
-
+	
 	Zur Visualisierung der Dynamik des Kalman-Filters wurde zudem eine rötlich-transparente 3D-Animation implementiert.
 	
 	\subsection{Validierung des Kalman-Filters und Experimente}
@@ -507,17 +462,17 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	Solange es keine Parameterabweichungen gibt und der Rauschanteil nicht unverhältnismäßig hoch ist, zeigt der Kalman-Filter ein sehr gutes Konvergenzverhalten.
 	Experimente mit Parameterabweichungen $\pm \SI{20}{\percent}$ führen jedoch zu kleinen stationären Schätzfehlern.
 	
-
-\begin{comment}
-\begin{figure}
-  \includegraphics[width=\linewidth]{images/Estimated_state_of_observer_(dp,_de,_dlambda).png}
-  \caption{Graph of Kalman-Filter reconstructing}
-  \label{fig:boat1}
-  
-Figure \ref{fig:boat1} shows a boat.
-\end{figure}
-\end{comment}
-
-\bibliography{Dokumentation}
-\nocite{ex3}
+	
+	\begin{comment}
+	\begin{figure}
+	\includegraphics[width=\linewidth]{images/Estimated_state_of_observer_(dp,_de,_dlambda).png}
+	\caption{Graph of Kalman-Filter reconstructing}
+	\label{fig:boat1}
+	
+	Figure \ref{fig:boat1} shows a boat.
+	\end{figure}
+	\end{comment}
+	
+	\bibliography{Dokumentation}
+	\nocite{ex3}
 \end{document}
