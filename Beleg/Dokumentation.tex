@@ -1,6 +1,7 @@
 \documentclass[times, 9pt,twocolumn]{article} 
 \usepackage[utf8]{inputenc}
 \usepackage[ngerman]{babel}
+\usepackage[autostyle=true,german=quotes]{csquotes}
 \usepackage{comment}
 \usepackage{times}
 \usepackage{geometry}
@@ -466,24 +467,45 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	Die symbolische Matrix $\bm O$ enthält sehr große Ausdrücke und durch scharfes Hinsehen war es mir nicht möglich Aussagen über den Rang zu machen. \\ 
 	\end{comment}
 
-	Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf "sehr dünne" Singularitäten den Rang $\hat r$ (\cite{ex3}, Anhang B.4). \\
+	Die Funktion \textit{rank()} berechnet in Matlab den generischen Rang $\hat r$ einer symbolischen Matrix. Wenn alle Elemente der Matrix analytische Ausdrücke sind, sind die Untervektorräume des Zustandsraums, für die der Rang kleiner ist als $\hat r$, alle Nullmengen. Die symbolische Matrix hat also bis auf \enquote{sehr dünne} Singularitäten den Rang $\hat r$ (\cite{ex3}, Anhang B.4).
+
 	Da die Systemmatrix nur analytische Funktionen enthält, beinhaltet auch die Beobachtbarkeitsmatrix nur analytische Ausdrücke. 
-	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar. Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres vorerst nicht durchgeführt werden sollte.
+	Der generische Rang der Beobachtbarkeitsmatrix $\bm O$ ist gemäß diesem Vorgehen 8, das System ist also bis auf wenig bis keine Singularitäten lokal detektierbar.
+	Eventuelle Singularitäten wurden im Zuge dieser Arbeit nicht berechnet, weshalb die Implementierung dieses Beobachters bei einem realen Versuchsstand ohne weiteres vorerst nicht durchgeführt werden sollte.
 	
 	\subsection{Implementierung}
-	Der diskrete, erweiterte Kalman-Filter lässt sich in einen Prädiktions- und einen Korrekturschritt unterteilen.  Im Prädiktionsschritt wird das nichtlineare Modell simuliert, zudem wird der Fehler der \textit{a priori} Zustandsschätzung in Form einer Kovarianzmatrix näherungsweise berechnet. Im Korrektursschritt wird die Messung des Ausgangs einbezogen, um letztendlich die \textit{a posteriori} Zustandsschätzung zu berechnen. Die Implementierung des Prädiktionsschrittes erfolgte durch das Integrieren der Differentialgleichungen mit dem RK45-Algorithmus. Dazu wurde die Funktion \textit{solve\_ivp()} aus dem Paket \textit{SciPy} verwendet. \\ Für die Berechnung der \textit{a priori} Kovarianzmatrix ist es notwendig das nichtlineare System im momentanen Punkt der Schätztrajektorie zu linearisieren und zu diskretisieren. Zur Linearisierung der Systemgleichung wurde ein CAS verwendet, sodass die symbolischen Ausdrücke direkt im Python-Quellcode eingefügt werden konnten. \\ Zur nachfolgenden Diskretisierung des Systems müssen die Ausdrücke $A^* = e^{A T_s}, B^* = \int_{0}^{T_s} e^{A \tau} d\tau$ mit $T_s$ als Zeitschrittweite berechnet werden. 
-	Die Lösung dieser Gleichungen lässt sich analytisch angeben, wenn $\bm A$	diagonalisierbar ist. Im vorliegenden Fall wurde keine analytische Lösung für die linearisierten, symbolischen Gleichungen gefunden, weswegen diese numerisch zur Laufzeit mit \textit{NumPy} berechnet werden. \\
+	Der diskrete, Erweiterte Kalman-Filter lässt sich in einen Prädiktions- und einen Korrekturschritt unterteilen. 
+	Im Prädiktionsschritt wird das nichtlineare Modell simuliert, zudem wird der Fehler der \textit{a priori} Zustandsschätzung in Form einer Kovarianzmatrix näherungsweise berechnet.
+	Im Korrektursschritt wird die Messung des Ausgangs einbezogen, um letztendlich die \textit{a posteriori} Zustandsschätzung zu berechnen.
+	Die Implementierung des Prädiktionsschrittes erfolgte durch das Integrieren der Differentialgleichungen mit dem RK45-Algorithmus.
+	Dazu wurde die Funktion \textit{solve\_ivp()} aus dem Paket \textit{SciPy} verwendet.
+	
+	Für die Berechnung der \textit{a priori} Kovarianzmatrix ist es notwendig das nichtlineare System im momentanen Punkt der Schätztrajektorie zu linearisieren und zu diskretisieren.
+	Zur Linearisierung der Systemgleichung wurde ein CAS verwendet, sodass die symbolischen Ausdrücke direkt im Python-Quellcode eingefügt werden konnten.
+	
+	Zur nachfolgenden Diskretisierung des Systems müssen die Ausdrücke
+	$$A^* = e^{A T_s},\quad B^* = \int_{0}^{T_s} e^{A \tau} \: \mathrm{d}\tau$$
+	mit $T_s$ als Zeitschrittweite berechnet werden. 
+	Die Lösung dieser Gleichungen lässt sich analytisch angeben, wenn $\bm A$	diagonalisierbar ist.
+	Im vorliegenden Fall wurde keine analytische Lösung für die linearisierten, symbolischen Gleichungen gefunden, weswegen diese numerisch zur Laufzeit mit \textit{NumPy} berechnet werden.
 	\begin{comment}
 	Die Diskretisierung wurde hingegen numerisch zur Laufzeit durchgeführt, da eine analytische Lösung des Diskretisierungsintegrals nicht gefunden wurde. \\
 	\end{comment}
 	\begin{comment}
 	Prinzipiell lassen sich meines Wissens nach nur lineare Systeme symbolisch diskretisieren, wenn die Systemmatrix diagonalisierbar ist. 
 	\end{comment}
-	Bei der Implementierung problematisch gestaltete sich in erster Linie die Berücksichtigung der Wertebegrenzung der Winkelgrößen. Da das reale System Werterestriktionen unterliegt, macht es Sinn diese ebenfalls bei der Zustandsrekonstruktion zu berücksichtigen. Konnte für diesen Zweck im Prädiktionsschritt noch die bereits entwickelte Wertebegrenzung aus der Simulation verwendet werden, so war dies im Korrekturschritt nicht mehr möglich. Als Lösung des Problems wurde nach dem Korrekturschritt eine Werteüberprüfung implementiert, die die Zustandsmaschine der Wertebegrenzung entsprechend umschaltet. \\
-	Zur Visualisierung der Dynamik des Kalman-Filters, wurde zudem eine rötlich-transparente 3D-Animation implementiert.
+
+	Bei der Implementierung problematisch gestaltete sich in erster Linie die Berücksichtigung der Wertebegrenzung der Winkelgrößen.
+	Da das reale System Werterestriktionen unterliegt, macht es Sinn diese ebenfalls bei der Zustandsrekonstruktion zu berücksichtigen.
+	Konnte für diesen Zweck im Prädiktionsschritt noch die bereits entwickelte Wertebegrenzung aus der Simulation verwendet werden, so war dies im Korrekturschritt nicht mehr möglich.
+	Als Lösung des Problems wurde nach dem Korrekturschritt eine Werteüberprüfung implementiert, die die Zustandsmaschine der Wertebegrenzung entsprechend umschaltet.
+
+	Zur Visualisierung der Dynamik des Kalman-Filters wurde zudem eine rötlich-transparente 3D-Animation implementiert.
 	
 	\subsection{Validierung des Kalman-Filters und Experimente}
-	Zur Validierung des Kalman-Filters wurden verschiedene Experimente durchgeführt. Solange es keine Parameterabweichungen gibt und der Rauschanteil nicht unverhältnismäßig hoch ist, zeigt der Kalman ein sehr gutes Konvergenzverhalten. Experimente mit Parameterabweichungen $\pm$ 20\% führen jedoch zu kleinen stationären Schätzfehlern.
+	Zur Validierung des Kalman-Filters wurden verschiedene Experimente durchgeführt.
+	Solange es keine Parameterabweichungen gibt und der Rauschanteil nicht unverhältnismäßig hoch ist, zeigt der Kalman-Filter ein sehr gutes Konvergenzverhalten.
+	Experimente mit Parameterabweichungen $\pm \SI{20}{\percent}$ führen jedoch zu kleinen stationären Schätzfehlern.
 	
 
 \begin{comment}
