@@ -92,20 +92,22 @@
 	\diff{}{t} \partiell{L}{\dot{q_i}} - \partiell{L}{q_i}=Q_i\, .
 	\end{equation}
 	Nach Einsetzen der potentiellen und kinetischen Energien sowie der nicht-konservativen Kräfte des Systems ergeben sich folgende Bewegungsgleichungen:
-	\begin{equation}
-	\begin{split}
-	&J_\varphi \ddot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2)\\  &+ \mu_\varphi \dot{\varphi} = V_d L_1
-	\end{split}
-	\end{equation}
-	\begin{equation}
-	\begin{split}
-	&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\
-	&= L_2 \cos \varepsilon + V_s L_3 \cos \varphi
-	\end{split}
-	\end{equation}
-	\begin{equation}
-	J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = V_s L_4 \cos \varepsilon \sin \varphi
-	\end{equation}
+	\begin{subequations}
+		\begin{align}
+			\begin{split}
+		&J_\varphi \ddot{\varphi} - J_\varphi \cos (\varphi) \sin (\varphi) (\dot{\varepsilon}^2- \cos^2 (\varepsilon) \dot{\lambda}^2)\\
+		&\qquad\qquad+ \mu_\varphi \dot{\varphi} = V_d L_1
+			\end{split}
+			\\
+		\begin{split}		
+			&J_\varepsilon(\varphi)\ddot{\varepsilon} + \mu_\varepsilon \dot{\varepsilon} + J_\varepsilon(\varphi) \cos (\varepsilon) \sin (\varepsilon) \dot{\lambda}^2\\
+			&\qquad\qquad= L_2 \cos \varepsilon + V_s L_3 \cos \varphi
+		\end{split}
+		\\
+		&J_\lambda(\varepsilon,\varphi) \ddot{\lambda} + \mu_\lambda \dot{\lambda} = V_s L_4 \cos \varepsilon \sin \varphi
+		\end{align}
+		\label{eq:lagrange_result}
+	\end{subequations}
 	Mit $J_i$ .. Trägheitsmoment um Achse $i$; $V_s$ .. Summe der Rotorspannung $V_f + V_b$; $V_d$ .. Differenz der Rotorspannungen $V_f - V_b$; $L_i$ .. Längenkonstante; $\mu_i$ .. Gleitreibungskoeffizient um Gelenk $i$. Dieses einfache Modell beinhaltet bereits Zentripetalkräfte sowie Gleitreibung der Gelenke.
 
 %	\subsection{Langrange-Formalismus (long)}
@@ -407,7 +409,7 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	
 	Zur Linearisierung des Systems sowie zur Berechnung der Kalmanschen Beobachtbarkeitsmatrix wurde das CAS von Matlab verwendet, da die Rangberechnung symbolischer Matrizen unter \textit{SymPy} unzumutbar lange dauerte. Dies geschah ohne Wissen von dem Paket \textit{symbtools} von Dr. Knoll, welches einen anderen Algorithmus zur Rangbestimmung symbolischer Matrizen enthält. 
 	\subsubsection{Einfachstes Modell}
-	Das einfachste Modell folgt aus den Gleichungen 2-4, wenn die Zentripetal- und Reibungskräfte vereinfacht als sehr klein bzw.\ 0 angenommen werden.
+	Das einfachste Modell folgt aus den Gleichungen~\ref{eq:lagrange_result}, wenn die Zentripetal- und Reibungskräfte vereinfacht als sehr klein bzw.\ 0 angenommen werden.
 	\begin{align*}
 	\bm f(\bm x) &= \begin{bmatrix}
 	\dot \varphi \\
