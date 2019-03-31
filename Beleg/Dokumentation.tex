@@ -217,7 +217,7 @@
 	%Einfache PID-Regler sind für viele praktische Probleme in der Lage, auch ohne umfangreiche mathematische Modellierung und Berechnung, durch geschickte Handeinstellung Ruhelagen zu stabilisieren.
 	%Deshalb liegt auch hier nahe, einen solchen Ansatz auszuprobieren.
     %
-	Eine Ruhelage in diesem System wird beschrieben durch zwei frei wählbare Winkel \(\varepsilon^* \in (-\frac{\pi}{2}, \frac{\pi}{2})\) und \(\lambda^* \in (-\pi, \pi)\), außerdem gilt \(\varphi^*=0\).
+	Eine Ruhelage in diesem System kann durch zwei frei wählbare Winkel \(\varepsilon^* \in (-\frac{\pi}{2}, \frac{\pi}{2})\) und \(\lambda^* \in (-\pi, \pi)\) beschrieben werden, außerdem gilt \(\varphi^*=0\).
 	Zur Einstellung der Ruhelage stehen als Stellgrößen die Motorspannungen \(V_f\) für den vorderen, und \(V_b\) für den hinteren Motor zur Verfügung.
 
 	Ein PID-Regler der Form
@@ -226,7 +226,7 @@
 	\]
 	besitzt nur jeweils einen skalaren Eingang und Ausgang, für dieses System müssen also mehrere miteinander verschaltet werden.
 	
-	Der vollständige Regelkreis ist in Abbildung \ref{fig:pid_diagram} dargestellt.
+	Der vollständige Regelkreis ist in Abbildung~\ref{fig:pid_diagram} dargestellt.
 	PID~1 und~2 setzen Drehzahlvorgaben in Motorspannungen um, PID~3 realisiert einen internen Sollwert für \(\varphi\), und 4 und 5 die äußeren Vorgaben für \(\varepsilon\) und \(\lambda\).
 	Die Transformation
 	\begin{equation}
@@ -341,7 +341,7 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	\[
 		\varepsilon^{(4)} = \varepsilon_d^{(4)} - \sum_{i=0}^3 k_i (\varepsilon^{(i)} - \varepsilon_d^{(i)})
 	\]
-	zu berechnen, die dazu führt, dass \(\varepsilon(t)\) dem Verlauf \(\varepsilon_d(t)\) folgt, werden die dritten und vierten Ableitungen von \(\varepsilon\) benötigt, die in unserer Simulation nicht zur Verfügung stehen.
+	zu berechnen, die dazu führt, dass \(\varepsilon(t)\) dem Verlauf \(\varepsilon_d(t)\) folgt, werden die dritten und vierten zeitlichen Ableitungen von \(\varepsilon\) benötigt, die in unserer Simulation nicht zur Verfügung stehen.
 	Um das Problem zu lösen sollten Verfahren zur Ableitungsschätzung, wie Automatisches Differenzieren, genauer untersucht werden.
 	\subsubsection{Linearisierende Rückführung}
 	Bei Betrachtung der vereinfachten Systemgleichungen fällt auf, dass $\varphi$ alleine über~\ref{eq:flat1} mit Steuerung von $\omega_d$ bestimmt wird.
@@ -362,7 +362,7 @@ J_\lambda \ddot \lambda + \mu_\lambda \dot\lambda &= L_4 \omega_s \sin (\varphi)
 	\end{subequations}
 	das Teilsystem \ref{eq:flat2}~-~\ref{eq:flat3} eingangs-zustands-linearisiert werden.
 
-	Nun ist es leicht möglich, für das lineare System
+	Nun ist es möglich, für das lineare System
 	\begin{subequations}
 		\begin{align}
 			\ddot{\varepsilon} &= v_1\\
