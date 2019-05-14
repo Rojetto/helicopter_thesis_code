@@ -26,7 +26,7 @@ classdef pidAlgorithm < handle
 %                 end
 %             end
             
-            out = obj.gains(1)*x + obj.gains(2)*obj.ix + obj.gains(3)*dx;
+            out = double(obj.gains(1)*x + obj.gains(2)*obj.ix + obj.gains(3)*dx);
             
             obj.last_t = t;
             obj.last_x = x;

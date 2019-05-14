@@ -8,6 +8,7 @@ from JoystickWidget import JoystickWidget
 from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static, compute_feed_forward_flatness
 from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
+from helicontrollers.MCascadePidController import MCascadePidController
 from helicontrollers.LqrController import LqrController
 from helicontrollers.QuasistaticFlatnessController import QuasistaticFlatnessController
 from helicontrollers.FeedbackLinearizationController import FeedbackLinearizationController
@@ -89,7 +90,8 @@ class mainWindow(QtWidgets.QMainWindow):
         self.current_controller = None
         controller_list = [ManualController(), InteractiveController(joystick_widget), PolePlacementController(),
                            LqrController(), DirectPidController(),
-                           CascadePidController(), TimeVariantController(), QuasistaticFlatnessController(),
+                           CascadePidController(), MCascadePidController(),
+                           TimeVariantController(), QuasistaticFlatnessController(),
                            FeedbackLinearizationController()]
 
         # GUI layout
