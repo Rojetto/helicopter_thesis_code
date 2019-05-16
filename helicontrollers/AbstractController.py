@@ -4,9 +4,7 @@ class ParamBool:
 
 
 class ParamFloatArray:
-    def __init__(self, mins, maxs, init_values):
-        self.mins = mins
-        self.maxs = maxs
+    def __init__(self, init_values):
         self.init_values = init_values
 
 

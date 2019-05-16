@@ -21,11 +21,11 @@ class FeedbackLinearizationController(AbstractController):
         super().__init__("Feedback linearization", {
             "Pitch derivative feed-forward": ParamBool(self.pitch_derivative_feed_forward),
             "Friction and centripetal": ParamBool(self.friction_centripetal),
-            "k Elevation": ParamFloatArray([0, 0], [1000, 1000], self.ke),
-            "k Travel": ParamFloatArray([0, 0], [1000, 1000], self.kl),
-            "k Pitch": ParamFloatArray([0, 0], [1000, 1000], self.kp),
+            "k Elevation": ParamFloatArray(self.ke),
+            "k Travel": ParamFloatArray(self.kl),
+            "k Pitch": ParamFloatArray(self.kp),
             "Rotor speed controller": ParamBool(self.rotor_speed_controller),
-            "Rotor PD": ParamFloatArray([0, 0], [1000, 1000], self.k_rotor)
+            "Rotor PD": ParamFloatArray(self.k_rotor)
         })
 
     def control(self, t, x, e_traj, lambda_traj):

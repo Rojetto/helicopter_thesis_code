@@ -220,9 +220,7 @@ class TimeVariantController(AbstractController):
             "Flatness-calculation model type": ParamEnum(["Simple", "Centripetal"],
                                                          [ModelType.EASY, ModelType.CENTRIPETAL],
                                                          self.flatness_model_type),
-            "Poles": ParamFloatArray([-100, -100, -100, -100, -100, -100],
-                                     [-0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
-                                     self.poles)
+            "Poles": ParamFloatArray(self.poles)
         })
 
     def control(self, t, x, e_traj, lambda_traj):

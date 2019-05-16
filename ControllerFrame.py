@@ -60,7 +60,7 @@ class ControllerFrame(QtWidgets.QFrame):
                     row_content = QtWidgets.QHBoxLayout()
 
                     for box_i, box in enumerate(widgets):
-                        box.setRange(param_spec.mins[box_i], param_spec.maxs[box_i])
+                        box.setRange(-9999, 9999)
                         box.setValue(param_spec.init_values[box_i])
                         row_content.addWidget(box)
 

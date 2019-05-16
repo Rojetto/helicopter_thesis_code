@@ -8,12 +8,8 @@ class DirectPidController(AbstractController):
         self.travel_pid = PidAlgorithm([1, 0, 1])
 
         super().__init__("Direct PID", {
-            "Elevation PID": ParamFloatArray([0, 0, 0],
-                                             [100, 100, 100],
-                                             self.elevation_pid.gains),
-            "Travel PID": ParamFloatArray([0, 0, 0],
-                                          [100, 100, 100],
-                                          self.travel_pid.gains)
+            "Elevation PID": ParamFloatArray(self.elevation_pid.gains),
+            "Travel PID": ParamFloatArray(self.travel_pid.gains)
         })
 
     def control(self, t, x, e_traj, lambda_traj):

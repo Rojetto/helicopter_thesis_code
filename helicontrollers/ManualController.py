@@ -7,8 +7,8 @@ class ManualController(AbstractController):
         self.Vb = 0.25
 
         super().__init__("Manual control", {
-            "Vf": ParamFloatArray([-10], [10], [self.Vf]),
-            "Vb": ParamFloatArray([-10], [10], [self.Vb])
+            "Vf": ParamFloatArray([self.Vf]),
+            "Vb": ParamFloatArray([self.Vb])
         })
 
     def control(self, t, x, e_traj, lambda_traj):

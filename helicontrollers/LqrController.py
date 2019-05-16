@@ -20,12 +20,8 @@ class LqrController(AbstractController):
                                     [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL, ModelType.NO_SIMPLIFICATIONS],
                                     self.model_type),
             "Time variant feedback": ParamBool(self.time_variant_feedback),
-            "diag(Q)": ParamFloatArray([0, 0, 0, 0, 0, 0, 0, 0],
-                                       [100, 100, 100, 100, 100, 100, 100, 100],
-                                       np.diag(self.Q)),
-            "diag(R)": ParamFloatArray([0, 0],
-                                       [100, 100],
-                                       np.diag(self.R))
+            "diag(Q)": ParamFloatArray(np.diag(self.Q)),
+            "diag(R)": ParamFloatArray(np.diag(self.R))
         })
 
     def control(self, t, x, e_traj, lambda_traj):

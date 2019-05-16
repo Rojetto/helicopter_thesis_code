@@ -17,9 +17,7 @@ class PolePlacementController(AbstractController):
                                     [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL],
                                     self.model_type),
             "Time variant feedback": ParamBool(self.time_variant_feedback),
-            "Poles": ParamFloatArray([-100, -100, -100, -100, -100, -100],
-                                     [-0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
-                                     self.poles)
+            "Poles": ParamFloatArray(self.poles)
         })
 
     def control(self, t, x, e_traj, lambda_traj):

@@ -14,17 +14,11 @@ class CascadePidController(AbstractController):
         self.rotor_speed_control = True
 
         super().__init__("Cascade PID", {
-            "Elevation PID": ParamFloatArray([0, 0, 0],
-                                             [100, 100, 100],
-                                             self.elevation_pid.gains),
-            "Travel-Pitch PID": ParamFloatArray([0, 0, 0],
-                                                [100, 100, 100],
-                                                self.travel_pitch_pid.gains),
-            "Pitch-Vd PID": ParamFloatArray([0, 0, 0],
-                                            [100, 100, 100],
-                                            self.pitch_vd_pid.gains),
+            "Elevation PID": ParamFloatArray(self.elevation_pid.gains),
+            "Travel-Pitch PID": ParamFloatArray(self.travel_pitch_pid.gains),
+            "Pitch-Vd PID": ParamFloatArray(self.pitch_vd_pid.gains),
             "Rotor PD + internal FF": ParamBool(self.rotor_speed_control),
-            "Rotor PD": ParamFloatArray([0, 0], [1000, 1000], self.k_rotor)
+            "Rotor PD": ParamFloatArray(self.k_rotor)
         })
 
     def control(self, t, x, e_traj, lambda_traj):

@@ -16,11 +16,9 @@ class QuasistaticFlatnessController(AbstractController):
         self.run_once = False
 
         super().__init__("Quasistatic Flatness Controller", {
-            "k1": ParamFloatArray([-100, -100, -100, -100], [100, 100, 100, 100], self.k1),
-            "k2": ParamFloatArray([-100, -100], [100, 100], self.k2),
-            "Luenberger poles": ParamFloatArray([-100, -100, -100, -100, -100, -100],
-                                                [-0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
-                                                self.luenberger_poles)
+            "k1": ParamFloatArray(self.k1),
+            "k2": ParamFloatArray(self.k2),
+            "Luenberger poles": ParamFloatArray(self.luenberger_poles)
         })
 
     def control(self, t, x, e_traj, lambda_traj):

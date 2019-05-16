@@ -47,10 +47,10 @@ class InteractiveController(AbstractController):
             "Mode": ParamEnum(["Vf, Vb", "Vd, Vs", "phi, Vs", "dlambda, depsilon"],
                               [InteractiveMode.VF_VB, InteractiveMode.VD_VS, InteractiveMode.PHI_VS, InteractiveMode.DLAMBDA_DEPSILON],
                               self.mode),
-            "Rotor speed PD": ParamFloatArray([0, 0], [100, 100], self.rotor_speed_pd),
-            "Phi PD": ParamFloatArray([0, 0], [100, 100], self.phi_pd_gains),
-            "dlambda PD": ParamFloatArray([0, 0], [100, 100], self.dlambda_pd_gains),
-            "depsilon PD": ParamFloatArray([0, 0], [100, 100], self.depsilon_pd_gains)
+            "Rotor speed PD": ParamFloatArray(self.rotor_speed_pd),
+            "Phi PD": ParamFloatArray(self.phi_pd_gains),
+            "dlambda PD": ParamFloatArray(self.dlambda_pd_gains),
+            "depsilon PD": ParamFloatArray(self.depsilon_pd_gains)
         })
 
     def on_pos_changed(self, x, y):
