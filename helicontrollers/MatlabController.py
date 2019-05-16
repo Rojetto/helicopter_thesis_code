@@ -2,8 +2,9 @@ from helicontrollers.AbstractController import *
 import matlab.engine
 
 
-class MCascadePidController(AbstractController):
-    def __init__(self):
+class MatlabController(AbstractController):
+    def __init__(self, matlab_class_name):
+        self.matlab_class_name = matlab_class_name
         self.matlab_engine = None
         self.matlab_controller = None
 
@@ -16,7 +17,7 @@ class MCascadePidController(AbstractController):
             print(f"Successfully connected to MATLAB session '{session_name}'")
 
             try:
-                self.matlab_controller = self.matlab_engine.CascadePid()
+                self.matlab_controller = getattr(self.matlab_engine, self.matlab_class_name)()
                 names_values = self.matlab_engine.getParametersAndValues(self.matlab_controller)
 
                 for i in range(0, len(names_values), 2):
@@ -38,7 +39,7 @@ class MCascadePidController(AbstractController):
         except matlab.engine.EngineError:
             print(f"Unable to connect to MATLAB session '{session_name}'")
 
-        super().__init__("Cascade PID (MATLAB)", param_definition_dict)
+        super().__init__(f"{matlab_class_name} (MATLAB)", param_definition_dict)
 
     def control(self, t, x, e_traj, lambda_traj):
         x = matlab.double(list(x))
@@ -57,7 +58,7 @@ class MCascadePidController(AbstractController):
 
     def initialize(self, param_value_dict):
         if self.matlab_engine is not None:
-            self.matlab_controller = self.matlab_engine.CascadePid()
+            self.matlab_controller = getattr(self.matlab_engine, self.matlab_class_name)()
 
             flat = []
             for name, value in param_value_dict.items():
