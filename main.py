@@ -88,10 +88,8 @@ class mainWindow(QtWidgets.QMainWindow):
         self.disturbance = None
         # Initialize controller and kalman filter
         self.current_controller = None
-        controller_list = [ManualController(), InteractiveController(joystick_widget), PolePlacementController(),
-                           LqrController(), DirectPidController(),
-                           CascadePidController(), MatlabController("CascadePid"),
-                           TimeVariantController(), QuasistaticFlatnessController(),
+        controller_list = [ManualController(), PolePlacementController(),
+                           LqrController(), CascadePidController(), MatlabController("CascadePid"),
                            FeedbackLinearizationController(), MatlabController("FeedbackLinearization"),
                            MatlabController("TimeVariantLQR")]
 
