@@ -27,6 +27,20 @@ planner_travel_g = 0
 planner_elevation_g = 0
 
 
+class LoggingDataV3:
+    def __init__(self, ts, xs, us_controller, e_traj_and_derivatives, lambda_traj_and_derivatives,
+                 xs_estimated_state, us_noisy_input, ys_noisy_output, cov_matrix):
+        self.ts = ts
+        self.xs = xs
+        self.us_controller = us_controller
+        self.e_traj_and_derivatives = e_traj_and_derivatives
+        self.lambda_traj_and_derivatives = lambda_traj_and_derivatives
+        self.xs_estimated_state = xs_estimated_state
+        self.ys_noisy_output = ys_noisy_output
+        self.us_noisy_input = us_noisy_input
+        self.cov_matrix = cov_matrix
+
+
 class LoggingDataV2:
     def __init__(self, ts, xs, us_ff, us_controller, e_traj_and_derivatives, lambda_traj_and_derivatives,
                  xs_estimated_state, us_noisy_input, ys_noisy_output, cov_matrix):
@@ -55,7 +69,7 @@ class LoggingDataV1:
 def bundle_data():
     global index
 
-    bundle = LoggingDataV2(ts_store[:index], xs_store[:index], us_ff_store[:index], us_controller_store[:index],
+    bundle = LoggingDataV3(ts_store[:index], xs_store[:index], us_controller_store[:index],
                            e_traj_store[:index], lambda_traj_store[:index], xs_estimated_store[:index],
                            us_noisy_input_store[:index], ys_noisy_output_store[:index], cov_matrix_store[:index])
 
@@ -90,7 +104,7 @@ def add_planner(planner_travel, planner_elevation):
     planner_elevation_g = planner_elevation
 
 
-def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_derivatives, x_estimated_state,
+def add_frame(t, x, u_controller, e_traj_and_derivatives, lambda_traj_and_derivatives, x_estimated_state,
               us_noisy_input, ys_noisy_output, cov_matrix):
     global current_size, index
 
@@ -99,7 +113,6 @@ def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_
         ts_store.resize(current_size, refcheck=False)
         xs_store.resize((current_size, 8), refcheck=False)
         xs_estimated_store.resize((current_size, 8), refcheck=False)
-        us_ff_store.resize((current_size, 2), refcheck=False)
         us_controller_store.resize((current_size, 2), refcheck=False)
         e_traj_store.resize((current_size, 5), refcheck=False)
         lambda_traj_store.resize((current_size, 5), refcheck=False)
@@ -110,7 +123,6 @@ def add_frame(t, x, u_ff, u_controller, e_traj_and_derivatives, lambda_traj_and_
     ts_store[index] = t
     xs_store[index] = x
     xs_estimated_store[index] = x_estimated_state
-    us_ff_store[index] = u_ff
     us_controller_store[index] = u_controller
     ys_noisy_output_store[index] = ys_noisy_output
     us_noisy_input_store[index] = us_noisy_input
@@ -133,10 +145,9 @@ def show_plots():
     process(bundle)
 
 
-def process(bundle: LoggingDataV2):
+def process(bundle: LoggingDataV3):
     ts = bundle.ts
     xs = bundle.xs
-    us_ff = bundle.us_ff
     us_controller = bundle.us_controller
     e_traj_and_derivatives = bundle.e_traj_and_derivatives
     lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
@@ -301,22 +312,14 @@ def plotMoments(bundle):
 def plotInputs(bundle):
     ts = bundle.ts
     xs = bundle.xs
-    us_ff = bundle.us_ff
     us_controller = bundle.us_controller
     e_traj_and_derivatives = bundle.e_traj_and_derivatives
     lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
 
-    fig = custom_figure("Total front and back rotor voltages")
-    plt.plot(ts, us_ff[:, 0] + us_controller[:, 0])
-    plt.plot(ts, us_ff[:, 1] + us_controller[:, 1])
-    plt.legend(['Vf', 'Vb'])
-
-    fig = custom_figure("Feed forward and controller output")
-    plt.plot(ts, us_ff[:, 0])
+    fig = custom_figure("Controller output")
     plt.plot(ts, us_controller[:, 0])
-    plt.plot(ts, us_ff[:, 1])
     plt.plot(ts, us_controller[:, 1])
-    plt.legend(['Vf feed-forward', 'Vf controller', 'Vb feed-forward', 'Vb controller'])
+    plt.legend(['Vf controller', 'Vb controller'])
 
     fig = custom_figure("Rotorspeed")
     plt.plot(ts, xs[:, 6])
@@ -327,7 +330,6 @@ def plotInputs(bundle):
 def plotBasics(bundle):
     ts = bundle.ts
     xs = bundle.xs
-    us_ff = bundle.us_ff
     us_controller = bundle.us_controller
     e_traj_and_derivatives = bundle.e_traj_and_derivatives
     lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
@@ -367,8 +369,8 @@ def plotBasics(bundle):
 
     fig = custom_figure("Motorspannungen")
     ax1 = fig.add_subplot(111)
-    ax1.plot(ts, us_ff[:, 0] + us_controller[:, 0], label=r"Vf ohne Rauschen (V)")
-    ax1.plot(ts, us_ff[:, 1] + us_controller[:, 1], label=r"Vf ohne Rauschen (V)")
+    ax1.plot(ts, us_controller[:, 0], label=r"Vf ohne Rauschen (V)")
+    ax1.plot(ts, us_controller[:, 1], label=r"Vf ohne Rauschen (V)")
     plt.xlabel("Zeit (s)")
     plt.ylabel("Motorspannung")
     plt.title("Systemeingang mit und ohne Rauschen")
@@ -391,7 +393,6 @@ def plotObserver(bundle):
 
     ts = bundle.ts[1:]
     xs = bundle.xs[1:]
-    us_ff = bundle.us_ff[1:]
     us_controller = bundle.us_controller[1:]
     e_traj_and_derivatives = bundle.e_traj_and_derivatives[1:]
     lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives[1:]
@@ -506,8 +507,8 @@ def plotObserver(bundle):
     ax1 = fig.add_subplot(111)
     ax1.plot(ts, us_noisy_input[:, 0], label=r"Vf mit Rauschen (V)")
     ax1.plot(ts, us_noisy_input[:, 1], label=r"Vb mit Rauschen (V)")
-    ax1.plot(ts, us_ff[:, 0] + us_controller[:, 0], label=r"Vf ohne Rauschen (V)")
-    ax1.plot(ts, us_ff[:, 1] + us_controller[:, 1], label=r"Vf ohne Rauschen (V)")
+    ax1.plot(ts, us_controller[:, 0], label=r"Vf ohne Rauschen (V)")
+    ax1.plot(ts, us_controller[:, 1], label=r"Vf ohne Rauschen (V)")
     plt.xlabel("Zeit (s)")
     plt.ylabel("Motorspannung")
     plt.title("Systemeingang mit und ohne Rauschen")
@@ -544,8 +545,8 @@ def plotObserver(bundle):
     # plt.legend()
 
     # Calculate the variance of the kalman filter signals for verifying correct noise generation
-    vf_var = np.var(us_noisy_input[:, 0] - (us_ff[:, 0] + us_controller[:, 0]))
-    vb_var = np.var(us_noisy_input[:, 1] - (us_ff[:, 1] + us_controller[:, 1]))
+    vf_var = np.var(us_noisy_input[:, 0] - (us_controller[:, 0]))
+    vb_var = np.var(us_noisy_input[:, 1] - (us_controller[:, 1]))
     p_var = (np.var(ys_noisy_output[:, 0] - xs[:, 0])) * (180/np.pi)**2
     e_var = (np.var(ys_noisy_output[:, 1] - xs[:, 1])) * (180/np.pi)**2
     lamb_var = (np.var(ys_noisy_output[:, 2] - xs[:, 2]))* (180/np.pi)**2

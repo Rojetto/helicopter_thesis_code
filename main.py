@@ -191,13 +191,13 @@ class mainWindow(QtWidgets.QMainWindow):
         self.trajectory_frame = TrajectoryFrame()
         self.controller_frame = ControllerFrame(controller_list)
         self.disturbance_frame = DisturbanceFrame()
-        self.feedforward_frame = FeedforwardFrame()
+        #self.feedforward_frame = FeedforwardFrame()
         self.observer_frame = ObserverFrame()
         settings_tabs.addTab(model_frame, "Model")
         settings_tabs.addTab(self.trajectory_frame, "Trajectory")
         settings_tabs.addTab(self.controller_frame, "Controller")
         settings_tabs.addTab(self.disturbance_frame, "Disturbance")
-        settings_tabs.addTab(self.feedforward_frame, "Feedforward")
+        #settings_tabs.addTab(self.feedforward_frame, "Feedforward")
         settings_tabs.addTab(self.observer_frame, "Observer")
         self.feedforward_method = None
         self.feedforward_model = None
@@ -235,13 +235,13 @@ class mainWindow(QtWidgets.QMainWindow):
         pass
 
     def on_controller_update_button(self):
-        self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
+        self.current_controller, param_values = self.controller_frame.get_selected_object_and_params()
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
         logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
         self.current_controller.initialize(param_values)
 
     def on_start_button(self):
-        self.current_controller, param_values = self.controller_frame.get_selected_controller_and_params()
+        self.current_controller, param_values = self.controller_frame.get_selected_object_and_params()
         self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
         logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
         self.current_controller.initialize(param_values)
@@ -254,7 +254,6 @@ class mainWindow(QtWidgets.QMainWindow):
             est_state = self.observer.get_estimated_state()
             est_state[0:3] = self.observer_initial_value[0:3]
             self.observer.set_estimated_state(est_state)
-        self.feedforward_method,  self.feedforward_model = self.feedforward_frame.get_feedforward_method_and_model()
 
         self.sim_running = True
         self.log_enabled = self.log_checkbox.checkState() == 2
@@ -291,28 +290,19 @@ class mainWindow(QtWidgets.QMainWindow):
             # get current disturbance
             current_disturbance = self.disturbance.eval(t)
 
-            if self.feedforward_method == FeedForwardMethod.STATIC:
-                Vf_ff, Vb_ff = compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives)
-            elif self.feedforward_method == FeedForwardMethod.FLATNESS:
-                Vf_ff, Vb_ff = compute_feed_forward_flatness(self.feedforward_model,
-                                                             e_and_derivatives, lambda_and_derivatives)
-            else:
-                Vf_ff = 0
-                Vb_ff = 0
             # Get controller output
             if not val.validation_enabled:
                 Vf_controller, Vb_controller = self.current_controller.control(t, x, e_and_derivatives, lambda_and_derivatives)
             else:
                 Vf_controller, Vb_controller = val.convV(val.calcInputs_numeric(dl=val.dl, e=val.e, rad=False))[0:2]
 
-            # Add feed-forward and controller
-            Vf = Vf_ff + Vf_controller
-            Vb = Vb_ff + Vb_controller
+            Vf = Vf_controller
+            Vb = Vb_controller
             # Call observer object
             x_estimated_state, noisy_input, noisy_output, cov_matrix = self.observer.calc_observation(t, x, [Vf, Vb])
             # Log data
             if self.log_enabled:
-                logger.add_frame(t, x, [Vf_ff, Vb_ff], [Vf_controller, Vb_controller],
+                logger.add_frame(t, x, [Vf_controller, Vb_controller],
                                  e_and_derivatives, lambda_and_derivatives, x_estimated_state, noisy_input,
                                  noisy_output, cov_matrix)
             # Calculate next simulation step
