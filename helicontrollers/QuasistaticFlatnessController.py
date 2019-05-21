@@ -1,5 +1,6 @@
-from helicontrollers.AbstractController import *
+from helicontrollers.AbstractController import AbstractController
 from helicontrollers.util import compute_feed_forward_flatness_simple
+from ParameterFrame import ParamFloatArray
 from control import sample_system, place, ss, ssdata
 import numpy as np
 

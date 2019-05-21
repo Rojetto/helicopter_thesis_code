@@ -1,5 +1,6 @@
-from helicontrollers.AbstractController import AbstractController, ParamBool, ParamFloatArray
+from helicontrollers.AbstractController import AbstractController
 from helicontrollers.util import L1, L2, L3, L4, Je, Jl, Jp, compute_pitch_flatness_simple
+from ParameterFrame import ParamFloatArray, ParamBool
 from ModelConstants import d_l as mul, d_e as mue, d_p as mup
 from numpy import sin, cos, arctan, sqrt, sign
 from helicontrollers.util import PidAlgorithm

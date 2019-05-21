@@ -1,5 +1,6 @@
-from helicontrollers.AbstractController import *
-from helicontrollers.util import PidAlgorithm, ModelType
+from helicontrollers.AbstractController import AbstractController
+from helicontrollers.util import PidAlgorithm
+from ParameterFrame import ParamFloatArray
 
 
 class DirectPidController(AbstractController):

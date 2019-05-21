@@ -1,5 +1,6 @@
-from helicontrollers.AbstractController import AbstractController, ParamEnum, ParamFloatArray
+from helicontrollers.AbstractController import AbstractController
 from helicontrollers.util import ModelType, compute_feed_forward_flatness
+from ParameterFrame import ParamEnum, ParamFloatArray
 import control as ctr
 import numpy as np
 
