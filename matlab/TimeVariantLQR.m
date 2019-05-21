@@ -61,7 +61,7 @@ classdef TimeVariantLQR < HeliController
             tau_e = obj.ref_t(end);
             P_triu_0 = TimeVariantLQR.full_to_triu(obj.S);
             
-            [ode_tau, P_triu] = ode45(@obj.riccati_rhs, [0, tau_e], P_triu_0);
+            [ode_tau, P_triu] = ode45(@(tau, P_triu) TimeVariantLQR.riccati_rhs(obj, tau, P_triu), [0, tau_e], P_triu_0);
             obj.riccati_tau = ode_tau;
             obj.riccati_P_triu_tau = P_triu;
         end
@@ -90,15 +90,6 @@ classdef TimeVariantLQR < HeliController
             A = compute_A(x1, x2, x3, x4, x5, x6, u1, u2);
             B = compute_B(x1, x2, x3, x4, x5, x6, u1, u2);
         end
-        
-        function d_P_triu = riccati_rhs(obj, tau, P_triu)
-            te = obj.ref_t(end);
-            [A, B] = obj.get_SS_at_time(te - tau);
-            P = TimeVariantLQR.triu_to_full(P_triu);
-            
-            d_P = - P * B * obj.R_inv * B' * P' + P * A + A' * P + obj.Q;
-            d_P_triu = TimeVariantLQR.full_to_triu(d_P);
-        end
     end
     
     methods (Static)
@@ -115,6 +106,15 @@ classdef TimeVariantLQR < HeliController
             out(indices) = triu_mat;
             only_lower = out';
             out(indices') = only_lower(indices');
+        end
+        
+        function d_P_triu = riccati_rhs(obj, tau, P_triu)
+            te = obj.ref_t(end);
+            [A, B] = obj.get_SS_at_time(te - tau);
+            P = TimeVariantLQR.triu_to_full(P_triu);
+            
+            d_P = - P * B * obj.R_inv * B' * P' + P * A + A' * P + obj.Q;
+            d_P_triu = TimeVariantLQR.full_to_triu(d_P);
         end
     end
 end
