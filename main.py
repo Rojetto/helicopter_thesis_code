@@ -281,23 +281,26 @@ class mainWindow(QtWidgets.QMainWindow):
             current_disturbance = self.disturbance.eval(t)
 
             # Get controller output
-            Vf_controller, Vb_controller = self.current_controller.control(t, x)
+            Vf, Vb = self.current_controller.control(t, x)
 
-            Vf = Vf_controller
-            Vb = Vb_controller
             # Call observer object
-            x_estimated_state, noisy_input, noisy_output, cov_matrix = self.observer.calc_observation(t, x, [Vf, Vb])
+            x_obs, u_obs, y_obs, cov_matrix = self.observer.calc_observation(t, x, [Vf, Vb])
+
+            # Evaluate trajectory
+            traj_eval = self.trajectory.eval(t)
+
             # Log data
             if self.log_enabled:
-                logger.add_frame(t, x, [Vf_controller, Vb_controller], x_estimated_state, noisy_input,
-                                 noisy_output, cov_matrix)
+                logger.add_frame(t, x, [Vf, Vb],
+                                 traj_eval.phi, traj_eval.eps, traj_eval.lamb, traj_eval.vf, traj_eval.vb,
+                                 x_obs, u_obs, y_obs, cov_matrix)
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb, current_disturbance)
             self.heliModel.setState(lamb, e, p)
             # This Kalman filter visualization is always one step behind the main simulation.
             # This was corrected in the logger, but was not in this visualization because for the human eye
             # it doesn't make such a big difference
-            self.heliModelEst.setState(x_estimated_state[2], x_estimated_state[1], x_estimated_state[0])
+            self.heliModelEst.setState(x_obs[2], x_obs[1], x_obs[0])
         else:
             orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])
             orientation = orientation / 180.0 * np.pi

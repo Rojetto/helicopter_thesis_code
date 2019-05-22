@@ -9,32 +9,45 @@ import os.path
 import pickle
 from matplotlib.figure import Figure
 
+deg = np.pi / 180
+
 last_storage_directory = None
 index = 0
 chunk_size = 600  # 10 s with 60 FPS
-current_size = chunk_size
+current_size = 0
 ts_store = np.empty(current_size)
 xs_store = np.empty((current_size, 8))
-xs_estimated_store = np.empty((current_size, 8))
-ys_noisy_output_store = np.empty((current_size, 5))
-us_noisy_input_store = np.empty((current_size, 2))
+us_store = np.empty((current_size, 2))
+
+phi_ds_store = np.empty((current_size, 1))
+eps_ds_store = np.empty((current_size, 1))
+lamb_ds_store = np.empty((current_size, 1))
+vf_ds_store = np.empty((current_size, 1))
+vb_ds_store = np.empty((current_size, 1))
+
+xs_obs_store = np.empty((current_size, 8))
+ys_obs_store = np.empty((current_size, 5))
+us_obs_store = np.empty((current_size, 2))
+
 cov_matrix_store = np.empty((current_size, 8, 8))
-us_ff_store = np.empty((current_size, 2))
-us_controller_store = np.empty((current_size, 2))
-e_traj_store = np.empty((current_size, 5))
-lambda_traj_store = np.empty((current_size, 5))
-planner_travel_g = 0
-planner_elevation_g = 0
 
 
 class LoggingDataV3:
-    def __init__(self, ts, xs, us_controller, xs_estimated_state, us_noisy_input, ys_noisy_output, cov_matrix):
+    def __init__(self, ts, xs, us, phi_ds, eps_ds, lamb_ds, vf_ds, vb_ds, xs_obs, us_obs, ys_obs, cov_matrix):
         self.ts = ts
         self.xs = xs
-        self.us_controller = us_controller
-        self.xs_estimated_state = xs_estimated_state
-        self.ys_noisy_output = ys_noisy_output
-        self.us_noisy_input = us_noisy_input
+        self.us = us
+
+        self.phi_ds = phi_ds
+        self.eps_ds = eps_ds
+        self.lamb_ds = lamb_ds
+        self.vf_ds = vf_ds
+        self.vb_ds = vb_ds
+
+        self.xs_obs = xs_obs
+        self.ys_obs = ys_obs
+        self.us_obs = us_obs
+
         self.cov_matrix = cov_matrix
 
 
@@ -66,8 +79,10 @@ class LoggingDataV1:
 def bundle_data():
     global index
 
-    bundle = LoggingDataV3(ts_store[:index], xs_store[:index], us_controller_store[:index], xs_estimated_store[:index],
-                           us_noisy_input_store[:index], ys_noisy_output_store[:index], cov_matrix_store[:index])
+    bundle = LoggingDataV3(ts_store[:index], xs_store[:index], us_store[:index],
+                           phi_ds_store[:index], eps_ds_store[:index], lamb_ds_store[:index],
+                           vf_ds_store[:index], vb_ds_store[:index],
+                           xs_obs_store[:index], us_obs_store[:index], ys_obs_store[:index], cov_matrix_store[:index])
 
     return bundle
 
@@ -94,41 +109,52 @@ def load_bundle(path):
         return pickle.load(file)
 
 
-def add_planner(planner_travel, planner_elevation):
-    global planner_travel_g, planner_elevation_g
-    planner_travel_g = planner_travel
-    planner_elevation_g = planner_elevation
-
-
-def add_frame(t, x, u_controller, x_estimated_state,
-              us_noisy_input, ys_noisy_output, cov_matrix):
+def add_frame(t, x, u, phi_d, eps_d, lamb_d, vf_d, vb_d, x_obs, u_obs, y_obs, cov_matrix):
     global current_size, index
 
     if index == current_size:
         current_size += chunk_size
         ts_store.resize(current_size, refcheck=False)
         xs_store.resize((current_size, 8), refcheck=False)
-        xs_estimated_store.resize((current_size, 8), refcheck=False)
-        us_controller_store.resize((current_size, 2), refcheck=False)
-        ys_noisy_output_store.resize((current_size, 5), refcheck=False)
-        us_noisy_input_store.resize((current_size, 2), refcheck=False)
+        us_store.resize((current_size, 2), refcheck=False)
+
+        # Choose the size of the trajectory stores based on the dimension of the current vector
+        phi_ds_store.resize((current_size, phi_d.shape[0]), refcheck=False)
+        eps_ds_store.resize((current_size, eps_d.shape[0]), refcheck=False)
+        lamb_ds_store.resize((current_size, lamb_d.shape[0]), refcheck=False)
+        vf_ds_store.resize((current_size, vf_d.shape[0]), refcheck=False)
+        vb_ds_store.resize((current_size, vb_d.shape[0]), refcheck=False)
+
+        xs_obs_store.resize((current_size, 8), refcheck=False)
+        ys_obs_store.resize((current_size, 5), refcheck=False)
+        us_obs_store.resize((current_size, 2), refcheck=False)
+
         cov_matrix_store.resize((current_size, 8, 8), refcheck=False)
 
     ts_store[index] = t
     xs_store[index] = x
-    xs_estimated_store[index] = x_estimated_state
-    us_controller_store[index] = u_controller
-    ys_noisy_output_store[index] = ys_noisy_output
-    us_noisy_input_store[index] = us_noisy_input
+    us_store[index] = u
+
+    phi_ds_store[index] = phi_d
+    eps_ds_store[index] = eps_d
+    lamb_ds_store[index] = lamb_d
+    vf_ds_store[index] = vf_d
+    vb_ds_store[index] = vb_d
+
+    xs_obs_store[index] = x_obs
+    ys_obs_store[index] = y_obs
+    us_obs_store[index] = u_obs
+
     cov_matrix_store[index] = cov_matrix
 
     index += 1
 
 
 def reset():
-    global index
+    global index, current_size
 
     index = 0
+    current_size = 0
 
 
 def show_plots():
@@ -138,27 +164,7 @@ def show_plots():
 
 
 def process(bundle: LoggingDataV3):
-    ts = bundle.ts
-    xs = bundle.xs
-    us_controller = bundle.us_controller
-    e_traj_and_derivatives = bundle.e_traj_and_derivatives
-    lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
-    xs_estimated_state = bundle.xs_estimated_state
-    us_noisy_input = bundle.us_noisy_input
-    ys_noisy_output = bundle.ys_noisy_output
-    cov_matrix = bundle.cov_matrix
-
     # Your data processing code goes here
-
-    # fig = plt.figure()
-    # ax1 = fig.add_subplot(211)
-    # ax2 = fig.add_subplot(212)
-    # trav = planner_travel_g.eval_vec(ts)[:, 0]
-    # elev = planner_elevation_g.eval_vec(ts)[:, 0]
-    # ax1.plot(ts, trav)
-    # ax2.plot(ts, elev)
-    # ax1.grid()
-    # plt.show()
 
     # plotMoments(bundle)
 
@@ -168,7 +174,7 @@ def process(bundle: LoggingDataV3):
 
     # plotInputs(bundle)
 
-    plotObserver(bundle)
+    # plotObserver(bundle)
 
     plt.show()
 
@@ -225,6 +231,7 @@ def plotValidation(bundle):
     plt.plot(ts, dde / np.pi * 180.0)
     plt.plot(ts, ddlamb / np.pi * 180.0)
     plt.legend(['ddp', 'dde', 'ddlamb'])
+
 
 def plotMoments(bundle):
     # figures to show the influence of all moments
@@ -322,26 +329,25 @@ def plotInputs(bundle):
 def plotBasics(bundle):
     ts = bundle.ts
     xs = bundle.xs
-    us_controller = bundle.us_controller
-    e_traj_and_derivatives = bundle.e_traj_and_derivatives
-    lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
+    us = bundle.us
+    phi_ds = bundle.phi_ds
+    eps_ds = bundle.eps_ds
+    lamb_ds = bundle.lamb_ds
 
     fig = custom_figure("Joint angles (deg)")
-    p_traj = np.array([get_p_and_first_derivative(ModelType.CENTRIPETAL, e, l)[0] for (e, l) in
-                       zip(e_traj_and_derivatives, lambda_traj_and_derivatives)])
-    plt.plot(ts, xs[:, 0] / np.pi * 180.0, label="p")
-    plt.plot(ts, p_traj / np.pi * 180.0, label="p_traj")
-    plt.plot(ts, xs[:, 1] / np.pi * 180.0, label="e")
-    plt.plot(ts, e_traj_and_derivatives[:, 0] / np.pi * 180.0, label="e_traj")
-    plt.plot(ts, xs[:, 2] / np.pi * 180.0, label="lambda")
-    plt.plot(ts, lambda_traj_and_derivatives[:, 0] / np.pi * 180.0, label="lambda_traj")
+    plt.plot(ts, xs[:, 0]/deg, label="phi")
+    plt.plot(ts, phi_ds[:, 0]/deg, label="phi_d")
+    plt.plot(ts, xs[:, 1]/deg, label="eps")
+    plt.plot(ts, eps_ds[:, 0]/deg, label="eps_d")
+    plt.plot(ts, xs[:, 2]/deg, label="lamb")
+    plt.plot(ts, lamb_ds[:, 0]/deg, label="lamb_d")
     plt.legend()
 
     fig = custom_figure("Joint velocity (deg/s)")
-    plt.plot(ts, xs[:, 3] / np.pi * 180.0)
-    plt.plot(ts, xs[:, 4] / np.pi * 180.0)
-    plt.plot(ts, xs[:, 5] / np.pi * 180.0)
-    plt.legend(['dp', 'de', 'dlambda'])
+    plt.plot(ts, xs[:, 3]/deg)
+    plt.plot(ts, xs[:, 4]/deg)
+    plt.plot(ts, xs[:, 5]/deg)
+    plt.legend(['dphi', 'deps', 'dlamb'])
 
     fig = custom_figure("Motorumdrehungen")
     plt.plot(ts, xs[:, 6], "-.", label=r"f (1/s)")
@@ -361,8 +367,8 @@ def plotBasics(bundle):
 
     fig = custom_figure("Motorspannungen")
     ax1 = fig.add_subplot(111)
-    ax1.plot(ts, us_controller[:, 0], label=r"Vf ohne Rauschen (V)")
-    ax1.plot(ts, us_controller[:, 1], label=r"Vf ohne Rauschen (V)")
+    ax1.plot(ts, us[:, 0], label=r"Vf ohne Rauschen (V)")
+    ax1.plot(ts, us[:, 1], label=r"Vf ohne Rauschen (V)")
     plt.xlabel("Zeit (s)")
     plt.ylabel("Motorspannung")
     plt.title("Systemeingang mit und ohne Rauschen")
