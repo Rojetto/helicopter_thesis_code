@@ -1,8 +1,9 @@
 from ParameterFrame import ParameterizedClass
+from abc import ABC
 
 
-class AbstractController(ParameterizedClass):
-    def initialize(self, param_value_dict):
+class AbstractController(ParameterizedClass, ABC):
+    def initialize(self, trajectory):
         raise NotImplementedError
 
     def control(self, t, x):

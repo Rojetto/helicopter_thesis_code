@@ -12,9 +12,12 @@ class ManualController(AbstractController):
             "Vb": ParamFloatArray([self.Vb])
         })
 
-    def control(self, t, x, e_traj, lambda_traj):
+    def control(self, t, x):
         return [self.Vf, self.Vb]
 
-    def initialize(self, param_value_dict):
+    def set_params(self, param_value_dict):
         self.Vf = param_value_dict["Vf"][0]
         self.Vb = param_value_dict["Vb"][0]
+
+    def initialize(self, trajectory):
+        pass

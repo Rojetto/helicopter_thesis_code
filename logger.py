@@ -28,13 +28,10 @@ planner_elevation_g = 0
 
 
 class LoggingDataV3:
-    def __init__(self, ts, xs, us_controller, e_traj_and_derivatives, lambda_traj_and_derivatives,
-                 xs_estimated_state, us_noisy_input, ys_noisy_output, cov_matrix):
+    def __init__(self, ts, xs, us_controller, xs_estimated_state, us_noisy_input, ys_noisy_output, cov_matrix):
         self.ts = ts
         self.xs = xs
         self.us_controller = us_controller
-        self.e_traj_and_derivatives = e_traj_and_derivatives
-        self.lambda_traj_and_derivatives = lambda_traj_and_derivatives
         self.xs_estimated_state = xs_estimated_state
         self.ys_noisy_output = ys_noisy_output
         self.us_noisy_input = us_noisy_input
@@ -69,8 +66,7 @@ class LoggingDataV1:
 def bundle_data():
     global index
 
-    bundle = LoggingDataV3(ts_store[:index], xs_store[:index], us_controller_store[:index],
-                           e_traj_store[:index], lambda_traj_store[:index], xs_estimated_store[:index],
+    bundle = LoggingDataV3(ts_store[:index], xs_store[:index], us_controller_store[:index], xs_estimated_store[:index],
                            us_noisy_input_store[:index], ys_noisy_output_store[:index], cov_matrix_store[:index])
 
     return bundle
@@ -104,7 +100,7 @@ def add_planner(planner_travel, planner_elevation):
     planner_elevation_g = planner_elevation
 
 
-def add_frame(t, x, u_controller, e_traj_and_derivatives, lambda_traj_and_derivatives, x_estimated_state,
+def add_frame(t, x, u_controller, x_estimated_state,
               us_noisy_input, ys_noisy_output, cov_matrix):
     global current_size, index
 
@@ -114,8 +110,6 @@ def add_frame(t, x, u_controller, e_traj_and_derivatives, lambda_traj_and_deriva
         xs_store.resize((current_size, 8), refcheck=False)
         xs_estimated_store.resize((current_size, 8), refcheck=False)
         us_controller_store.resize((current_size, 2), refcheck=False)
-        e_traj_store.resize((current_size, 5), refcheck=False)
-        lambda_traj_store.resize((current_size, 5), refcheck=False)
         ys_noisy_output_store.resize((current_size, 5), refcheck=False)
         us_noisy_input_store.resize((current_size, 2), refcheck=False)
         cov_matrix_store.resize((current_size, 8, 8), refcheck=False)
@@ -126,8 +120,6 @@ def add_frame(t, x, u_controller, e_traj_and_derivatives, lambda_traj_and_deriva
     us_controller_store[index] = u_controller
     ys_noisy_output_store[index] = ys_noisy_output
     us_noisy_input_store[index] = us_noisy_input
-    e_traj_store[index] = e_traj_and_derivatives
-    lambda_traj_store[index] = lambda_traj_and_derivatives
     cov_matrix_store[index] = cov_matrix
 
     index += 1

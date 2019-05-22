@@ -74,7 +74,7 @@ class mainWindow(QtWidgets.QMainWindow):
         joystick_widget = JoystickWidget()
         joystick_window.setCentralWidget(joystick_widget)
         joystick_window.resize(400, 400)
-        joystick_window.show()
+        #joystick_window.show()
 
         # Initialize helicopter model
         self.heliModel = HelicopterModel()
@@ -202,8 +202,7 @@ class mainWindow(QtWidgets.QMainWindow):
         self.observer = None
         self.observer_initial_value = np.zeros(8)
 
-        # Get the current trajectory planner
-        self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
+        self.trajectory = None
 
         # Show the window
         self.show()
@@ -233,16 +232,14 @@ class mainWindow(QtWidgets.QMainWindow):
         pass
 
     def on_controller_update_button(self):
-        self.current_controller, param_values = self.controller_frame.get_selected_object_and_params()
-        self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
-        logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
-        self.current_controller.initialize(param_values)
+        self.current_controller = self.controller_frame.get_selected_object()
+        self.trajectory = self.trajectory_frame.get_trajectory()
+        self.current_controller.initialize(self.trajectory)
 
     def on_start_button(self):
-        self.current_controller, param_values = self.controller_frame.get_selected_object_and_params()
-        self.current_planner_travel, self.current_planner_elevation = self.trajectory_frame.get_planner()
-        logger.add_planner(self.current_planner_travel, self.current_planner_elevation)
-        self.current_controller.initialize(param_values)
+        self.current_controller = self.controller_frame.get_selected_object()
+        self.trajectory = self.trajectory_frame.get_trajectory()
+        self.current_controller.initialize(self.trajectory)
         self.disturbance = self.disturbance_frame.get_disturbance()
         self.observer = self.observer_frame.get_observer(self.timeStep)
         self.observer.set_system_model_and_step_size(self.heliSim.get_model_type(), self.timeStep)
@@ -280,19 +277,11 @@ class mainWindow(QtWidgets.QMainWindow):
             x = self.heliSim.get_current_state()
             # Get feed-forward output
             # feed_forward_method = self.controller_frame.get_selected_feed_forward_method()
-            e_and_derivatives = self.current_planner_elevation.eval(t)
-            lambda_and_derivatives = self.current_planner_travel.eval(t)
-            # The trajectory planners emit degrees, so we need to convert to rad
-            e_and_derivatives = e_and_derivatives / 180 * np.pi
-            lambda_and_derivatives = lambda_and_derivatives / 180 * np.pi
             # get current disturbance
             current_disturbance = self.disturbance.eval(t)
 
             # Get controller output
-            if not val.validation_enabled:
-                Vf_controller, Vb_controller = self.current_controller.control(t, x, e_and_derivatives, lambda_and_derivatives)
-            else:
-                Vf_controller, Vb_controller = val.convV(val.calcInputs_numeric(dl=val.dl, e=val.e, rad=False))[0:2]
+            Vf_controller, Vb_controller = self.current_controller.control(t, x)
 
             Vf = Vf_controller
             Vb = Vb_controller
@@ -300,8 +289,7 @@ class mainWindow(QtWidgets.QMainWindow):
             x_estimated_state, noisy_input, noisy_output, cov_matrix = self.observer.calc_observation(t, x, [Vf, Vb])
             # Log data
             if self.log_enabled:
-                logger.add_frame(t, x, [Vf_controller, Vb_controller],
-                                 e_and_derivatives, lambda_and_derivatives, x_estimated_state, noisy_input,
+                logger.add_frame(t, x, [Vf_controller, Vb_controller], x_estimated_state, noisy_input,
                                  noisy_output, cov_matrix)
             # Calculate next simulation step
             p, e, lamb, dp, de, dlamb, f_speed, b_speed = self.heliSim.calc_step(Vf, Vb, current_disturbance)
@@ -311,16 +299,10 @@ class mainWindow(QtWidgets.QMainWindow):
             # it doesn't make such a big difference
             self.heliModelEst.setState(x_estimated_state[2], x_estimated_state[1], x_estimated_state[0])
         else:
-            if not val.validation_enabled:
-                orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])
-                orientation = orientation / 180.0 * np.pi
-                self.heliModel.setState(orientation[2], orientation[1], orientation[0])
-                self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], 0, 0, 0, 0, 0])
-            else:
-                p = val.calcInputs_numeric(val.dl, val.e, rad=False)[2]
-                orientation = np.array([p, val.e, 0, 0, 0, val.dl, 0, 0])/ 180.0 * np.pi
-                self.heliModel.setState(orientation[2], orientation[1], orientation[0])
-                self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], orientation[3], orientation[4], orientation[5], orientation[6], orientation[7]])
+            orientation = np.array([self.init_pitch_edit.value(), self.init_elevation_edit.value(), self.init_travel_edit.value()])
+            orientation = orientation / 180.0 * np.pi
+            self.heliModel.setState(orientation[2], orientation[1], orientation[0])
+            self.heliSim.set_current_state_and_time([orientation[0], orientation[1], orientation[2], 0, 0, 0, 0, 0])
 
         # # handle vtk camera
         # pos = self.vtk_camera.GetPosition()

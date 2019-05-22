@@ -1,5 +1,6 @@
 from typing import List
 from PyQt5 import QtWidgets
+from abc import ABC
 
 
 class ParamBool:
@@ -19,12 +20,12 @@ class ParamEnum:
         self.init_value = init_value
 
 
-class ParameterizedClass:
+class ParameterizedClass(ABC):
     def __init__(self, name, param_definition_dict):
         self.name = name
         self.param_definition_dict = param_definition_dict
 
-    def initialize(self, param_value_dict):
+    def set_params(self, param_value_dict):
         raise NotImplementedError
 
 
@@ -105,7 +106,7 @@ class ParameterFrame(QtWidgets.QFrame):
     def on_object_combo_select(self):
         self.object_frame_stack.setCurrentIndex(self.object_combo.currentIndex())
 
-    def get_selected_object_and_params(self):
+    def get_selected_object(self):
         object_i = self.object_combo.currentIndex()
         selected_object = self.objects[object_i]
         param_dict = self.object_param_dicts_with_widgets[object_i]
@@ -124,4 +125,5 @@ class ParameterFrame(QtWidgets.QFrame):
 
             param_values[param_name] = value
 
-        return selected_object, param_values
+        selected_object.set_params(param_values)
+        return selected_object
