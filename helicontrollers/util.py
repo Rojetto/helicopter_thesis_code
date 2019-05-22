@@ -280,7 +280,7 @@ def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_
     di2 = dd2 + de_2 + df2 + dg2
     dj2 = dc2 * i + 2*dc1*di1 + c * di2
 
-    A =  h / j
+    A = h / j
     dA1 = (dh1 * j - h * dj1) / (j ** 2)
     dA2 = ((dh2 * j - h * dj2) * j - (dh1 * j - h * dj1) * 2 * dj1) / (j**3)
 
