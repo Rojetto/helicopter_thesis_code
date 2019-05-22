@@ -46,16 +46,14 @@ class MatlabController(AbstractController):
 
         super().__init__(f"{matlab_class_name} (MATLAB)", param_definition_dict)
 
-    def control(self, t, x, e_traj, lambda_traj):
+    def control(self, t, x):
         x = matlab.double(list(x))
-        e_traj = matlab.double(list(e_traj))
-        lambda_traj = matlab.double(list(lambda_traj))
 
         u = [0.0, 0.0]
 
         if self.matlab_controller is not None:
             try:
-                matlab_result = MatlabController.matlab_engine.control(self.matlab_controller, t, x, e_traj, lambda_traj)
+                matlab_result = MatlabController.matlab_engine.control(self.matlab_controller, t, x)
                 Vf = matlab_result[0][0]
                 Vb = matlab_result[1][0]
                 u = [Vf, Vb]
@@ -66,9 +64,7 @@ class MatlabController(AbstractController):
 
         return u
 
-    def initialize(self, param_value_dict):
-        self.matlab_errored = False
-
+    def set_params(self, param_value_dict):
         if MatlabController.matlab_engine is not None:
             self.matlab_controller = getattr(MatlabController.matlab_engine, self.matlab_class_name)()
 
@@ -82,7 +78,20 @@ class MatlabController(AbstractController):
                 flat += [name, matlab_value]
 
             MatlabController.matlab_engine.setAllParameters(self.matlab_controller, flat, nargout=0)
+
+    def initialize(self, trajectory):
+        self.matlab_errored = False
+
+        if MatlabController.matlab_engine is not None:
+            self.matlab_controller = getattr(MatlabController.matlab_engine, self.matlab_class_name)()
+            t_d = matlab.double(trajectory.t.tolist())
+            phi_d = matlab.double(trajectory.phi.tolist())
+            eps_d = matlab.double(trajectory.eps.tolist())
+            lamb_d = matlab.double(trajectory.lamb.tolist())
+            vf_d = matlab.double(trajectory.vf.tolist())
+            vb_d = matlab.double(trajectory.vb.tolist())
+
             try:
-                MatlabController.matlab_engine.initialize(self.matlab_controller, nargout=0)
+                MatlabController.matlab_engine.initialize(self.matlab_controller, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d, nargout=0)
             except matlab.engine.MatlabExecutionError as e:
                 print(f"Error while executing MATLAB controller initialization code:\n{str(e)}")

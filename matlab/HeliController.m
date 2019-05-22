@@ -1,10 +1,11 @@
 classdef (Abstract) HeliController < matlab.System ...
         & matlab.system.mixin.SampleTime ...
-        & matlab.system.mixin.Propagates    
+        & matlab.system.mixin.Propagates
+    
     methods (Abstract)
-        initialize(obj)
+        initialize(obj, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
         
-        control(obj, t, x, elevation_traj, lambda_traj)
+        control(obj, t, x)
     end
     
     methods
@@ -33,13 +34,13 @@ classdef (Abstract) HeliController < matlab.System ...
     end
     
     methods (Access = protected)
-        function setupImpl(obj)
-            obj.initialize()
+        function setupImpl(obj, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d) %#ok<*INUSL>
+            obj.initialize(t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
         end
         
-        function u = stepImpl(obj, x, elevation_traj, lambda_traj)
+        function u = stepImpl(obj, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d) %#ok<INUSD>
             t = obj.getCurrentTime();
-            u = obj.control(t, x, elevation_traj, lambda_traj);
+            u = obj.control(t, x);
         end
         
         function [out1] = isOutputFixedSizeImpl(~)
@@ -58,10 +59,14 @@ classdef (Abstract) HeliController < matlab.System ...
             out1 = 'double';
         end
     
-        function [x_name, etraj_name, ltraj_name] = getInputNamesImpl(~)
-            x_name = 'State';
-            etraj_name = 'Elevation';
-            ltraj_name = 'Travel';
+        function [in1, in2, in3, in4, in5, in6, in7] = getInputNamesImpl(~)
+            in1 = 'State';
+            in2 = 'Traj Time';
+            in3 = 'Traj Phi';
+            in4 = 'Traj Eps';
+            in5 = 'Traj Lamb';
+            in6 = 'Traj Vf';
+            in7 = 'Traj Vb';
         end
         
         function [out_name] = getOutputNamesImpl(~)

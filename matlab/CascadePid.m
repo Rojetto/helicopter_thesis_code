@@ -4,6 +4,8 @@ classdef CascadePid < HeliController
         elevation_pid
         travel_pitch_pid
         pitch_vd_pid
+        
+        trajectory
     end
     
     properties (Nontunable)
@@ -22,13 +24,19 @@ classdef CascadePid < HeliController
             obj.pitch_vd_pid = pidAlgorithm(zeros(3,1));
         end
 
-        function initialize(obj)
+        function initialize(obj, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+            obj.trajectory = Trajectory(t_d, phi_d, eps_d, lamb_d, vf_d, vb_d);
+            
             obj.elevation_pid.gains = obj.elevation_pid_gains;
             obj.travel_pitch_pid.gains = obj.travel_pitch_pid_gains;
             obj.pitch_vd_pid.gains = obj.pitch_vd_pid_gains;
         end
         
-        function u = control(obj, t, x, elevation_traj, lambda_traj)
+        function u = control(obj, t, x)
+            traj_eval = obj.trajectory.eval(t);
+            elevation_traj = traj_eval.eps;
+            lambda_traj = traj_eval.lamb;
+            
             e_error = x(2) - elevation_traj(1);
             delta_ws_d = - obj.elevation_pid.compute(t, e_error, x(5));
 
@@ -43,8 +51,8 @@ classdef CascadePid < HeliController
             delta_wf_d = (delta_ws_d + delta_wd_d) / 2;
             delta_wb_d = (delta_ws_d - delta_wd_d) / 2;
 
-            Vf = delta_wf_d;
-            Vb = delta_wb_d;
+            Vf = traj_eval.vf(1) + delta_wf_d;
+            Vb = traj_eval.vb(1) + delta_wb_d;
 
             u = [Vf; Vb];
         end
