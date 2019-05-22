@@ -1,9 +1,11 @@
 from ParameterFrame import ParameterFrame, ParameterizedClass, ParamFloatArray, ParamBool
 from Trajectory import Trajectory
-from numpy import array, linspace, zeros, empty
+from numpy import array, linspace, zeros, empty, pi
 from helicontrollers.util import compute_feed_forward_static, compute_pitch_and_inputs_flatness_centripetal
 from abc import ABC
 from Planner import PolynomialPlanner
+
+deg = pi / 180
 
 
 class TrajectoryFrame(ParameterFrame):
@@ -31,17 +33,17 @@ class TypeOperatingPoint(TrajectoryType):
         })
 
     def set_params(self, param_value_dict):
-        self.travel = param_value_dict["Travel"]
-        self.elevation = param_value_dict["Elevation"]
+        self.travel = param_value_dict["Travel"][0]
+        self.elevation = param_value_dict["Elevation"][0]
 
     def generate(self):
         t = array([0.0])
-        phi = array([0.0])
-        eps = array([self.elevation])
-        lamb = array([self.travel])
-        vf, vb = compute_feed_forward_static(eps, lamb)
-        vf = array([vf])
-        vb = array([vb])
+        phi = array([[0.0]])
+        eps = array([[self.elevation * deg]])
+        lamb = array([[self.travel * deg]])
+        vf, vb = compute_feed_forward_static(eps[0], lamb[0])
+        vf = array([[vf]])
+        vb = array([[vb]])
 
         return Trajectory(t, phi, eps, lamb, vf, vb)
 
@@ -73,16 +75,16 @@ class TypePolynomialFlatness(TrajectoryType):
 
     def generate(self):
         elevation_d_start = zeros(self.derivative_order + 1)
-        elevation_d_start[0] = self.elevation_start
+        elevation_d_start[0] = self.elevation_start * deg
 
         elevation_d_end = zeros(self.derivative_order + 1)
-        elevation_d_end[0] = self.elevation_end
+        elevation_d_end[0] = self.elevation_end * deg
 
         travel_d_start = zeros(self.derivative_order + 1)
-        travel_d_start[0] = self.travel_start
+        travel_d_start[0] = self.travel_start * deg
 
         travel_d_end = zeros(self.derivative_order + 1)
-        travel_d_end[0] = self.travel_end
+        travel_d_end[0] = self.travel_end * deg
 
         elevation_planner = PolynomialPlanner(elevation_d_start, elevation_d_end, 0.0, self.t_end, self.derivative_order)
         travel_planner = PolynomialPlanner(travel_d_start, travel_d_end, 0.0, self.t_end, self.derivative_order)
