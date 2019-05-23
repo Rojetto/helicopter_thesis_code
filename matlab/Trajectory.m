@@ -1,4 +1,4 @@
-classdef Trajectory < handle
+classdef Trajectory
     properties
         t
         phi

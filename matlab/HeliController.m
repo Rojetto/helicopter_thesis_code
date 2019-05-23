@@ -2,6 +2,10 @@ classdef (Abstract) HeliController < matlab.System ...
         & matlab.system.mixin.SampleTime ...
         & matlab.system.mixin.Propagates
     
+    properties (Access=private)
+        is_initialized = false
+    end
+    
     methods (Abstract)
         initialize(obj, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
         
@@ -31,14 +35,24 @@ classdef (Abstract) HeliController < matlab.System ...
                 out{i*2} = prop_value;
             end
         end
+        
+        function initializeWithIndividualArguments(obj, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+            trajectory = Trajectory(t_d, phi_d, eps_d, lamb_d, vf_d, vb_d);
+            obj.initialize(trajectory)
+        end
     end
     
     methods (Access = protected)
-        function setupImpl(obj, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d) %#ok<*INUSL>
-            obj.initialize(t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+        function setupImpl(obj, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+            
         end
         
-        function u = stepImpl(obj, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d) %#ok<INUSD>
+        function u = stepImpl(obj, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+            if ~obj.is_initialized
+                obj.initializeWithIndividualArguments(t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+                obj.is_initialized = true;
+            end
+            
             t = obj.getCurrentTime();
             u = obj.control(t, x);
         end

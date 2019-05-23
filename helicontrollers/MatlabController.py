@@ -92,6 +92,6 @@ class MatlabController(AbstractController):
             vb_d = matlab.double(trajectory.vb.tolist())
 
             try:
-                MatlabController.matlab_engine.initialize(self.matlab_controller, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d, nargout=0)
+                MatlabController.matlab_engine.initializeWithIndividualArguments(self.matlab_controller, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d, nargout=0)
             except matlab.engine.MatlabExecutionError as e:
                 print(f"Error while executing MATLAB controller initialization code:\n{str(e)}")

@@ -22,10 +22,12 @@ classdef CascadePid < HeliController
             obj.elevation_pid = pidAlgorithm(zeros(3,1));
             obj.travel_pitch_pid = pidAlgorithm(zeros(3,1));
             obj.pitch_vd_pid = pidAlgorithm(zeros(3,1));
+            
+            obj.trajectory = Trajectory([], [], [], [], [], []);
         end
 
-        function initialize(obj, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
-            obj.trajectory = Trajectory(t_d, phi_d, eps_d, lamb_d, vf_d, vb_d);
+        function initialize(obj, trajectory)
+            obj.trajectory = trajectory;
             
             obj.elevation_pid.gains = obj.elevation_pid_gains;
             obj.travel_pitch_pid.gains = obj.travel_pitch_pid_gains;
