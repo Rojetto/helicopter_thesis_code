@@ -38,9 +38,9 @@ class TypeOperatingPoint(TrajectoryType):
 
     def generate(self):
         t = array([0.0])
-        phi = array([[0.0]])
-        eps = array([[self.elevation * deg]])
-        lamb = array([[self.travel * deg]])
+        phi = array([[0.0, 0.0]])
+        eps = array([[self.elevation * deg, 0.0]])
+        lamb = array([[self.travel * deg, 0.0]])
         vf, vb = compute_feed_forward_static(eps[0], lamb[0])
         vf = array([[vf]])
         vb = array([[vb]])
