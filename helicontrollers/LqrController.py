@@ -16,6 +16,8 @@ class LqrController(AbstractController):
         self.feedback_computed = False
         self.time_variant_feedback = False
 
+        self.trajectory = None
+
         super().__init__("LQR", {
             "Model type": ParamEnum(["Simple", "Friction", "Centripetal", "Full"],
                                     [ModelType.EASY, ModelType.FRICTION, ModelType.CENTRIPETAL, ModelType.NO_SIMPLIFICATIONS],
@@ -25,22 +27,29 @@ class LqrController(AbstractController):
             "diag(R)": ParamFloatArray(np.diag(self.R))
         })
 
-    def control(self, t, x, e_traj, lambda_traj):
+    def control(self, t, x):
+        traj_eval = self.trajectory.eval(t)
+
         if self.time_variant_feedback or not self.feedback_computed:
-            self.K = self.compute_feedback_matrix(e_traj[0])
+            self.K = self.compute_feedback_matrix(traj_eval.eps[0])
             self.feedback_computed = True
 
-        Vf_op, Vb_op = compute_feed_forward_static(e_traj, lambda_traj)
-        x_op = np.array([0, e_traj[0], lambda_traj[0], 0, 0, 0, Vf_op, Vb_op])
+        Vf_op = traj_eval.vf[0]
+        Vb_op = traj_eval.vb[0]
+        u_op = np.array([Vf_op, Vb_op])
+        x_op = np.array([0, traj_eval.eps[0], traj_eval.lamb[0], 0, 0, 0, Vf_op, Vb_op])
 
-        u = - self.K @ (x - x_op)
+        u = u_op - self.K @ (x - x_op)
         return u
 
-    def initialize(self, param_value_dict):
+    def set_params(self, param_value_dict):
         self.model_type = param_value_dict["Model type"]
         self.Q = np.diag(param_value_dict["diag(Q)"])
         self.R = np.diag(param_value_dict["diag(R)"])
         self.time_variant_feedback = param_value_dict["Time variant feedback"]
+
+    def initialize(self, trajectory):
+        self.trajectory = trajectory
         self.feedback_computed = False
 
     def compute_feedback_matrix(self, e_op):
