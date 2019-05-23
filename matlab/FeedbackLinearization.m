@@ -4,6 +4,8 @@ classdef FeedbackLinearization < HeliController
         front_rotor_pid
         back_rotor_pid
         c
+        
+        trajectory
     end
 
     properties (Nontunable, Logical)
@@ -30,20 +32,27 @@ classdef FeedbackLinearization < HeliController
             obj.back_rotor_pid = pidAlgorithm(zeros(3,1));
 
             obj.c = Constants();
+            obj.trajectory = Trajectory([], [], [], [], [], []);
         end
 
-        function initialize(obj)
+        function initialize(obj, trajectory)
             obj.front_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
             obj.front_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
+            
+            obj.trajectory = trajectory;
         end
         
-        function u = control(obj, t, x, e_traj, lambda_traj)
+        function u = control(obj, t, x)
             p = x(1);
             e = x(2);
             l = x(3);
             dp = x(4);
             de = x(5);
             dl = x(6);
+            
+            traj_eval = obj.trajectory.eval(t);
+            e_traj = traj_eval.eps;
+            lambda_traj = traj_eval.lamb;
 
             if obj.rotor_speed_controller
                 wf = x(7);

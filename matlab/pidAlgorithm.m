@@ -3,6 +3,7 @@ classdef pidAlgorithm < handle
         gains
         ix
         last_t
+        has_last_x
         last_x
     end
     
@@ -11,7 +12,8 @@ classdef pidAlgorithm < handle
             obj.gains = gains;
             obj.ix = 0.0;
             obj.last_t = 0.0;
-            obj.last_x = [];
+            obj.has_last_x = false;
+            obj.last_x = 0.0;
         end
         
         function out = compute(obj, t, x, dx)
@@ -22,12 +24,13 @@ classdef pidAlgorithm < handle
             
             obj.last_t = t;
             obj.last_x = x;
+            obj.has_last_x = true;
         end
         
         function out = compute_fd(obj, t, x)
             dt = t - obj.last_t;
             
-            if isempty(obj.last_x)
+            if ~obj.has_last_x
                 dx = 0;
             else
                 dx = (x - obj.last_x) / dt;
