@@ -83,7 +83,6 @@ class MatlabController(AbstractController):
         self.matlab_errored = False
 
         if MatlabController.matlab_engine is not None:
-            self.matlab_controller = getattr(MatlabController.matlab_engine, self.matlab_class_name)()
             t_d = matlab.double(trajectory.t.tolist())
             phi_d = matlab.double(trajectory.phi.tolist())
             eps_d = matlab.double(trajectory.eps.tolist())
