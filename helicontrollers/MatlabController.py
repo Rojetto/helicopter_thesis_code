@@ -33,12 +33,13 @@ class MatlabController(AbstractController):
 
                     if type(value) is float:
                         definition = ParamFloatArray([value])
-                    elif type(value) is matlab.double:
+                    elif type(value) is matlab.double and (value.size[0] == 1 or value.size[1] == 1):
                         definition = ParamFloatArray(list(value[0]))
                     elif type(value) is bool:
                         definition = ParamBool(value)
                     else:
-                        raise RuntimeError(f"Unable to create control for parameter of type {type(value)}")
+                        print(f"Unable to create control for parameter {self.matlab_class_name}.{name} of type {type(value)}")
+                        continue
 
                     param_definition_dict[name] = definition
             except matlab.engine.EngineError as e:
