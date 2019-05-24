@@ -110,7 +110,7 @@ def compute_linear_ss_full(x_op, u_op):
                                         - mc.d_p * dp
                                         + mc.l_p*(wf-wb)
                                         + mc.J_m * sp.cos(p) * de * (wb - wf)
-                                        + mc.J_m * sp.sin(p) * sp.cos(e) * dp * (wf - wb)
+                                        + mc.J_m * sp.sin(p) * sp.cos(e) * dl * (wf - wb)
                                         )
     dde_rhs = 1/(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2+mc.l_p**2*sp.sin(p)**2))*(
         - sp.cos(e)*sp.sin(e)*(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2-mc.l_p**2*sp.sin(p)**2))*dl**2
@@ -119,7 +119,7 @@ def compute_linear_ss_full(x_op, u_op):
         + mc.l_h*sp.cos(p)*(wf+wb)
         + sp.sin(p)*mc.K_m*(wf-wb)
         + mc.J_m * sp.cos(p) * dp * (wf - wb)
-        + mc.J_m * sp.cos(p) * sp.sin(e) * dp * (wb - wf)
+        + mc.J_m * sp.cos(p) * sp.sin(e) * dl * (wb - wf)
     )
     ddl_rhs = 1/(mc.m_c*(mc.l_c*sp.cos(e))**2+2*mc.m_p*((mc.l_h*sp.cos(e))**2+(mc.l_p*sp.sin(p)*sp.sin(e))**2+(mc.l_p*sp.cos(p))**2))*(
         mc.l_h*sp.cos(e)*sp.sin(p)*(wf+wb)
