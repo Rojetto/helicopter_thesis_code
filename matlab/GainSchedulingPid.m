@@ -4,7 +4,10 @@ classdef GainSchedulingPid < HeliController
         elevation_pid
         travel_pitch_pid
         pitch_vd_pid
-        
+
+        front_rotor_pid
+        back_rotor_pid
+
         trajectory
     end
     
@@ -18,6 +21,8 @@ classdef GainSchedulingPid < HeliController
                                   1.5, 0, 1.5]
         %pitch_vd_pid_gains Pitch-Vd PID
         pitch_vd_pid_gains = [20, 0, 2.3]
+        %k_rotor Rotor PD
+        k_rotor = [5, 0]
     end
     
     methods
@@ -25,6 +30,9 @@ classdef GainSchedulingPid < HeliController
             obj.elevation_pid = pidAlgorithm(zeros(3,1));
             obj.travel_pitch_pid = pidAlgorithm(zeros(3,1));
             obj.pitch_vd_pid = pidAlgorithm(zeros(3,1));
+
+            obj.front_rotor_pid = pidAlgorithm(zeros(3,1));
+            obj.back_rotor_pid = pidAlgorithm(zeros(3,1));
             
             obj.trajectory = Trajectory([], [], [], [], [], []);
         end
@@ -35,6 +43,9 @@ classdef GainSchedulingPid < HeliController
             obj.elevation_pid.gains = obj.elevation_pid_gains;
             obj.travel_pitch_pid.gains = obj.travel_pitch_pid_gains;
             obj.pitch_vd_pid.gains = obj.pitch_vd_pid_gains;
+
+            obj.front_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
+            obj.back_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
         end
         
         function u = control(obj, t, x)
@@ -75,8 +86,11 @@ classdef GainSchedulingPid < HeliController
             delta_wf_d = (delta_ws_d + delta_wd_d) / 2;
             delta_wb_d = (delta_ws_d - delta_wd_d) / 2;
 
-            Vf = traj_eval.vf(1) + delta_wf_d;
-            Vb = traj_eval.vb(1) + delta_wb_d;
+            wf_d = traj_eval.vf(1) + delta_wf_d;
+            wb_d = traj_eval.vb(1) + delta_wb_d;
+
+            Vf = wf_d - obj.front_rotor_pid.compute_fd(t, x(7) - wf_d);
+            Vb = wb_d - obj.back_rotor_pid.compute_fd(t, x(8) - wb_d);
 
             u = [Vf; Vb];
         end
