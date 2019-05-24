@@ -91,7 +91,7 @@ class mainWindow(QtWidgets.QMainWindow):
         controller_list = [ManualController(), PolePlacementController(),
                            LqrController(), CascadePidController(), MatlabController("CascadePid"),
                            FeedbackLinearizationController(), MatlabController("FeedbackLinearization"),
-                           MatlabController("TimeVariantLQR")]
+                           MatlabController("TimeVariantLQR"), MatlabController("GainSchedulingPid")]
 
         # GUI layout
         main_layout.addWidget(vtk_widget, 1)  # Set a stretch factor > 0 so that this widget takes all remaining space
