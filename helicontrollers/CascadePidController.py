@@ -26,21 +26,34 @@ class CascadePidController(AbstractController):
 
     def control(self, t, x):
         traj_eval = self.trajectory.eval(t)
+        phi_traj = traj_eval.phi
         eps_traj = traj_eval.eps
         lamb_traj = traj_eval.lamb
         wf_d_ff = traj_eval.vf[0]
         wb_d_ff = traj_eval.vb[0]
 
         e_error = x[1] - eps_traj[0]
-        delta_ws_d = - self.elevation_pid.compute(t, e_error, x[4])
+        if len(eps_traj) >= 2:
+            de_error = x[4] - eps_traj[1]
+        else:
+            de_error = x[4]
+        delta_ws_d = - self.elevation_pid.compute(t, e_error, de_error)
 
         # outer loop: travel --> pitch
         lambda_error = x[2] - lamb_traj[0]
-        p_op = - self.travel_pitch_pid.compute(t, lambda_error, x[5])
+        if len(lamb_traj) >= 2:
+            dlamb_error = x[5] - lamb_traj[1]
+        else:
+            dlamb_error = x[5]
+        p_op = - self.travel_pitch_pid.compute(t, lambda_error, dlamb_error)
 
         # inner loop: pitch --> Vd
         p_error = x[0] - p_op
-        delta_wd_d = - self.pitch_vd_pid.compute(t, p_error, x[3])
+        if len(phi_traj) >= 2:
+            dp_error = x[3] - phi_traj[1]
+        else:
+            dp_error = x[3]
+        delta_wd_d = - self.pitch_vd_pid.compute(t, p_error, dp_error)
 
         delta_wf_d = (delta_ws_d + delta_wd_d) / 2
         delta_wb_d = (delta_ws_d - delta_wd_d) / 2

@@ -36,19 +36,36 @@ classdef CascadePid < HeliController
         
         function u = control(obj, t, x)
             traj_eval = obj.trajectory.eval(t);
-            elevation_traj = traj_eval.eps;
-            lambda_traj = traj_eval.lamb;
+            phi_traj = traj_eval.phi;
+            eps_traj = traj_eval.eps;
+            lamb_traj = traj_eval.lamb;
             
-            e_error = x(2) - elevation_traj(1);
-            delta_ws_d = - obj.elevation_pid.compute(t, e_error, x(5));
+            
+            eps_error = x(2) - eps_traj(1);
+            if numel(eps_traj) >= 2
+                deps_error = x(5) - eps_traj(2);
+            else
+                deps_error = x(5);
+            end
+            delta_ws_d = - obj.elevation_pid.compute(t, eps_error, deps_error);
 
             % outer loop: travel --> pitch
-            lambda_error = x(3) - lambda_traj(1);
-            p_op = - obj.travel_pitch_pid.compute(t, lambda_error, x(6));
+            lamb_error = x(3) - lamb_traj(1);
+            if numel(lamb_traj) >= 2
+                dlamb_error = x(6) - lamb_traj(2);
+            else
+                dlamb_error = x(6);
+            end
+            phi_op = - obj.travel_pitch_pid.compute(t, lamb_error, dlamb_error);
 
             % inner loop: pitch --> Vd
-            p_error = x(1) - p_op;
-            delta_wd_d = - obj.pitch_vd_pid.compute(t, p_error, x(4));
+            phi_error = x(1) - phi_op;
+            if numel(phi_traj) >= 2
+                dphi_error = x(4) - phi_traj(2);
+            else
+                dphi_error = x(4);
+            end
+            delta_wd_d = - obj.pitch_vd_pid.compute(t, phi_error, dphi_error);
 
             delta_wf_d = (delta_ws_d + delta_wd_d) / 2;
             delta_wb_d = (delta_ws_d - delta_wd_d) / 2;
