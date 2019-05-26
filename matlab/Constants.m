@@ -35,7 +35,7 @@ classdef Constants
         function obj = Constants()
             obj.m_m = 0.2 * obj.m_p;
             obj.r_m = obj.l_p / 8;
-            obj.J_m = 0.5 * obj.m_m * obj.r_m^2
+            obj.J_m = 0.5 * obj.m_m * obj.r_m^2;
 
             obj.L1 = obj.l_p;
             obj.L2 = obj.g * (obj.l_c * obj.m_c - 2 * obj.l_h * obj.m_p);
