@@ -1,8 +1,6 @@
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets
 import numpy as np
-import Planner
-from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus, DisturbanceRect, NoDisturbance
-import Observer
+from observer import Observer
 from ModelConstants import ModelType
 
 
@@ -346,8 +344,8 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
                                                dp_cov_init, de_cov_init, dlamb_cov_init])
 
             observer = Observer.LinearKalmanFilterWithLimits(init_state_vector, init_cov_matrix, model_type, e_op,
-                                                   nOutputs, stepSize, input_matrix_variance, output_matrix_variance,
-                                                   input_noise_variance, output_noise_variance)
+                                                             nOutputs, stepSize, input_matrix_variance, output_matrix_variance,
+                                                             input_noise_variance, output_noise_variance)
 
             observer.set_should_limit(should_check_limits)
             observer.set_dynamic_inertia(dynamic_inertia)
@@ -406,14 +404,14 @@ class ObserverSettingsFrame(QtWidgets.QFrame):
             if model_type == ModelType.GYROMOMENT:
                 if nOutputs == 5:
                     observer = Observer.ExtKalmanFilterGyroModelLimits(init_state_vector, init_cov_matrix,
-                                                                        stepSize, input_matrix_variance,
-                                                                        output_matrix_variance,
-                                                                        input_noise_variance, output_noise_variance)
-                elif nOutputs == 3:
-                    observer = Observer.ExtKalmanFilterGyroModelLimitsOnly3(init_state_vector, init_cov_matrix,
                                                                        stepSize, input_matrix_variance,
                                                                        output_matrix_variance,
                                                                        input_noise_variance, output_noise_variance)
+                elif nOutputs == 3:
+                    observer = Observer.ExtKalmanFilterGyroModelLimitsOnly3(init_state_vector, init_cov_matrix,
+                                                                            stepSize, input_matrix_variance,
+                                                                            output_matrix_variance,
+                                                                            input_noise_variance, output_noise_variance)
             else:
                 observer = Observer.ExtKalmanFilterEasyModelLimits(init_state_vector, init_cov_matrix,
                                                                    stepSize, input_matrix_variance,

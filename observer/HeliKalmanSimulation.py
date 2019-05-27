@@ -1,9 +1,8 @@
 import numpy as np
 import scipy.integrate
 import copy
-import InaccurateModelConstants as mc
+from observer import InaccurateModelConstants as mc
 from enum import Enum
-import time
 from ModelConstants import ModelType
 
 

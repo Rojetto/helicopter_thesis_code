@@ -1,8 +1,6 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtCore
 import numpy as np
-import Observer
-from ModelConstants import ModelType
-import InaccurateModelConstants as imc
+from observer import InaccurateModelConstants as imc
 
 
 class ObserverNoiseFrame(QtWidgets.QFrame):

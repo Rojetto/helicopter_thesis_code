@@ -1,7 +1,5 @@
 from PyQt5 import QtWidgets, QtGui
 import numpy as np
-import Planner
-from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus, NoDisturbance
 from ModelConstants import ModelType
 from helicontrollers.util import FeedForwardMethod
 
