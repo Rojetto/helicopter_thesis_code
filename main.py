@@ -3,26 +3,19 @@ matplotlib.use('Qt5Agg')
 import os
 
 import logger
-import zentripedal_validation as val
 from JoystickWidget import JoystickWidget
-from helicontrollers.util import FeedForwardMethod, compute_feed_forward_static, compute_feed_forward_flatness
 from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
 from helicontrollers.MatlabController import MatlabController
 from helicontrollers.LqrController import LqrController
-from helicontrollers.QuasistaticFlatnessController import QuasistaticFlatnessController
 from helicontrollers.FeedbackLinearizationController import FeedbackLinearizationController
-from helicontrollers.InteractiveController import InteractiveController
 
 from ControllerFrame import ControllerFrame
 from ModelFrame import ModelFrame
 from TrajectoryFrame import TrajectoryFrame
 from DisturbanceFrame import DisturbanceFrame
-from FeedforwardFrame import FeedforwardFrame
 from ObserverFrame import ObserverFrame
-from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
-from helicontrollers.TimeVariantController import TimeVariantController
 
 from visualisation.HelicopterModel import HelicopterModel
 from visualisation.HelicopterModelEstimated import HelicopterModelEstimated
