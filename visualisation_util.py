@@ -2,6 +2,48 @@ import vtk
 import numpy as np
 from ModelConstants import *
 
+vtk_l_a = 10*l_h
+vtk_l_h = 10*l_h
+vtk_l_p = 10*l_p
+vtk_l_c = 10*l_c
+
+T_vtk = np.array([[1, 0, 0, 0],
+                  [0, 0, 1, 0],
+                  [0, -1, 0, 0],
+                  [0, 0, 0, 1]])
+
+#Alignment and position of geometrical joints relative to T_i_minus_one
+T_j1 = np.array([[1, 0, 0, 0],
+                 [0, 0, 1, 0],
+                 [0, -1, 0, 0],
+                 [0, 0, 0, 1]])
+
+T_j2 = np.array([[1, 0, 0, 0],
+                 [0, 0, -1, 0],
+                 [0, 1, 0, 0],
+                 [0, 0, 0, 1]])
+
+T_j3 = np.array([[1, 0, 0, 0],
+                 [0, 0, -1, 0],
+                 [0, 1, 0, vtk_l_h],
+                 [0, 0, 0, 1]])
+
+#endeffector alignment and position relative to T_i
+T_e1 = np.array([[1, 0, 0, 0],
+                 [0, 1, 0, -vtk_l_p],
+                 [0, 0, 1, 0],
+                 [0, 0, 0, 1]])
+
+T_e2 = np.array([[1, 0, 0, 0],
+                 [0, 1, 0, vtk_l_p],
+                 [0, 0, 1, 0],
+                 [0, 0, 0, 1]])
+
+T_e3 = np.array([[1, 0, 0, 0],
+                 [0, 1, 0, 0],
+                 [0, 0, 1, -vtk_l_c],
+                 [0, 0, 0, 1]])
+
 #set T_vtk to identity matrix for no artificial coordinates
 T_vtk = np.array([[1, 0, 0, -(vtk_l_h - vtk_l_c)/2],
                   [0, 1, 0, 0],

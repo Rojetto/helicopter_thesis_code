@@ -1,7 +1,6 @@
 import vtk
 import numpy as np
-from misc_functions import setPokeMatrixWithMatr, drawLineFromMatrixToMatr
-import ModelConstants as mc
+from visualisation_util import *
 
 #Static Theta values (for initialization)
 s_theta1 = 0
@@ -14,9 +13,9 @@ T_vtk = np.array([[1, 0, 0, 0],
                   [0, 0, 0, 1]])
 
 def getDHBTable(theta1, theta2, theta3):
-    dnh_table = np.array([[theta1, mc.vtk_l_a, 0, -np.pi / 4],
+    dnh_table = np.array([[theta1, vtk_l_a, 0, -np.pi / 4],
                           [theta2 + np.pi / 4, 0, 0, np.pi / 4],
-                          [theta3, mc.vtk_l_h, 0, 0]])
+                          [theta3, vtk_l_h, 0, 0]])
     return dnh_table
 
 def getDHBMatrix(theta, d, a, alpha):

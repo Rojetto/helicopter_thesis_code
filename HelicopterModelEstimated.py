@@ -1,13 +1,15 @@
 import vtk
 import numpy as np
 import JointAndConnectorEstimated as jc
-from ModelConstants import *
+from visualisation_util import *
+
 
 def getDHBTable(theta1, theta2, theta3):
     dnh_table = np.array([[theta1, vtk_l_a, 0, -np.pi / 2],
                           [theta2 + np.pi / 2, 0, 0, np.pi / 2],
                           [theta3, vtk_l_h, 0, 0]])
     return dnh_table
+
 
 def getDHBMatrix(theta, d, a, alpha):
     """Returns the homogenous i-1/i-Denavit-Hartenberg-Transformation-Matrix. Parameters have the index i"""
@@ -21,6 +23,7 @@ def getDHBMatrix(theta, d, a, alpha):
                   [0, 0, 0, 1]])
     return m
 
+
 class HelicopterModelEstimated(object):
     def __init__(self):
         self.state = [0, 0, 0] #theta1, theta2, theta3
@@ -33,7 +36,6 @@ class HelicopterModelEstimated(object):
         self.joint2.addEndeffector(T_e3)
         self.joint3.addEndeffector(T_e1)
         self.joint3.addEndeffector(T_e2)
-
 
     def addAllActors(self, renderer):
         """Must be called from main script in order to add all actors to the renderer"""
@@ -64,4 +66,3 @@ class HelicopterModelEstimated(object):
         self.joint1.setVisibility(visibility)
         self.joint2.setVisibility(visibility)
         self.joint3.setVisibility(visibility)
-

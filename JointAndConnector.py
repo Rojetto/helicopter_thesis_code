@@ -1,6 +1,6 @@
 import vtk
 import numpy as np
-from misc_functions import setPokeMatrixWithMatr, drawLineFromMatrixToMatr
+from visualisation_util import setPokeMatrixWithMatr, drawLineFromMatrixToMatr
 
 l_a = 20
 l_h = 6
