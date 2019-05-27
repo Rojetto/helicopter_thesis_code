@@ -1,11 +1,6 @@
-from PyQt5 import QtWidgets, QtGui
-import numpy as np
-import Planner
-from Disturbance import Disturbance, DisturbanceStep, DisturbanceSinus, DisturbanceRect, NoDisturbance
-import Observer
-from ModelConstants import ModelType
-import ObserverSettingsFrame
-import ObserverNoiseFrame
+from PyQt5 import QtWidgets
+from gui import ObserverNoiseFrame, ObserverSettingsFrame
+
 
 class ObserverFrame(QtWidgets.QFrame):
     def __init__(self):

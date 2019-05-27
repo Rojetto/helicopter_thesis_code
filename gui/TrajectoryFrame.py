@@ -1,4 +1,4 @@
-from ParameterFrame import ParameterFrame, ParameterizedClass, ParamFloatArray, ParamBool
+from gui.ParameterFrame import ParameterFrame, ParameterizedClass, ParamFloatArray
 from Trajectory import Trajectory
 from numpy import array, linspace, zeros, empty, pi
 from helicontrollers.util import compute_feed_forward_static, compute_pitch_and_inputs_flatness_centripetal

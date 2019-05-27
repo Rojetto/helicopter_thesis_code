@@ -1,6 +1,6 @@
 from helicontrollers.AbstractController import AbstractController
 from helicontrollers.util import ModelType, compute_linear_ss
-from ParameterFrame import ParamFloatArray, ParamBool, ParamEnum
+from gui.ParameterFrame import ParamFloatArray, ParamBool, ParamEnum
 import control as ctr
 import numpy as np
 

@@ -1,6 +1,6 @@
 from helicontrollers.AbstractController import AbstractController
-from helicontrollers.util import PidAlgorithm, ModelType, compute_feed_forward_flatness
-from ParameterFrame import ParamFloatArray, ParamBool
+from helicontrollers.util import PidAlgorithm
+from gui.ParameterFrame import ParamFloatArray, ParamBool
 
 
 class CascadePidController(AbstractController):

@@ -3,18 +3,18 @@ matplotlib.use('Qt5Agg')
 import os
 
 import logger
-from JoystickWidget import JoystickWidget
+from gui.JoystickWidget import JoystickWidget
 from helicontrollers.ManualController import ManualController
 from helicontrollers.CascadePidController import CascadePidController
 from helicontrollers.MatlabController import MatlabController
 from helicontrollers.LqrController import LqrController
 from helicontrollers.FeedbackLinearizationController import FeedbackLinearizationController
 
-from ControllerFrame import ControllerFrame
-from ModelFrame import ModelFrame
-from TrajectoryFrame import TrajectoryFrame
-from DisturbanceFrame import DisturbanceFrame
-from ObserverFrame import ObserverFrame
+from gui.ControllerFrame import ControllerFrame
+from gui.ModelFrame import ModelFrame
+from gui.TrajectoryFrame import TrajectoryFrame
+from gui.DisturbanceFrame import DisturbanceFrame
+from gui.ObserverFrame import ObserverFrame
 from helicontrollers.PolePlacementController import PolePlacementController
 
 from visualisation.HelicopterModel import HelicopterModel

@@ -1,5 +1,5 @@
 from typing import List
-from ParameterFrame import ParameterFrame
+from gui.ParameterFrame import ParameterFrame
 from helicontrollers.AbstractController import AbstractController
 
 

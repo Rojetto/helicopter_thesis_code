@@ -1,4 +1,4 @@
-from ParameterFrame import ParameterizedClass
+from gui.ParameterFrame import ParameterizedClass
 from abc import ABC
 
 

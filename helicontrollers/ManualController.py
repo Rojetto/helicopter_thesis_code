@@ -1,5 +1,5 @@
 from helicontrollers.AbstractController import AbstractController
-from ParameterFrame import ParamFloatArray
+from gui.ParameterFrame import ParamFloatArray
 
 
 class ManualController(AbstractController):

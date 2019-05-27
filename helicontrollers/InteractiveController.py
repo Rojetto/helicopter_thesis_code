@@ -2,8 +2,8 @@ from enum import Enum
 
 from helicontrollers.AbstractController import AbstractController
 from helicontrollers.util import PidAlgorithm
-from ParameterFrame import ParamFloatArray, ParamEnum
-from JoystickWidget import JoystickWidget
+from gui.ParameterFrame import ParamFloatArray, ParamEnum
+from gui.JoystickWidget import JoystickWidget
 import numpy as np
 
 

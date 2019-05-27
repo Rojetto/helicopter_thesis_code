@@ -1,7 +1,7 @@
 from scipy.linalg import solve_continuous_are
 
 from helicontrollers.AbstractController import AbstractController
-from ParameterFrame import ParamEnum, ParamBool, ParamFloatArray
+from gui.ParameterFrame import ParamEnum, ParamBool, ParamFloatArray
 import numpy as np
 
 from helicontrollers.util import ModelType, compute_linear_ss, compute_linear_ss_full, compute_feed_forward_static
