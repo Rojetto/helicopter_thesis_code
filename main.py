@@ -24,10 +24,10 @@ from helicontrollers.DirectPidController import DirectPidController
 from helicontrollers.PolePlacementController import PolePlacementController
 from helicontrollers.TimeVariantController import TimeVariantController
 
-from HelicopterModel import HelicopterModel
-from HelicopterModelEstimated import HelicopterModelEstimated
+from visualisation.HelicopterModel import HelicopterModel
+from visualisation.HelicopterModelEstimated import HelicopterModelEstimated
 from HeliSimulation import HeliSimulation
-from MyQVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+from visualisation.MyQVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 import sys
 import vtk

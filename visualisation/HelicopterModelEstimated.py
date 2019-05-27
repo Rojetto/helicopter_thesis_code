@@ -1,7 +1,5 @@
-import vtk
-import numpy as np
-import JointAndConnectorEstimated as jc
-from visualisation_util import *
+from visualisation import JointAndConnectorEstimated as jc
+from visualisation.visualisation_util import *
 
 
 def getDHBTable(theta1, theta2, theta3):

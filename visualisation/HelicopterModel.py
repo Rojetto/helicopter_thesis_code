@@ -1,8 +1,5 @@
-import vtk
-import numpy as np
-import JointAndConnector as jc
-from ModelConstants import *
-from visualisation_util import *
+from visualisation import JointAndConnector as jc
+from visualisation.visualisation_util import *
 
 
 def getDHBTable(theta1, theta2, theta3):

@@ -1,6 +1,4 @@
-import vtk
-import numpy as np
-from visualisation_util import *
+from visualisation.visualisation_util import *
 
 #Static Theta values (for initialization)
 s_theta1 = 0
