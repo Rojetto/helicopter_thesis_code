@@ -1,9 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import ModelConstants as mc
-from helicontrollers.TimeVariantController import get_p_and_first_derivative
-from helicontrollers.util import ModelType
-from HeliSimulation import getInertia
 from PyQt5 import QtWidgets
 import os.path
 import pickle
