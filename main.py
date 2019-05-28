@@ -81,10 +81,20 @@ class mainWindow(QtWidgets.QMainWindow):
         self.disturbance = None
         # Initialize controller and kalman filter
         self.current_controller = None
-        controller_list = [ManualController(), PolePlacementController(),
-                           LqrController(), CascadePidController(), MatlabController("CascadePid"),
-                           FeedbackLinearizationController(), MatlabController("FeedbackLinearization"),
-                           MatlabController("TimeVariantLQR"), MatlabController("GainSchedulingPid")]
+
+        controller_manual = ManualController()
+        controller_poles = PolePlacementController()
+        controller_lqr = LqrController()
+        controller_cascade_pid = CascadePidController()
+        controller_m_cascade_pid = MatlabController("CascadePid")
+        controller_feedback_lin = FeedbackLinearizationController()
+        controller_m_feedback_lin = MatlabController("FeedbackLinearization")
+        controller_m_time_variant_lqr = MatlabController("TimeVariantLQR")
+        controller_m_gain_scheduling_pid = MatlabController("GainSchedulingPid")
+        controller_list = [controller_manual, controller_poles,
+                           controller_lqr, controller_cascade_pid, controller_m_cascade_pid,
+                           controller_feedback_lin, controller_m_feedback_lin,
+                           controller_m_time_variant_lqr, controller_m_gain_scheduling_pid]
 
         # GUI layout
         main_layout.addWidget(vtk_widget, 1)  # Set a stretch factor > 0 so that this widget takes all remaining space
@@ -181,6 +191,7 @@ class mainWindow(QtWidgets.QMainWindow):
         model_frame = ModelFrame(self.heliSim)
         self.trajectory_frame = TrajectoryFrame()
         self.controller_frame = ControllerFrame(controller_list)
+        self.controller_frame.select_object(controller_m_cascade_pid)
         self.disturbance_frame = DisturbanceFrame()
         #self.feedforward_frame = FeedforwardFrame()
         self.observer_frame = ObserverFrame()

@@ -10,7 +10,10 @@ deg = pi / 180
 
 class TrajectoryFrame(ParameterFrame):
     def __init__(self):
-        super().__init__([TypeOperatingPoint(), TypePolynomialFlatness()])
+        type_op = TypeOperatingPoint()
+        type_flatness = TypePolynomialFlatness()
+        super().__init__([TypeOperatingPoint(), type_flatness])
+        self.select_object(type_flatness)
 
     def get_trajectory(self):
         traj_type = self.get_selected_object()
@@ -50,11 +53,11 @@ class TypeOperatingPoint(TrajectoryType):
 
 class TypePolynomialFlatness(TrajectoryType):
     def __init__(self):
-        self.elevation_start = 0.0
-        self.elevation_end = 30.0
-        self.travel_start = 0.0
-        self.travel_end = 30.0
-        self.t_end = 8.0
+        self.elevation_start = -60.0
+        self.elevation_end = 60.0
+        self.travel_start = -60.0
+        self.travel_end = 60.0
+        self.t_end = 10.0
         self.derivative_order = 4
         self.sample_rate = 60.0
 

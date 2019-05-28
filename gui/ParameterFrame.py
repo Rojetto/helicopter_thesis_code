@@ -103,6 +103,10 @@ class ParameterFrame(QtWidgets.QFrame):
         main_layout.addWidget(scroll_area, 1)
         main_layout.addLayout(combos_layout)
 
+    def select_object(self, obj: ParameterizedClass):
+        index = self.object_combo.findText(obj.name)
+        self.object_combo.setCurrentIndex(index)
+
     def on_object_combo_select(self):
         self.object_frame_stack.setCurrentIndex(self.object_combo.currentIndex())
 
