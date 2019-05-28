@@ -1,7 +1,7 @@
 from helicontrollers.AbstractController import AbstractController
 from helicontrollers.util import L1, L2, L3, L4, Je, Jl, Jp, compute_pitch_flatness_simple
 from gui.ParameterFrame import ParamFloatArray, ParamBool
-from ModelConstants import d_l as mul, d_e as mue, d_p as mup
+from ModelConstants import OriginalConstants
 from numpy import sin, cos, arctan, sqrt, sign
 from helicontrollers.util import PidAlgorithm
 
@@ -31,6 +31,10 @@ class FeedbackLinearizationController(AbstractController):
 
     def control(self, t, x, e_traj, lambda_traj):
         p, e, l, dp, de, dl, wf, wb = x
+
+        mup = OriginalConstants.d_p
+        mue = OriginalConstants.d_e
+        mul = OriginalConstants.d_l
 
         v1 = e_traj[2] - self.ke[1] * (de - e_traj[1]) - self.ke[0] * (e - e_traj[0])
         v2 = lambda_traj[2] - self.kl[1] * (dl - lambda_traj[1]) - self.kl[0] * (l - lambda_traj[0])

@@ -4,7 +4,7 @@ from gui.ParameterFrame import ParamEnum, ParamFloatArray
 import control as ctr
 import numpy as np
 
-import ModelConstants as mc
+from ModelConstants import OriginalConstants as mc
 from numpy.ma import cos, sin
 
 L1 = mc.l_p

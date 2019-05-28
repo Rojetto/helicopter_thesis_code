@@ -1,11 +1,11 @@
 import vtk
 import numpy as np
-from ModelConstants import *
+from ModelConstants import RandomizedConstants as mc
 
-vtk_l_a = 10*l_h
-vtk_l_h = 10*l_h
-vtk_l_p = 10*l_p
-vtk_l_c = 10*l_c
+vtk_l_a = 10*mc.l_h
+vtk_l_h = 10*mc.l_h
+vtk_l_p = 10*mc.l_p
+vtk_l_c = 10*mc.l_c
 
 T_vtk = np.array([[1, 0, 0, 0],
                   [0, 0, 1, 0],

@@ -1,9 +1,9 @@
 import numpy as np
 import scipy.integrate
 import copy
-import ModelConstants as mc
 from enum import Enum
 import time
+from ModelConstants import OriginalConstants as mc
 from ModelConstants import ModelType
 
 

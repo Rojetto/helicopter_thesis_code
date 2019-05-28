@@ -1,4 +1,4 @@
-import ModelConstants as mc
+from ModelConstants import OriginalConstants as mc
 from ModelConstants import ModelType
 from enum import Enum
 from numpy.ma import cos, sin, arctan

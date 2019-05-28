@@ -1,5 +1,5 @@
 import numpy as np
-import ModelConstants as mc
+from ModelConstants import OriginalConstants as mc
 from HeliSimulation import getInertia
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt

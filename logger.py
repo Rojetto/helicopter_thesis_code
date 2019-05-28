@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import ModelConstants as mc
+from ModelConstants import RandomizedConstants as mc
 from PyQt5 import QtWidgets
 import os.path
 import pickle

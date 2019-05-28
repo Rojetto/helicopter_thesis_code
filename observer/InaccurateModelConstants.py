@@ -1,5 +1,5 @@
 import numpy as np
-import ModelConstants as real_mc
+from ModelConstants import OriginalConstants as real_mc
 import random
 
 # this should be implemented by the ModelConstants.py. otherwise you cant compare both enum classes
