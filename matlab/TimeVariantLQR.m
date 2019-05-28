@@ -69,6 +69,10 @@ classdef TimeVariantLQR < HeliController
             u_diff = - obj.R_inv * B' * P * x_diff;
             
             out = u_d + u_diff;
+            
+            if t == te
+                out = u_d;
+            end
         end
         
         function solve_riccati(obj)
