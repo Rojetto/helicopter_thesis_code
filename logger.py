@@ -87,7 +87,7 @@ def bundle_data():
 def open_dialog_and_store():
     global last_storage_directory
     path, _ = QtWidgets.QFileDialog.getSaveFileName(None, directory=last_storage_directory,
-                                                    filter="HeliControl data (*.hc2)")
+                                                    filter="HeliControl data (*.hc3)")
 
     # User might have pressed "Cancel"
     if not path:
@@ -166,6 +166,8 @@ def process(bundle: LoggingDataV3):
     # plotMoments(bundle)
 
     plotBasics(bundle)
+
+    plotTracking(bundle)
 
     # plotValidation(bundle)
 
@@ -372,6 +374,20 @@ def plotBasics(bundle):
     ax1.legend(loc=1)
 
 
+def plotTracking(bundle):
+    deg = np.pi / 180
+
+    ts = bundle.ts
+    xs = bundle.xs
+    phi_ds = bundle.phi_ds
+    eps_ds = bundle.eps_ds
+    lamb_ds = bundle.lamb_ds
+
+    custom_figure("Tracking errors")
+    plt.plot(ts, xs[:, 0]/deg - phi_ds[:, 0]/deg, label=r"$e_\varphi$")
+    plt.plot(ts, xs[:, 1]/deg - eps_ds[:, 0]/deg, label=r"$e_\varepsilon$")
+    plt.plot(ts, xs[:, 2]/deg - lamb_ds[:, 0]/deg, label=r"$e_\lambda$")
+    plt.legend()
 
 
 def plotObserver(bundle):
