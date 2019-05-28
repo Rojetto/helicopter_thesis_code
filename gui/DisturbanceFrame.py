@@ -133,14 +133,12 @@ class DisturbanceFrame(QtWidgets.QFrame):
         combo_idx = self.disturbance_combo.currentIndex()
         # the chosen combo entry defines the type of planner that is returned
         if combo_idx == 0:
-            # print("Disturbance step")
             t_start = self.disturbance_step_t_start.value()
             z0 = self.disturbance_step_z0.value()
             zf = self.disturbance_step_z_step.value()
             point_of_application = self.disturbance_step_type.currentText()
             disturbance = DisturbanceStep(t_start, z0, zf, point_of_application)
         elif combo_idx == 1:
-            # print("Disturbance Sinus")
             t_start = self.disturbance_sin_t_start.value()
             z_offset = self.disturbance_sin_z_offset.value()
             z_amplitude = self.disturbance_sin_z_amplitude.value()
@@ -154,6 +152,5 @@ class DisturbanceFrame(QtWidgets.QFrame):
             point_of_application = self.rect_disturbance_type.currentText()
             disturbance = DisturbanceRect(t_start, t_length, zf, point_of_application)
         elif combo_idx == 3:
-            print("No Disturbance")
             disturbance = NoDisturbance()
         return disturbance

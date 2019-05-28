@@ -346,7 +346,7 @@ class HeliKalmanSimulation(object):
                     event_time = v[0]
                     event_nr = idx
                     triggered_event = event_list[event_nr]
-            print(triggered_event.__name__ + " was triggered at " + str(event_time))
+            #print(triggered_event.__name__ + " was triggered at " + str(event_time))
             # remove occured event from event list
             event_list.remove(triggered_event)
             # integrate from t0 to eventTime

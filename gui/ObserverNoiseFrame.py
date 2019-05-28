@@ -182,8 +182,6 @@ class ObserverNoiseFrame(QtWidgets.QFrame):
         input_noise_variance = self.noise_N_spinbox.value() / self.N_factor
         output_noise_variance = self.noise_W_spinbox.value() / self.W_factor
 
-        print("output_standard_deviation in degree = " + str(np.sqrt(output_noise_variance)))
-
         # convert to radian variance
         output_matrix_variance = output_matrix_variance * (np.pi/180)**2
         output_noise_variance = output_noise_variance * (np.pi/180)**2
