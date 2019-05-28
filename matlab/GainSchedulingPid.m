@@ -105,7 +105,7 @@ classdef GainSchedulingPid < HeliController
                 eps = obj.elevation_levels(end) * deg;
             end
 
-            gains = interp1(obj.elevation_levels, obj.travel_pitch_pid_gains, eps);
+            gains = interp1(obj.elevation_levels*deg, obj.travel_pitch_pid_gains, eps);
             obj.travel_pitch_pid.gains = gains;
         end
     end
