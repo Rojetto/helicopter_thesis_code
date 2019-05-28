@@ -101,7 +101,7 @@ def open_dialog_and_store():
         pickle.dump(bundle, file)
 
 
-def load_bundle(path):
+def load_bundle(path) -> LoggingDataV3:
     with open(path, "rb") as file:
         return pickle.load(file)
 
