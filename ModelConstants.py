@@ -18,7 +18,7 @@ class OriginalConstants:
     l_c = 0.52
     m_p = 0.5 * 0.771  # kg
     m_c_max = 2 * l_h/l_c * m_p
-    m_c = 0.9  # arbitrary, but has to be smaller than m_c_max
+    m_c = 0.93 * m_c_max  # arbitrary, but has to be smaller than m_c_max
 
     # motor characteristics
     m_m = 0.2 * m_p
@@ -48,7 +48,7 @@ class RandomizedConstants:
     l_c = OriginalConstants.l_c * random.uniform(0.9, 1.1)
     m_p = OriginalConstants.m_p * random.uniform(0.9, 1.1)
     m_c_max = 2 * l_h / l_c * m_p
-    m_c = m_c_max*random.uniform(0.7, 0.9)  # arbitrary, but has to be smaller than m_c_max
+    m_c = m_c_max*random.uniform(0.9, 0.96)  # arbitrary, but has to be smaller than m_c_max
 
     # motor characteristics
     m_m = 0.2 * m_p
@@ -77,7 +77,7 @@ class LowerBoundConstants:
     l_c = OriginalConstants.l_c * 0.9
     m_p = OriginalConstants.m_p * 0.9
     m_c_max = 2 * l_h / l_c * m_p
-    m_c = m_c_max*0.7  # arbitrary, but has to be smaller than m_c_max
+    m_c = m_c_max*0.9  # arbitrary, but has to be smaller than m_c_max
 
     # motor characteristics
     m_m = 0.2 * m_p
@@ -106,7 +106,7 @@ class UpperBoundConstants:
     l_c = OriginalConstants.l_c * 1.1
     m_p = OriginalConstants.m_p * 1.1
     m_c_max = 2 * l_h / l_c * m_p
-    m_c = m_c_max*0.9  # arbitrary, but has to be smaller than m_c_max
+    m_c = m_c_max*0.96  # arbitrary, but has to be smaller than m_c_max
 
     # motor characteristics
     m_m = 0.2 * m_p
