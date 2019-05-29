@@ -11,9 +11,9 @@ classdef TimeVariantLQR < HeliController
     end
     
     properties (Nontunable)
-        Q_diag = [0.1, 10, 10, 0.1, 0.2, 0.1, 0.2, 0.2]
-        R_diag = [0.1, 0.1]
-        S_diag = [1, 1, 2, 0.05, 0.1, 0.1, 0.1, 0.1]
+        Q_diag = [3, 50, 20, 2, 1, 5, 1, 1]
+        R_diag = [1, 1]
+        S_diag = [3, 50, 20, 2, 1, 5, 1, 1]
         riccati_step_width = 0.1
     end
     

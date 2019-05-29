@@ -171,7 +171,7 @@ def process(bundle: LoggingDataV3):
 
     # plotValidation(bundle)
 
-    # plotInputs(bundle)
+    plotInputs(bundle)
 
     # plotObserver(bundle)
 
@@ -310,19 +310,12 @@ def plotMoments(bundle):
 def plotInputs(bundle):
     ts = bundle.ts
     xs = bundle.xs
-    us_controller = bundle.us_controller
-    e_traj_and_derivatives = bundle.e_traj_and_derivatives
-    lambda_traj_and_derivatives = bundle.lambda_traj_and_derivatives
+    us = bundle.us
 
     fig = custom_figure("Controller output")
-    plt.plot(ts, us_controller[:, 0])
-    plt.plot(ts, us_controller[:, 1])
+    plt.plot(ts, us[:, 0])
+    plt.plot(ts, us[:, 1])
     plt.legend(['Vf controller', 'Vb controller'])
-
-    fig = custom_figure("Rotorspeed")
-    plt.plot(ts, xs[:, 6])
-    plt.plot(ts, xs[:, 7])
-    plt.legend(['f', 'b'])
 
 
 def plotBasics(bundle):
@@ -348,12 +341,11 @@ def plotBasics(bundle):
     plt.plot(ts, xs[:, 5]/deg)
     plt.legend(['dphi', 'deps', 'dlamb'])
 
-    fig = custom_figure("Motorumdrehungen")
-    plt.plot(ts, xs[:, 6], "-.", label=r"f (1/s)")
-    plt.plot(ts, xs[:, 7], "-.", label=r"b (1/s)")
-    plt.xlabel("Zeit (s)")
-    plt.ylabel("Motorumdrehungen")
-    plt.title("Motorumdrehungen")
+    fig = custom_figure("Rotor speeds")
+    plt.plot(ts, bundle.vf_ds[:, 0], "-.", label="wf_d")
+    plt.plot(ts, xs[:, 6], label="wf")
+    plt.plot(ts, bundle.vb_ds[:, 0], "-.", label="wb_d")
+    plt.plot(ts, xs[:, 7], label="wb")
     plt.legend()
 
     fig = custom_figure("Motorumdrehungen umgerechnet")
@@ -363,15 +355,6 @@ def plotBasics(bundle):
     plt.ylabel("Motorumdrehungen")
     plt.title("Motorumdrehungen")
     plt.legend()
-
-    fig = custom_figure("Motorspannungen")
-    ax1 = fig.add_subplot(111)
-    ax1.plot(ts, us[:, 0], label=r"Vf ohne Rauschen (V)")
-    ax1.plot(ts, us[:, 1], label=r"Vf ohne Rauschen (V)")
-    plt.xlabel("Zeit (s)")
-    plt.ylabel("Motorspannung")
-    plt.title("Systemeingang mit und ohne Rauschen")
-    ax1.legend(loc=1)
 
 
 def plotTracking(bundle):
