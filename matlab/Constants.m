@@ -4,6 +4,7 @@ classdef Constants
         l_h = 0.65
         l_p = 0.18
         l_c = 0.52
+        
         m_c = 0.9
         m_p = 0.5 * 0.771
 
@@ -11,10 +12,13 @@ classdef Constants
         mue = 0.053
         mul = 0.274
 
-        T_f = 0.1
-        T_b = 0.1
-        K_f = 1
-        K_b = 1
+        T_w = 0.1
+        K_w = 1
+        
+        p1 = 1
+        q1 = 0.5
+        p2 = 0.6
+        q2 = 0.3
 
         m_m
         r_m
