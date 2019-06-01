@@ -5,7 +5,7 @@ function setup(block)
 
 % Register number of ports
 block.NumInputPorts  = 2;
-block.NumOutputPorts = 8;
+block.NumOutputPorts = 11;
 
 % Setup port properties to be inherited or dynamic
 block.SetPreCompInpPortInfoToDynamic;
@@ -24,6 +24,7 @@ block.InputPort(2).SamplingMode = 'Sample';
 block.InputPort(2).DirectFeedthrough = false;
 
 % Override output port properties
+% Angles (only actual output)
 block.OutputPort(1).Dimensions       = 1;
 block.OutputPort(1).DatatypeID  = 0; % double
 block.OutputPort(1).Complexity  = 'Real';
@@ -36,6 +37,7 @@ block.OutputPort(3).Dimensions       = 1;
 block.OutputPort(3).DatatypeID  = 0; % double
 block.OutputPort(3).Complexity  = 'Real';
 block.OutputPort(3).SamplingMode = 'Sample';
+% First angle derivatives
 block.OutputPort(4).Dimensions       = 1;
 block.OutputPort(4).DatatypeID  = 0; % double
 block.OutputPort(4).Complexity  = 'Real';
@@ -48,6 +50,7 @@ block.OutputPort(6).Dimensions       = 1;
 block.OutputPort(6).DatatypeID  = 0; % double
 block.OutputPort(6).Complexity  = 'Real';
 block.OutputPort(6).SamplingMode = 'Sample';
+% Rotor speeds
 block.OutputPort(7).Dimensions       = 1;
 block.OutputPort(7).DatatypeID  = 0; % double
 block.OutputPort(7).Complexity  = 'Real';
@@ -56,6 +59,19 @@ block.OutputPort(8).Dimensions       = 1;
 block.OutputPort(8).DatatypeID  = 0; % double
 block.OutputPort(8).Complexity  = 'Real';
 block.OutputPort(8).SamplingMode = 'Sample';
+% Second angle derivatives
+block.OutputPort(9).Dimensions       = 1;
+block.OutputPort(9).DatatypeID  = 0; % double
+block.OutputPort(9).Complexity  = 'Real';
+block.OutputPort(9).SamplingMode = 'Sample';
+block.OutputPort(10).Dimensions       = 1;
+block.OutputPort(10).DatatypeID  = 0; % double
+block.OutputPort(10).Complexity  = 'Real';
+block.OutputPort(10).SamplingMode = 'Sample';
+block.OutputPort(11).Dimensions       = 1;
+block.OutputPort(11).DatatypeID  = 0; % double
+block.OutputPort(11).Complexity  = 'Real';
+block.OutputPort(11).SamplingMode = 'Sample';
 
 block.NumContStates = 8;
 
@@ -104,11 +120,22 @@ block.OutputPort(6).Data = block.ContStates.Data(6);
 block.OutputPort(7).Data = block.ContStates.Data(7);
 block.OutputPort(8).Data = block.ContStates.Data(8);
 
+dx = ComputeDerivativesFromBlockData(block);
+
+block.OutputPort(9).Data = dx(4);
+block.OutputPort(10).Data = dx(5);
+block.OutputPort(11).Data = dx(6);
+
 %end Outputs
 
 
 function Derivatives(block)
 
+block.Derivatives.Data = ComputeDerivativesFromBlockData(block);
+
+%end Derivatives
+
+function dx = ComputeDerivativesFromBlockData(block)
 vf = block.InputPort(1).Data;
 vb = block.InputPort(2).Data;
 
@@ -123,9 +150,6 @@ wb = block.ContStates.Data(8);
 
 x = [phi, eps, lamb, dphi, deps, dlamb, wf, wb];
 u = [vf, vb];
-dx = system_f(x, u);
+dx = system_f(x, u)';
 
-block.Derivatives.Data = dx';
-
-%end Derivatives
 
