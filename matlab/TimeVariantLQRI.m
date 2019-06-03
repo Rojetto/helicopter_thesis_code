@@ -12,9 +12,9 @@ classdef TimeVariantLQRI < HeliController
     end
     
     properties (Nontunable)
-        Q_diag = [3, 50, 20, 2, 1, 5, 1, 1, 0.1, 2, 20]
+        Q_diag = [3, 50, 20, 2, 1, 5, 1, 1, 0.1, 10, 10]
         R_diag = [1, 1]
-        S_diag = [3, 50, 20, 2, 1, 5, 1, 1, 0.1, 2, 20]
+        S_diag = [3, 50, 20, 2, 1, 5, 1, 1, 0.1, 10, 10 ]
         riccati_step_width = 0.1
         sim_step_width = 1/60
     end
