@@ -300,7 +300,6 @@ def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_
     Vs = (((Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e))) ** 2 + ((Je * de2 + mc.d_e * de1 + Je * cos(e) * sin(e) * dl1**2 - L2 * cos(e)) / L3) ** 2) ** (1 / 2)
     Vd = (1/L1) * (Jp * dp2 + mc.d_p * dp1 - Jp * cos(p) * sin(p) * (de1**2 - cos(e)**2 * dl1**2))
 
-
     Vf = (Vs + Vd) / 2
     Vb = (Vs - Vd) / 2
 

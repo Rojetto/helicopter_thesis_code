@@ -14,16 +14,6 @@ class LimitType(Enum):
     LOWER_LIMIT = -1
 
 
-L_1 = mc.l_p
-L_2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
-L_3 = mc.l_h
-L_4 = mc.l_h
-
-J_p_static = 2*mc.m_p*mc.l_p**2
-J_e_static = mc.m_c * mc.l_c**2 + 2* mc.m_p*mc.l_h**2
-J_l_static = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2)
-
-
 class StateLimits(object):
     """
     Helper class just for saving which states have reached their limit at the current time step,
