@@ -67,10 +67,10 @@ d_e = real_mc.d_e
 d_l = real_mc.d_l
 
 # PT1 charakteristics for ROTOR SPEED
-T_f = real_mc.T_f
-T_b = real_mc.T_b
-K_f = real_mc.K_f
-K_b = real_mc.K_b
+T_f = real_mc.T_w
+T_b = real_mc.T_w
+K_f = real_mc.K_w
+K_b = real_mc.K_w
 K = real_mc.K
 K_m = real_mc.K_m
 
