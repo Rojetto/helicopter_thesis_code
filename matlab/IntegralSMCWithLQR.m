@@ -88,9 +88,9 @@ classdef IntegralSMCWithLQR < HeliController
             smc_dir = (obj.G*B)' * sigma;
             u_diff1 = - obj.rho * smc_dir / norm(smc_dir);
             
-            sigmas_ws = evalin('base', 'sigmas');
-            sigmas_ws(end+1, :) = sigma';
-            assignin('base', 'sigmas', sigmas_ws);
+            %sigmas_ws = evalin('base', 'sigmas');
+            %sigmas_ws(end+1, :) = sigma';
+            %assignin('base', 'sigmas', sigmas_ws);
 
             u_diff = u_diff0 + u_diff1;
             

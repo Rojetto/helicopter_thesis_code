@@ -50,6 +50,9 @@ function dx = system_f_with_params(x, u, ...
     end
 
     if term_motor_nonlinear
+        %syms Fr(w)
+        %Fr(w) = piecewise(w<=-2*q2/p2, p2*w+q2, -2*q2/p2<w<=0,-p2^2/(4*q2)*w^2,0<w<=2*q1/p1,p1^2/(4*q1) * w^2,p1*w-q1);
+
         Ff = Fr(wf);
         Fb = Fr(wb);
     else
@@ -99,7 +102,7 @@ function dx = system_f_with_params(x, u, ...
         if w <= -2 * q2 / p2
             out = p2*w + q2;
         elseif -2 * q2 / p2 < w && w <= 0
-            out = -2 * p2^2/(4*q2) * w^2;
+            out = - p2^2/(4*q2) * w^2;
         elseif 0 < w && w <= 2 * q1/p1
             out = p1^2/(4*q1) * w^2;
         else

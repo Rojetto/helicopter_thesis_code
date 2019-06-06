@@ -49,7 +49,7 @@ def system_f(x, u, model_type: ModelType, dynamic_inertia):
         if w <= -2 * mc.q2 / mc.p2:
             return mc.p2 * w + mc.q2
         elif - 2 * mc.q2 / mc.p2 < w <= 0:
-            return -2 * mc.p2**2 / (4 * mc.q2) * w**2
+            return - mc.p2**2 / (4 * mc.q2) * w**2
         elif 0 < w <= 2 * mc.q1 / mc.p1:
             return mc.p1**2 / (4 * mc.q1) * w**2
         else:
