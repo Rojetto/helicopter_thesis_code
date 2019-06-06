@@ -9,6 +9,8 @@ classdef CascadePid < HeliController
         back_rotor_pid
         
         trajectory
+
+        c
     end
     
     properties (Nontunable)
@@ -32,6 +34,8 @@ classdef CascadePid < HeliController
             obj.back_rotor_pid = pidAlgorithm(zeros(3,1));
             
             obj.trajectory = Trajectory([], [], [], [], [], []);
+
+            obj.c = Constants();
         end
 
         function initialize(obj, trajectory)
@@ -58,7 +62,7 @@ classdef CascadePid < HeliController
             else
                 deps_error = x(5);
             end
-            delta_ws_d = - obj.elevation_pid.compute(t, eps_error, deps_error);
+            delta_Fs_d = - obj.elevation_pid.compute(t, eps_error, deps_error);
 
             % outer loop: travel --> pitch
             lamb_error = x(3) - lamb_traj(1);
@@ -76,18 +80,53 @@ classdef CascadePid < HeliController
             else
                 dphi_error = x(4);
             end
-            delta_wd_d = - obj.pitch_vd_pid.compute(t, phi_error, dphi_error);
+            delta_Fd_d = - obj.pitch_vd_pid.compute(t, phi_error, dphi_error);
+            
+            Fs_ff = Fr(traj_eval.vf(1)) + Fr(traj_eval.vb(1));
+            Fd_ff = Fr(traj_eval.vf(1)) - Fr(traj_eval.vb(1));
+            
+            Fs_d = Fs_ff + delta_Fs_d;
+            Fd_d = Fd_ff + delta_Fd_d;
+            
+            Ff_d = (Fs_d + Fd_d) / 2;
+            Fb_d = (Fs_d - Fd_d) / 2;
 
-            delta_wf_d = (delta_ws_d + delta_wd_d) / 2;
-            delta_wb_d = (delta_ws_d - delta_wd_d) / 2;
+            wf_d = Fr_inv(Ff_d);
+            wb_d = Fr_inv(Fb_d);
+            
+            extra_ws = evalin('base', 'extra');
+            extra_ws(end+1,:) = [x(7), wf_d, x(8), wb_d];
+            assignin('base', 'extra', extra_ws)
+            
 
-            wf_d = traj_eval.vf(1) + delta_wf_d;
-            wb_d = traj_eval.vb(1) + delta_wb_d;
+            uf = wf_d - obj.front_rotor_pid.compute_fd(t, x(7) - wf_d);
+            ub = wb_d - obj.back_rotor_pid.compute_fd(t, x(8) - wb_d);
 
-            Vf = wf_d - obj.front_rotor_pid.compute_fd(t, x(7) - wf_d);
-            Vb = wb_d - obj.back_rotor_pid.compute_fd(t, x(8) - wb_d);
+            u = [uf; ub];
 
-            u = [Vf; Vb];
+            function F = Fr(w)
+                if w <= -2 * obj.c.q2 / obj.c.p2
+                    F = obj.c.p2*w + obj.c.q2;
+                elseif -2 * obj.c.q2 / obj.c.p2 < w && w <= 0
+                    F = - obj.c.p2^2/(4*obj.c.q2) * w^2;
+                elseif 0 < w && w <= 2 * obj.c.q1/obj.c.p1
+                    F = obj.c.p1^2/(4*obj.c.q1) * w^2;
+                else
+                    F = obj.c.p1 * w - obj.c.q1;
+                end
+            end
+            
+            function w = Fr_inv(F)
+                if F <= - obj.c.q2
+                    w = (F - obj.c.q2) / obj.c.p2;
+                elseif -obj.c.q2 <= F && F < 0
+                    w = sqrt(-4*obj.c.q2*F) / obj.c.p2;
+                elseif 0 <= F && F < obj.c.q1
+                    w = sqrt(4*obj.c.q1*F) / obj.c.p1;
+                else
+                    w = (F + obj.c.q1) / obj.c.p1;
+                end
+            end
         end
     end
 end
