@@ -1,7 +1,7 @@
 from ModelConstants import OriginalConstants as mc
 from ModelConstants import ModelType
 from enum import Enum
-from numpy.ma import cos, sin, arctan
+from numpy.ma import cos, sin, arctan, sqrt
 import numpy as np
 import sympy as sp
 
@@ -297,10 +297,23 @@ def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_
 
     # Vs = (Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e) * sin(p))
     # Vs without Singularity
-    Vs = (((Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e))) ** 2 + ((Je * de2 + mc.d_e * de1 + Je * cos(e) * sin(e) * dl1**2 - L2 * cos(e)) / L3) ** 2) ** (1 / 2)
-    Vd = (1/L1) * (Jp * dp2 + mc.d_p * dp1 - Jp * cos(p) * sin(p) * (de1**2 - cos(e)**2 * dl1**2))
+    Fs = (((Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e))) ** 2 + ((Je * de2 + mc.d_e * de1 + Je * cos(e) * sin(e) * dl1**2 - L2 * cos(e)) / L3) ** 2) ** (1 / 2)
+    Fd = (1/L1) * (Jp * dp2 + mc.d_p * dp1 - Jp * cos(p) * sin(p) * (de1**2 - cos(e)**2 * dl1**2))
 
-    Vf = (Vs + Vd) / 2
-    Vb = (Vs - Vd) / 2
+    Ff = (Fs + Fd) / 2
+    Fb = (Fs - Fd) / 2
 
-    return np.array([p, dp1, dp2]), np.array([Vf, Vb])
+    def Fr_inverse(F):
+        if F <= - mc.q2:
+            return (F - mc.q2) / mc.p2
+        elif -mc.q2 <= F < 0:
+            return sqrt(-4*mc.q2*F) / mc.p2
+        elif 0 <= F < mc.q1:
+            return sqrt(4*mc.q1*F) / mc.p1
+        else:
+            return (F + mc.q1) / mc.p1
+
+    uf = Fr_inverse(Ff)
+    ub = Fr_inverse(Fb)
+
+    return np.array([p, dp1, dp2]), np.array([uf, ub])

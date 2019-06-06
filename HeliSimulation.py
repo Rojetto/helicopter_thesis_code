@@ -59,7 +59,8 @@ def system_f(x, u, model_type: ModelType, dynamic_inertia):
     term_centripetal = True if model_type >= ModelType.CENTRIPETAL else False
     term_motor_pt1 = True if model_type >= ModelType.ROTORSPEED else False
     term_motor_reaction = True if model_type >= ModelType.ROTORSPEED else False
-    term_motor_nonlinear = True if model_type >= ModelType.ROTORSPEED else False
+    #term_motor_nonlinear = True if model_type >= ModelType.ROTORSPEED else False
+    term_motor_nonlinear = True
     term_rotor_gyro = True if model_type >= ModelType.GYROMOMENT else False
     term_dynamic_inertia = dynamic_inertia
 
