@@ -1,11 +1,49 @@
 import numpy as np
-from numpy import sin, cos, pi
+import sympy as sp
 import scipy.integrate
 import copy
 from enum import Enum
 import time
 from ModelConstants import OriginalConstants as mc
 from ModelConstants import ModelType
+
+
+# locally override basic functions to make code work numerically and symbolically
+def sin(x):
+    if isinstance(x, sp.Expr):
+        return sp.sin(x)
+    else:
+        return np.sin(x)
+
+
+def cos(x):
+    if isinstance(x, sp.Expr):
+        return sp.cos(x)
+    else:
+        return np.cos(x)
+
+
+def Fr(w):
+    cond_1 = w <= -2 * mc.q2 / mc.p2
+    expr_1 = mc.p2 * w + mc.q2
+    cond_2 = w <= 0
+    expr_2 = - mc.p2 ** 2 / (4 * mc.q2) * w ** 2
+    cond_3 = w <= 2 * mc.q1 / mc.p1
+    expr_3 = mc.p1 ** 2 / (4 * mc.q1) * w ** 2
+    cond_4 = True
+    expr_4 = mc.p1 * w - mc.q1
+
+    if isinstance(w, sp.Expr):
+        return sp.functions.elementary.piecewise.Piecewise((expr_1, cond_1), (expr_2, cond_2), (expr_3, cond_3), (expr_4, cond_4))
+    else:
+        if cond_1:
+            return expr_1
+        elif cond_2:
+            return expr_2
+        elif cond_3:
+            return expr_3
+        elif cond_4:
+            return expr_4
 
 
 class LimitType(Enum):
@@ -45,16 +83,6 @@ class EventParams(object):
 
 
 def system_f(x, u, model_type: ModelType, dynamic_inertia):
-    def Fr(w):
-        if w <= -2 * mc.q2 / mc.p2:
-            return mc.p2 * w + mc.q2
-        elif - 2 * mc.q2 / mc.p2 < w <= 0:
-            return - mc.p2**2 / (4 * mc.q2) * w**2
-        elif 0 < w <= 2 * mc.q1 / mc.p1:
-            return mc.p1**2 / (4 * mc.q1) * w**2
-        else:
-            return mc.p1 * w - mc.q1
-
     term_friction = True if model_type >= ModelType.FRICTION else False
     term_centripetal = True if model_type >= ModelType.CENTRIPETAL else False
     term_motor_pt1 = True if model_type >= ModelType.ROTORSPEED else False
@@ -71,10 +99,10 @@ def system_f(x, u, model_type: ModelType, dynamic_inertia):
 
     if term_dynamic_inertia:
         J_phi = 2 * mc.m_p * mc.l_p**2
-        J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2 * sin(phi)**2)
-        J_eps_2 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 - mc.l_p**2 * sin(phi)**2)
-        J_lamb = mc.m_c * (mc.l_c * cos(eps))**2 + 2 * mc.m_p * (
-                    (mc.l_h * cos(eps))**2 + (mc.l_p * sin(phi) * sin(eps))**2 + (mc.l_p * cos(phi))**2)
+        J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2 * sin(phi) ** 2)
+        J_eps_2 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h ** 2 - mc.l_p ** 2 * sin(phi) ** 2)
+        J_lamb = mc.m_c * (mc.l_c * cos(eps)) ** 2 + 2 * mc.m_p * (
+                (mc.l_h * cos(eps)) ** 2 + (mc.l_p * sin(phi) * sin(eps)) ** 2 + (mc.l_p * cos(phi)) ** 2)
     else:
         J_phi = 2 * mc.m_p * mc.l_p**2
         J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * mc.l_h**2
@@ -108,8 +136,8 @@ def system_f(x, u, model_type: ModelType, dynamic_inertia):
     ddlamb_rhs = Fs * mc.l_h * cos(eps) * sin(phi)
 
     if term_centripetal:
-        ddphi_rhs = ddphi_rhs + J_phi * cos(phi) * sin(phi) * (deps**2 - cos(eps)**2 * dlamb**2)
-        ddeps_rhs = ddeps_rhs - J_eps_2 * cos(eps) * sin(eps) * dlamb**2
+        ddphi_rhs = ddphi_rhs + J_phi * cos(phi) * sin(phi) * (deps ** 2 - cos(eps) ** 2 * dlamb ** 2)
+        ddeps_rhs = ddeps_rhs - J_eps_2 * cos(eps) * sin(eps) * dlamb ** 2
 
     if term_friction:
         ddphi_rhs = ddphi_rhs - mc.d_p * dphi
@@ -129,7 +157,11 @@ def system_f(x, u, model_type: ModelType, dynamic_inertia):
     ddeps = ddeps_rhs / J_eps_1
     ddlamb = ddlamb_rhs / J_lamb
 
-    dx = np.array([dphi, deps, dlamb, ddphi, ddeps, ddlamb, dwf, dwb])
+    if isinstance(dphi, sp.Expr):
+        dx = sp.Matrix([dphi, deps, dlamb, ddphi, ddeps, ddlamb, dwf, dwb])
+    else:
+        dx = np.array([dphi, deps, dlamb, ddphi, ddeps, ddlamb, dwf, dwb])
+
     return dx
 
 
@@ -213,10 +245,10 @@ def getInertia(x, dynamic_inertia_torque):
 
     if dynamic_inertia_torque:
         J_phi = 2 * mc.m_p * mc.l_p**2
-        J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2 * sin(phi)**2)
-        J_eps_2 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 - mc.l_p**2 * sin(phi)**2)
-        J_lamb = mc.m_c * (mc.l_c * cos(eps))**2 + 2 * mc.m_p * (
-                    (mc.l_h * cos(eps))**2 + (mc.l_p * sin(phi) * sin(eps))**2 + (mc.l_p * cos(phi))**2)
+        J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2 * sin(phi) ** 2)
+        J_eps_2 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h ** 2 - mc.l_p ** 2 * sin(phi) ** 2)
+        J_lamb = mc.m_c * (mc.l_c * cos(eps)) ** 2 + 2 * mc.m_p * (
+                (mc.l_h * cos(eps)) ** 2 + (mc.l_p * sin(phi) * sin(eps)) ** 2 + (mc.l_p * cos(phi)) ** 2)
     else:
         J_phi = 2 * mc.m_p * mc.l_p**2
         J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * mc.l_h**2

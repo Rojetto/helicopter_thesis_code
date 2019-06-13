@@ -1,5 +1,6 @@
 from ModelConstants import OriginalConstants as mc
 from ModelConstants import ModelType
+from HeliSimulation import system_f
 from enum import Enum
 from numpy.ma import cos, sin, arctan, sqrt
 import numpy as np
@@ -87,6 +88,28 @@ def compute_linear_ss(model_type: ModelType, e_op):
     return A, B
 
 
+def generate_A_and_B_functions():
+    phi, eps, lamb = sp.symbols(r"p e \lambda")
+    dphi, deps, dlamb = sp.symbols(r"\dot{\varphi} \dot{\varepsilon} \dot{\lambda}")
+    wf, wb, uf, ub = sp.symbols(r"\omega_f \omega_b u_f u_b")
+
+    x = sp.Matrix([phi, eps, lamb, dphi, deps, dlamb, wf, wb])
+    u = sp.Matrix([uf, ub])
+
+    dx = system_f(x, u, ModelType.NO_SIMPLIFICATIONS, True)
+
+    A_symbolic = dx.jacobian(x)
+    B_symbolic = dx.jacobian(u)
+
+    A_lambda = sp.lambdify([phi, eps, lamb, dphi, deps, dlamb, wf, wb, uf, ub], A_symbolic)
+    B_lambda = sp.lambdify([phi, eps, lamb, dphi, deps, dlamb, wf, wb, uf, ub], B_symbolic)
+
+    return A_lambda, B_lambda
+
+
+A_lambda, B_lambda = generate_A_and_B_functions()
+
+
 def compute_linear_ss_full(x_op, u_op):
     """
     Computes linear state space matrices A and B for the full model (without any simplifications) at operating point
@@ -94,50 +117,10 @@ def compute_linear_ss_full(x_op, u_op):
 
     :return: A, B
     """
+    A = A_lambda(x_op[0], x_op[1], x_op[2], x_op[3], x_op[4], x_op[5], x_op[6], x_op[7], u_op[0], u_op[1])
+    B = B_lambda(x_op[0], x_op[1], x_op[2], x_op[3], x_op[4], x_op[5], x_op[6], x_op[7], u_op[0], u_op[1])
 
-    p, e, l = sp.symbols("p e \\lambda")
-    dp, de, dl = sp.symbols("\\dot{p} \\dot{e} \\dot{\\lambda}")
-    wf, wb, Vf, Vb = sp.symbols("\\omega_f \\omega_b V_f V_b")
-
-    x = sp.Matrix([p, e, l, dp, de, dl, wf, wb])
-    u = sp.Matrix([Vf, Vb])
-    op_sub = list(zip(x, x_op)) + list(zip(u, u_op))
-
-    dp_rhs = dp
-    de_rhs = de
-    dl_rhs = dl
-    ddp_rhs = 1/(2*mc.m_p*mc.l_p**2) * (2*mc.m_p*mc.l_p**2*sp.cos(p)*sp.sin(p)*(de**2-sp.cos(e)**2*dl**2)
-                                        - mc.d_p * dp
-                                        + mc.l_p*(wf-wb)
-                                        + mc.J_m * sp.cos(p) * de * (wb - wf)
-                                        + mc.J_m * sp.sin(p) * sp.cos(e) * dl * (wf - wb)
-                                        )
-    dde_rhs = 1/(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2+mc.l_p**2*sp.sin(p)**2))*(
-        - sp.cos(e)*sp.sin(e)*(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2-mc.l_p**2*sp.sin(p)**2))*dl**2
-        - mc.d_e*de
-        + mc.g*(mc.m_c*mc.l_c-2*mc.m_p*mc.l_h)*sp.cos(e)
-        + mc.l_h*sp.cos(p)*(wf+wb)
-        + sp.sin(p)*mc.K_m*(wf-wb)
-        + mc.J_m * sp.cos(p) * dp * (wf - wb)
-        + mc.J_m * sp.cos(p) * sp.sin(e) * dl * (wb - wf)
-    )
-    ddl_rhs = 1/(mc.m_c*(mc.l_c*sp.cos(e))**2+2*mc.m_p*((mc.l_h*sp.cos(e))**2+(mc.l_p*sp.sin(p)*sp.sin(e))**2+(mc.l_p*sp.cos(p))**2))*(
-        mc.l_h*sp.cos(e)*sp.sin(p)*(wf+wb)
-        - mc.d_l*dl
-        + sp.cos(e)*sp.cos(p)*mc.K_m*(wb-wf)
-        + mc.J_m * sp.sin(p) * sp.cos(e) * dp * (wf - wb)
-    )
-    dwf_rhs = 1/mc.T_f * (Vf - wf)
-    dwb_rhs = 1/mc.T_b * (Vb - wb)
-
-    ss_rhs = sp.Matrix([dp_rhs, de_rhs, dl_rhs, ddp_rhs, dde_rhs, ddl_rhs, dwf_rhs, dwb_rhs])
-    A_symbolic = ss_rhs.jacobian(x)
-    B_symbolic = ss_rhs.jacobian(u)
-
-    A = A_symbolic.subs(op_sub)
-    B = B_symbolic.subs(op_sub)
-
-    return np.array(A).astype(np.float64), np.array(B).astype(np.float64)
+    return A, B
 
 
 def compute_feed_forward_static(e_and_derivatives, lambda_and_derivatives):
