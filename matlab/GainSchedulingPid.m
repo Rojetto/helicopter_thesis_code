@@ -14,13 +14,13 @@ classdef GainSchedulingPid < HeliController
     properties (Nontunable)
         elevation_levels = [-60, -30, 0, 30, 60]
         %elevation_pid_gains Elevation PID
-        elevation_pid_gains = [10, 4, 5]
+        elevation_pid_gains = [10, 0.1, 4]
         %travel_pitch_pid_gains Travel-Pitch PID
-        travel_pitch_pid_gains = [3, 0.1, 1.5;
-                                  4, 0.05, 1.7;
-                                  6, 0.01, 2;
-                                  4, 0.05, 1.7;
-                                  3, 0.1, 1.5]
+        travel_pitch_pid_gains = [2, 0.01, 1.0;
+                                  3, 0.01, 1.5;
+                                  4, 0.01, 2.0;
+                                  3, 0.01, 1.5;
+                                  2, 0.01, 1.0]
         %pitch_vd_pid_gains Pitch-Vd PID
         pitch_vd_pid_gains = [20, 0, 2.3]
         %k_rotor Rotor PD
