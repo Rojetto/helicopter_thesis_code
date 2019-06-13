@@ -1,6 +1,6 @@
 from ModelConstants import OriginalConstants as mc
 from ModelConstants import ModelType
-from HeliSimulation import system_f
+from HeliSimulation import system_f, Fr_inverse
 from enum import Enum
 from numpy.ma import cos, sin, arctan, sqrt
 import numpy as np
@@ -285,16 +285,6 @@ def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_
 
     Ff = (Fs + Fd) / 2
     Fb = (Fs - Fd) / 2
-
-    def Fr_inverse(F):
-        if F <= - mc.q2:
-            return (F - mc.q2) / mc.p2
-        elif -mc.q2 <= F < 0:
-            return sqrt(-4*mc.q2*F) / mc.p2
-        elif 0 <= F < mc.q1:
-            return sqrt(4*mc.q1*F) / mc.p1
-        else:
-            return (F + mc.q1) / mc.p1
 
     uf = Fr_inverse(Ff)
     ub = Fr_inverse(Fb)

@@ -23,6 +23,13 @@ def cos(x):
         return np.cos(x)
 
 
+def sqrt(x):
+    if isinstance(x, sp.Expr):
+        return sp.sqrt(x)
+    else:
+        return np.sqrt(x)
+
+
 def Fr(w):
     cond_1 = w <= -2 * mc.q2 / mc.p2
     expr_1 = mc.p2 * w + mc.q2
@@ -35,6 +42,30 @@ def Fr(w):
 
     if isinstance(w, sp.Expr):
         return sp.functions.elementary.piecewise.Piecewise((expr_1, cond_1), (expr_2, cond_2), (expr_3, cond_3), (expr_4, cond_4))
+    else:
+        if cond_1:
+            return expr_1
+        elif cond_2:
+            return expr_2
+        elif cond_3:
+            return expr_3
+        elif cond_4:
+            return expr_4
+
+
+def Fr_inverse(F):
+    cond_1 = F <= - mc.q2
+    expr_1 = (F - mc.q2) / mc.p2
+    cond_2 = F < 0
+    expr_2 = sqrt(-4*mc.q2*F) / mc.p2
+    cond_3 = F < mc.q1
+    expr_3 = sqrt(4*mc.q1*F) / mc.p1
+    cond_4 = True
+    expr_4 = (F + mc.q1) / mc.p1
+
+    if isinstance(F, sp.Expr):
+        return sp.functions.elementary.piecewise.Piecewise((expr_1, cond_1), (expr_2, cond_2), (expr_3, cond_3),
+                                                           (expr_4, cond_4))
     else:
         if cond_1:
             return expr_1

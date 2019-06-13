@@ -4,7 +4,7 @@ from helicontrollers.AbstractController import AbstractController
 from gui.ParameterFrame import ParamEnum, ParamBool, ParamFloatArray
 import numpy as np
 
-from helicontrollers.util import ModelType, compute_linear_ss, compute_linear_ss_full, compute_feed_forward_static
+from helicontrollers.util import ModelType, compute_linear_ss, compute_linear_ss_full
 
 
 class LqrController(AbstractController):
@@ -30,14 +30,16 @@ class LqrController(AbstractController):
     def control(self, t, x):
         traj_eval = self.trajectory.eval(t)
 
-        if self.time_variant_feedback or not self.feedback_computed:
-            self.K = self.compute_feedback_matrix(traj_eval.eps[0])
-            self.feedback_computed = True
+        uf_op = traj_eval.vf[0]
+        ub_op = traj_eval.vb[0]
+        u_op = np.array([uf_op, ub_op])
+        x_op = np.array([traj_eval.phi[0], traj_eval.eps[0], traj_eval.lamb[0],
+                         traj_eval.phi[1], traj_eval.eps[1], traj_eval.lamb[1],
+                         uf_op, ub_op])
 
-        Vf_op = traj_eval.vf[0]
-        Vb_op = traj_eval.vb[0]
-        u_op = np.array([Vf_op, Vb_op])
-        x_op = np.array([0, traj_eval.eps[0], traj_eval.lamb[0], 0, 0, 0, Vf_op, Vb_op])
+        if self.time_variant_feedback or not self.feedback_computed:
+            self.K = self.compute_feedback_matrix(x_op, u_op)
+            self.feedback_computed = True
 
         u = u_op - self.K @ (x - x_op)
         return u
@@ -52,11 +54,8 @@ class LqrController(AbstractController):
         self.trajectory = trajectory
         self.feedback_computed = False
 
-    def compute_feedback_matrix(self, e_op):
+    def compute_feedback_matrix(self, x_op, u_op):
         if self.model_type == ModelType.NO_SIMPLIFICATIONS:
-            Vf_op, Vb_op = compute_feed_forward_static([e_op, 0, 0, 0, 0], [0, 0, 0, 0, 0])
-            u_op = np.array([Vf_op, Vb_op])
-            x_op = np.array([0, e_op, 0, 0, 0, 0, Vf_op, Vb_op])
             A, B = compute_linear_ss_full(x_op, u_op)
 
             try:
@@ -68,7 +67,7 @@ class LqrController(AbstractController):
                 print("Error during LQR computation: " + str(e))
                 return np.zeros((2, 8))
         else:
-            A_reduced, B_reduced = compute_linear_ss(self.model_type, e_op)
+            A_reduced, B_reduced = compute_linear_ss(self.model_type, x_op[1])
 
             try:
                 Q_reduced = self.Q[:6, :6]
