@@ -57,9 +57,15 @@ def Fr_inverse(F):
     cond_1 = F <= - mc.q2
     expr_1 = (F - mc.q2) / mc.p2
     cond_2 = F < 0
-    expr_2 = sqrt(-4*mc.q2*F) / mc.p2
+    if isinstance(F, sp.Expr) or F <= 0:  # odd workaround to keep np.sqrt from throwing errors
+        expr_2 = sqrt(-4*mc.q2*F) / mc.p2
+    else:
+        expr_2 = 0
     cond_3 = F < mc.q1
-    expr_3 = sqrt(4*mc.q1*F) / mc.p1
+    if isinstance(F, sp.Expr) or F >= 0:
+        expr_3 = sqrt(4*mc.q1*F) / mc.p1
+    else:
+        expr_3 = 0
     cond_4 = True
     expr_4 = (F + mc.q1) / mc.p1
 
