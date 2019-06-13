@@ -94,9 +94,9 @@ classdef CascadePid < HeliController
             wf_d = Fr_inv(Ff_d);
             wb_d = Fr_inv(Fb_d);
             
-            extra_ws = evalin('base', 'extra');
-            extra_ws(end+1,:) = [x(7), wf_d, x(8), wb_d];
-            assignin('base', 'extra', extra_ws)
+            %extra_ws = evalin('base', 'extra');
+            %extra_ws(end+1,:) = [x(7), wf_d, x(8), wb_d];
+            %assignin('base', 'extra', extra_ws)
             
 
             uf = wf_d - obj.front_rotor_pid.compute_fd(t, x(7) - wf_d);
@@ -107,9 +107,9 @@ classdef CascadePid < HeliController
             function F = Fr(w)
                 if w <= -2 * obj.c.q2 / obj.c.p2
                     F = obj.c.p2*w + obj.c.q2;
-                elseif -2 * obj.c.q2 / obj.c.p2 < w && w <= 0
+                elseif w <= 0
                     F = - obj.c.p2^2/(4*obj.c.q2) * w^2;
-                elseif 0 < w && w <= 2 * obj.c.q1/obj.c.p1
+                elseif w <= 2 * obj.c.q1/obj.c.p1
                     F = obj.c.p1^2/(4*obj.c.q1) * w^2;
                 else
                     F = obj.c.p1 * w - obj.c.q1;
@@ -119,9 +119,9 @@ classdef CascadePid < HeliController
             function w = Fr_inv(F)
                 if F <= - obj.c.q2
                     w = (F - obj.c.q2) / obj.c.p2;
-                elseif -obj.c.q2 <= F && F < 0
-                    w = sqrt(-4*obj.c.q2*F) / obj.c.p2;
-                elseif 0 <= F && F < obj.c.q1
+                elseif F < 0
+                    w = - sqrt(-4*obj.c.q2*F) / obj.c.p2;
+                elseif F < obj.c.q1
                     w = sqrt(4*obj.c.q1*F) / obj.c.p1;
                 else
                     w = (F + obj.c.q1) / obj.c.p1;
