@@ -1,7 +1,7 @@
 from gui.ParameterFrame import ParameterFrame, ParameterizedClass, ParamFloatArray
 from Trajectory import Trajectory
 from numpy import array, linspace, zeros, empty, pi
-from helicontrollers.util import compute_feed_forward_static, compute_pitch_and_inputs_flatness_centripetal
+from helicontrollers.util import compute_pitch_and_inputs_flatness_centripetal
 from abc import ABC
 from Planner import PolynomialPlanner
 
@@ -41,12 +41,14 @@ class TypeOperatingPoint(TrajectoryType):
 
     def generate(self):
         t = array([0.0])
-        phi = array([[0.0, 0.0]])
-        eps = array([[self.elevation * deg, 0.0]])
-        lamb = array([[self.travel * deg, 0.0]])
-        vf, vb = compute_feed_forward_static(eps[0], lamb[0])
-        vf = array([[vf]])
-        vb = array([[vb]])
+        phi = array([[0.0, 0.0, 0.0]])
+        eps = array([[self.elevation * deg, 0.0, 0.0, 0.0, 0.0]])
+        lamb = array([[self.travel * deg, 0.0, 0.0, 0.0, 0.0]])
+
+        _, vf_vb = compute_pitch_and_inputs_flatness_centripetal(eps[0], lamb[0])
+
+        vf = array([[vf_vb[0]]])
+        vb = array([[vf_vb[1]]])
 
         return Trajectory(t, phi, eps, lamb, vf, vb)
 
