@@ -1,5 +1,4 @@
 classdef (Abstract) HeliController < matlab.System ...
-        & matlab.system.mixin.SampleTime ...
         & matlab.system.mixin.Propagates
     
     properties (Access=private)
@@ -43,17 +42,16 @@ classdef (Abstract) HeliController < matlab.System ...
     end
     
     methods (Access = protected)
-        function setupImpl(obj, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+        function setupImpl(obj, t, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
             
         end
         
-        function u = stepImpl(obj, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+        function u = stepImpl(obj, t, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
             if ~obj.is_initialized
                 obj.initializeWithIndividualArguments(t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
                 obj.is_initialized = true;
             end
             
-            t = obj.getCurrentTime();
             u = obj.control(t, x);
         end
         
@@ -73,14 +71,15 @@ classdef (Abstract) HeliController < matlab.System ...
             out1 = 'double';
         end
     
-        function [in1, in2, in3, in4, in5, in6, in7] = getInputNamesImpl(~)
-            in1 = 'State';
-            in2 = 'Traj Time';
-            in3 = 'Traj Phi';
-            in4 = 'Traj Eps';
-            in5 = 'Traj Lamb';
-            in6 = 'Traj Vf';
-            in7 = 'Traj Vb';
+        function [in1, in2, in3, in4, in5, in6, in7, in8] = getInputNamesImpl(~)
+            in1 = 'Time';
+            in2 = 'State';
+            in3 = 'Traj Time';
+            in4 = 'Traj Phi';
+            in5 = 'Traj Eps';
+            in6 = 'Traj Lamb';
+            in7 = 'Traj Vf';
+            in8 = 'Traj Vb';
         end
         
         function [out_name] = getOutputNamesImpl(~)
