@@ -15,3 +15,6 @@
 *.autosave
 slprj/
 .ipynb_checkpoints/
+*.rt-win64
+*.mexw64
+*_quarc_win64/
