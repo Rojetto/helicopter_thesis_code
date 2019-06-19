@@ -7,50 +7,52 @@ classdef CascadePid < HeliController
         
         front_rotor_pid
         back_rotor_pid
-        
-        trajectory
 
         c
     end
     
-    properties (Nontunable)
+    properties
         %elevation_pid_gains Elevation PID
-        elevation_pid_gains = [10, 0.1, 4]
+        elevation_pid_gains = [30, 20, 20]
         %travel_pitch_pid_gains Travel-Pitch PID
-        travel_pitch_pid_gains = [1.5, 0.05, 1.0]
+        travel_pitch_pid_gains = [0.8, 0.005, 1.3]
         %pitch_vd_pid_gains Pitch-Vd PID
-        pitch_vd_pid_gains = [20, 0, 2.3]
+        pitch_vd_pid_gains = [8, 0.5, 3.5]
         %k_rotor Rotor PD
-        k_rotor = [5, 0]
+        k_rotor = [0, 0]
+    end
+    
+    properties (Nontunable, Logical)
+        %feed_forward Use feed forward
+        feed_forward = false
+        %rotor_speed_control Rotor speed controller
+        rotor_speed_control = false
     end
     
     methods
         function obj = CascadePid()
-            obj.elevation_pid = pidAlgorithm(zeros(3,1));
-            obj.travel_pitch_pid = pidAlgorithm(zeros(3,1));
-            obj.pitch_vd_pid = pidAlgorithm(zeros(3,1));
-            
-            obj.front_rotor_pid = pidAlgorithm(zeros(3,1));
-            obj.back_rotor_pid = pidAlgorithm(zeros(3,1));
-            
-            obj.trajectory = Trajectory([], [], [], [], [], []);
+            obj.elevation_pid = pidAlgorithm(obj.elevation_pid_gains);
+            obj.travel_pitch_pid = pidAlgorithm(obj.travel_pitch_pid_gains);
+            obj.pitch_vd_pid = pidAlgorithm(obj.pitch_vd_pid_gains);
+
+            obj.front_rotor_pid = pidAlgorithm([obj.k_rotor(1), 0, obj.k_rotor(2)]);
+            obj.back_rotor_pid = pidAlgorithm([obj.k_rotor(1), 0, obj.k_rotor(2)]);
 
             obj.c = Constants();
         end
 
-        function initialize(obj, trajectory)
-            obj.trajectory = trajectory;
-            
-            obj.elevation_pid.gains = obj.elevation_pid_gains;
-            obj.travel_pitch_pid.gains = obj.travel_pitch_pid_gains;
-            obj.pitch_vd_pid.gains = obj.pitch_vd_pid_gains;
-
-            obj.front_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
-            obj.back_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
+        function initialize(obj)
         end
         
         function u = control(obj, t, x)
-            traj_eval = obj.trajectory.eval(t);
+            obj.elevation_pid.gains = obj.elevation_pid_gains;
+            obj.travel_pitch_pid.gains = obj.travel_pitch_pid_gains;
+            obj.pitch_vd_pid.gains = obj.pitch_vd_pid_gains;
+            
+            obj.front_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
+            obj.back_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
+            
+            traj_eval = eval_trajectory(obj.trajectory, t);
             phi_traj = traj_eval.phi;
             eps_traj = traj_eval.eps;
             lamb_traj = traj_eval.lamb;
@@ -82,50 +84,55 @@ classdef CascadePid < HeliController
             end
             delta_Fd_d = - obj.pitch_vd_pid.compute(t, phi_error, dphi_error);
             
-            Fs_ff = Fr(traj_eval.vf(1)) + Fr(traj_eval.vb(1));
-            Fd_ff = Fr(traj_eval.vf(1)) - Fr(traj_eval.vb(1));
+            if obj.feed_forward
+                Fs_ff = obj.Fr(traj_eval.vf(1)) + obj.Fr(traj_eval.vb(1));
+                Fd_ff = obj.Fr(traj_eval.vf(1)) - obj.Fr(traj_eval.vb(1));
+            else
+                Fs_ff = 0;
+                Fd_ff = 0;
+            end
             
             Fs_d = Fs_ff + delta_Fs_d;
             Fd_d = Fd_ff + delta_Fd_d;
             
             Ff_d = (Fs_d + Fd_d) / 2;
             Fb_d = (Fs_d - Fd_d) / 2;
-
-            wf_d = Fr_inv(Ff_d);
-            wb_d = Fr_inv(Fb_d);
             
-            %extra_ws = evalin('base', 'extra');
-            %extra_ws(end+1,:) = [x(7), wf_d, x(8), wb_d];
-            %assignin('base', 'extra', extra_ws)
-            
-
-            uf = wf_d - obj.front_rotor_pid.compute_fd(t, x(7) - wf_d);
-            ub = wb_d - obj.back_rotor_pid.compute_fd(t, x(8) - wb_d);
+            if obj.rotor_speed_control
+                wf_d = obj.Fr_inv(Ff_d);
+                wb_d = obj.Fr_inv(Fb_d);
+                
+                uf = wf_d - obj.front_rotor_pid.compute_fd(t, x(7) - wf_d);
+                ub = wb_d - obj.back_rotor_pid.compute_fd(t, x(8) - wb_d);
+            else
+                uf = Ff_d;
+                ub = Fb_d;
+            end
 
             u = [uf; ub];
-
-            function F = Fr(w)
-                if w <= -2 * obj.c.q2 / obj.c.p2
-                    F = obj.c.p2*w + obj.c.q2;
-                elseif w <= 0
-                    F = - obj.c.p2^2/(4*obj.c.q2) * w^2;
-                elseif w <= 2 * obj.c.q1/obj.c.p1
-                    F = obj.c.p1^2/(4*obj.c.q1) * w^2;
-                else
-                    F = obj.c.p1 * w - obj.c.q1;
-                end
+        end
+        
+        function F = Fr(obj, w)
+            if w <= -2 * obj.c.q2 / obj.c.p2
+                F = obj.c.p2*w + obj.c.q2;
+            elseif w <= 0
+                F = - obj.c.p2^2/(4*obj.c.q2) * w^2;
+            elseif w <= 2 * obj.c.q1/obj.c.p1
+                F = obj.c.p1^2/(4*obj.c.q1) * w^2;
+            else
+                F = obj.c.p1 * w - obj.c.q1;
             end
-            
-            function w = Fr_inv(F)
-                if F <= - obj.c.q2
-                    w = (F - obj.c.q2) / obj.c.p2;
-                elseif F < 0
-                    w = - sqrt(-4*obj.c.q2*F) / obj.c.p2;
-                elseif F < obj.c.q1
-                    w = sqrt(4*obj.c.q1*F) / obj.c.p1;
-                else
-                    w = (F + obj.c.q1) / obj.c.p1;
-                end
+        end
+        
+        function w = Fr_inv(obj, F)
+            if F <= - obj.c.q2
+                w = (F - obj.c.q2) / obj.c.p2;
+            elseif F < 0
+                w = - sqrt(-4*obj.c.q2*F) / obj.c.p2;
+            elseif F < obj.c.q1
+                w = sqrt(4*obj.c.q1*F) / obj.c.p1;
+            else
+                w = (F + obj.c.q1) / obj.c.p1;
             end
         end
     end

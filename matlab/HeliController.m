@@ -5,8 +5,12 @@ classdef (Abstract) HeliController < matlab.System ...
         is_initialized = false
     end
     
+    properties (Access=protected)
+        trajectory
+    end
+    
     methods (Abstract)
-        initialize(obj, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+        initialize(obj)
         
         control(obj, t, x)
     end
@@ -34,21 +38,23 @@ classdef (Abstract) HeliController < matlab.System ...
                 out{i*2} = prop_value;
             end
         end
-        
-        function initializeWithIndividualArguments(obj, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
-            trajectory = Trajectory(t_d, phi_d, eps_d, lamb_d, vf_d, vb_d);
-            obj.initialize(trajectory)
-        end
     end
     
     methods (Access = protected)
         function setupImpl(obj, t, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
-            
+            obj.trajectory = struct('t', t_d, 'phi', phi_d, 'eps', eps_d, 'lamb', lamb_d, 'vf', vf_d, 'vb', vb_d);
         end
         
         function u = stepImpl(obj, t, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
             if ~obj.is_initialized
-                obj.initializeWithIndividualArguments(t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+                obj.trajectory.t = t_d;
+                obj.trajectory.phi = phi_d;
+                obj.trajectory.eps = eps_d;
+                obj.trajectory.lamb = lamb_d;
+                obj.trajectory.vf = vf_d;
+                obj.trajectory.vb = vb_d;
+                
+                obj.initialize()
                 obj.is_initialized = true;
             end
             
