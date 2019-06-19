@@ -1,12 +1,10 @@
-log_neg = load('elevation_steps_negative.mat');
-log_neg = log_neg.log;
-log_pos = load('elevation_steps_positive.mat');
-log_pos = log_pos.log;
+log = load('elevation_steps.mat');
+log = log.log;
 
-t = [log_neg.time; log_pos.time + log_neg.time(end) + 0.002];
-vf = [log_neg.signals(1).values; log_pos.signals(1).values];
-vb = [log_neg.signals(2).values; log_pos.signals(2).values];
-eps = [log_neg.signals(4).values; log_pos.signals(4).values];
+t = log.time;
+vf = log.signals(1).values;
+vb = log.signals(2).values;
+eps = log.signals(4).values;
 
 close all
 figure
@@ -15,19 +13,22 @@ hold on
 plot(t, vf * 0.1 - 0.5)
 ylim([-0.6, 0.6])
 
-sections = [7.45 9.48;
-            12.8 14.54;
-            17.47 19.8;
-            22.5 24.6;
-            27.8 29.55;
-            32.6 34.68;
-            53.42 54.91;
-            57.52 59.33;
-            62.68 64.41;
-            67.82 69.79;
-            72.68 74.54;
-            77.8 79.72;
-            84.15 84.86];
+start_times = (11.5:3:161.5);
+end_times = start_times + 1.2;
+% sections = [7.45 9.48;
+%             12.8 14.54;
+%             17.47 19.8;
+%             22.5 24.6;
+%             27.8 29.55;
+%             32.6 34.68;
+%             53.42 54.91;
+%             57.52 59.33;
+%             62.68 64.41;
+%             67.82 69.79;
+%             72.68 74.54;
+%             77.8 79.72;
+%             84.15 84.86];
+sections = [start_times', end_times'];
 
 sections_size = size(sections);
 n_datapoints = sections_size(1);
