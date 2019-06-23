@@ -9,22 +9,9 @@ def getDHBTable(theta1, theta2, theta3):
     return dnh_table
 
 
-def getDHBMatrix(theta, d, a, alpha):
-    """Returns the homogenous i-1/i-Denavit-Hartenberg-Transformation-Matrix. Parameters have the index i"""
-    c_t = np.cos(theta)
-    s_t = np.sin(theta)
-    c_a = np.cos(alpha)
-    s_a = np.sin(alpha)
-    m = np.array([[c_t, -s_t*c_a, s_t*s_a, a*c_t],
-                  [s_t, c_t*c_a, -c_t*s_a, a*s_t],
-                  [0, s_a, c_a, d],
-                  [0, 0, 0, 1]])
-    return m
-
-
 class HelicopterModel(object):
     def __init__(self):
-        self.state = [0, 0, 0] #theta1, theta2, theta3
+        self.state = [0, 0, 0]  # theta1, theta2, theta3
         self.axesActor = vtk.vtkAxesActor()
 
         self.joint1 = jc.Joint(1, 1, 0.25, T_j1)
