@@ -278,7 +278,6 @@ class mainWindow(QtWidgets.QMainWindow):
 
     def timerCallback(self, *args):
         self.total_t += self.timeStep
-        theta1, theta2, theta3 = self.heliModel.getState()
 
         if self.sim_running:
             t = self.heliSim.get_current_time()

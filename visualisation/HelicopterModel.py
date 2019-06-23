@@ -42,7 +42,3 @@ class HelicopterModel(object):
         T_1 = self.joint_travel.updatePosition(T_0, travel, dhb_table[0])
         T_2 = self.joint_elevation.updatePosition(T_1, elevation, dhb_table[1])
         T_3 = self.joint_pitch.updatePosition(T_2, pitch, dhb_table[2])
-
-    def getState(self):
-        """get the state. change it later to read only"""
-        return self.state
