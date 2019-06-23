@@ -17,8 +17,7 @@ def getDHBMatrix(theta, d, a, alpha):
 
 
 class Joint(object):
-    def __init__(self, index, height, radius, T_joint):
-        self.index = index
+    def __init__(self, height, radius, T_joint):
         self.height = height
         self.T_joint = T_joint
         self.endeff_list = []

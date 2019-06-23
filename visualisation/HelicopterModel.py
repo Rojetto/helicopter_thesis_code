@@ -14,9 +14,9 @@ class HelicopterModel(object):
         self.state = [0, 0, 0]  # travel, elevation, pitch
         self.axesActor = vtk.vtkAxesActor()
 
-        self.joint_travel = jc.Joint(1, 0.1, 0.025, T_joint_travel)
-        self.joint_elevation = jc.Joint(2, 0.1, 0.025, T_joint_elevation)
-        self.joint_pitch = jc.Joint(3, 0.1, 0.025, T_joint_pitch)
+        self.joint_travel = jc.Joint(0.1, 0.025, T_joint_travel)
+        self.joint_elevation = jc.Joint(0.1, 0.025, T_joint_elevation)
+        self.joint_pitch = jc.Joint(0.1, 0.025, T_joint_pitch)
 
         self.joint_elevation.addEndeffector(T_counter_weight)
         self.joint_pitch.addEndeffector(T_front_rotor)
