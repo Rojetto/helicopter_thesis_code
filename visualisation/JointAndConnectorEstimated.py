@@ -55,6 +55,12 @@ class JointEstimated(object):
         for endeff in self.endeff_list:
             endeff.addActor(renderer)
 
+    def setVisibility(self, visibility):
+        self.actor.SetVisibility(visibility)
+        self.lineActor.SetVisibility(visibility)
+        for endeff in self.endeff_list:
+            endeff.setVisibility(visibility)
+
     def addEndeffector(self, T_e):
         """All Endeffectors must be connected BEFORE the call of addActor"""
         # create new endeffector
@@ -119,4 +125,8 @@ class EndeffectorEstimated(object):
         setPokeMatrixWithMatr(self.actor, T)
         # Draw line from last joint to endeffector
         drawLineFromMatrixToMatr(self.lineSource, T_lastJoint, T)
+
+    def setVisibility(self, visibility):
+        self.actor.SetVisibility(visibility)
+        self.lineActor.SetVisibility(visibility)
 

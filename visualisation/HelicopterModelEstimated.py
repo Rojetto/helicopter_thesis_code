@@ -46,3 +46,8 @@ class HelicopterModelEstimated(object):
     def getState(self):
         """get the state. change it later to read only"""
         return self.state
+
+    def setVisibility(self, visibility):
+        self.joint_travel.setVisibility(visibility)
+        self.joint_elevation.setVisibility(visibility)
+        self.joint_pitch.setVisibility(visibility)

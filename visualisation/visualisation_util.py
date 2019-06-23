@@ -6,11 +6,9 @@ vtk_l_a = mc.l_h
 vtk_l_h = mc.l_h
 vtk_l_p = mc.l_p
 vtk_l_c = mc.l_c
-
-T_vtk = np.array([[1, 0, 0, 0],
-                  [0, 0, 1, 0],
-                  [0, -1, 0, 0],
-                  [0, 0, 0, 1]])
+vtk_d_c = mc.d_c
+vtk_d_1 = mc.d_1
+vtk_d_2 = mc.d_2
 
 #Alignment and position of geometrical joints relative to T_i_minus_one
 T_joint_travel = np.array([[1, 0, 0, 0],

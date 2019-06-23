@@ -35,6 +35,9 @@ class OriginalConstants:
     l_p = 0.18  # m
     l_h = 0.65
     l_c = 0.52
+    d_c = 0.2
+    d_1 = 0.05
+    d_2 = 0.03
     m_p = 0.5 * 0.771  # kg
     m_c_max = 2 * l_h/l_c * m_p
     m_c = 0.93 * m_c_max  # arbitrary, but has to be smaller than m_c_max
