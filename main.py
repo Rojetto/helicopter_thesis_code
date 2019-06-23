@@ -48,8 +48,8 @@ class mainWindow(QtWidgets.QMainWindow):
         vtk_renderer.SetBackground(0.2, 0.2, 0.2)
         # Set VTK camera position
         self.vtk_camera = vtk.vtkCamera()
-        self.vtk_camera.SetPosition(7.798348203139179, -14.627243436996828, 9.812118058259466)
-        self.vtk_camera.SetFocalPoint(0.5922143243356399, 0.8215172523568901, 0.7217881556358339)
+        self.vtk_camera.SetPosition(0.8, -1.4, 1)
+        self.vtk_camera.SetFocalPoint(0, 0, 0)
         self.vtk_camera.SetViewUp(-0.1623428949744522, 0.4430640903746749, 0.8816683028621229)
         vtk_renderer.SetActiveCamera(self.vtk_camera)
 

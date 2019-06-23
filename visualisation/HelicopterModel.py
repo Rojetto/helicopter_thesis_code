@@ -14,19 +14,19 @@ class HelicopterModel(object):
         self.state = [0, 0, 0]  # theta1, theta2, theta3
         self.axesActor = vtk.vtkAxesActor()
 
-        self.joint1 = jc.Joint(1, 1, 0.25, T_j1)
-        self.joint2 = jc.Joint(2, 1, 0.25, T_j2)
-        self.joint3 = jc.Joint(3, 1, 0.25, T_j3)
+        self.joint_travel = jc.Joint(1, 0.1, 0.025, T_joint_travel)
+        self.joint_elevation = jc.Joint(2, 0.1, 0.025, T_joint_elevation)
+        self.joint_pitch = jc.Joint(3, 0.1, 0.025, T_joint_pitch)
 
-        self.joint2.addEndeffector(T_e3)
-        self.joint3.addEndeffector(T_e1)
-        self.joint3.addEndeffector(T_e2)
+        self.joint_elevation.addEndeffector(T_counter_weight)
+        self.joint_pitch.addEndeffector(T_front_rotor)
+        self.joint_pitch.addEndeffector(T_back_rotor)
 
     def addAllActors(self, renderer):
         """Must be called from main script in order to add all actors to the renderer"""
-        self.joint1.addActor(renderer)
-        self.joint2.addActor(renderer)
-        self.joint3.addActor(renderer)
+        self.joint_travel.addActor(renderer)
+        self.joint_elevation.addActor(renderer)
+        self.joint_pitch.addActor(renderer)
         renderer.AddActor(self.axesActor)
 
     def setState(self, theta1, theta2, theta3):
@@ -39,9 +39,9 @@ class HelicopterModel(object):
         self.state = [theta1, theta2, theta3]
         dhb_table = getDHBTable(theta1, theta2, theta3)
         T_0 = np.eye(4)
-        T_1 = self.joint1.updatePosition(T_0, theta1, dhb_table[0])
-        T_2 = self.joint2.updatePosition(T_1, theta2, dhb_table[1])
-        T_3 = self.joint3.updatePosition(T_2, theta3, dhb_table[2])
+        T_1 = self.joint_travel.updatePosition(T_0, theta1, dhb_table[0])
+        T_2 = self.joint_elevation.updatePosition(T_1, theta2, dhb_table[1])
+        T_3 = self.joint_pitch.updatePosition(T_2, theta3, dhb_table[2])
 
     def getState(self):
         """get the state. change it later to read only"""

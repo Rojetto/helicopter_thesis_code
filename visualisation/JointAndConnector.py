@@ -82,9 +82,9 @@ class Endeffector(object):
 
         # Create Cube
         self.source = vtk.vtkCubeSource()
-        self.source.SetXLength(0.5)
-        self.source.SetYLength(0.5)
-        self.source.SetZLength(0.5)
+        self.source.SetXLength(0.05)
+        self.source.SetYLength(0.05)
+        self.source.SetZLength(0.05)
 
         self.mapper = vtk.vtkPolyDataMapper()
         self.mapper.SetInputConnection(self.source.GetOutputPort())

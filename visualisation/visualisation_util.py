@@ -2,10 +2,10 @@ import vtk
 import numpy as np
 from ModelConstants import RandomizedConstants as mc
 
-vtk_l_a = 10*mc.l_h
-vtk_l_h = 10*mc.l_h
-vtk_l_p = 10*mc.l_p
-vtk_l_c = 10*mc.l_c
+vtk_l_a = mc.l_h
+vtk_l_h = mc.l_h
+vtk_l_p = mc.l_p
+vtk_l_c = mc.l_c
 
 T_vtk = np.array([[1, 0, 0, 0],
                   [0, 0, 1, 0],
@@ -13,36 +13,36 @@ T_vtk = np.array([[1, 0, 0, 0],
                   [0, 0, 0, 1]])
 
 #Alignment and position of geometrical joints relative to T_i_minus_one
-T_j1 = np.array([[1, 0, 0, 0],
-                 [0, 0, 1, 0],
-                 [0, -1, 0, 0],
-                 [0, 0, 0, 1]])
+T_joint_travel = np.array([[1, 0, 0, 0],
+                           [0, 0, 1, 0],
+                           [0, -1, 0, 0],
+                           [0, 0, 0, 1]])
 
-T_j2 = np.array([[1, 0, 0, 0],
-                 [0, 0, -1, 0],
-                 [0, 1, 0, 0],
-                 [0, 0, 0, 1]])
+T_joint_elevation = np.array([[1, 0, 0, 0],
+                              [0, 0, -1, 0],
+                              [0, 1, 0, 0],
+                              [0, 0, 0, 1]])
 
-T_j3 = np.array([[1, 0, 0, 0],
-                 [0, 0, -1, 0],
-                 [0, 1, 0, vtk_l_h],
-                 [0, 0, 0, 1]])
+T_joint_pitch = np.array([[1, 0, 0, 0],
+                          [0, 0, -1, 0],
+                          [0, 1, 0, vtk_l_h],
+                          [0, 0, 0, 1]])
 
 #endeffector alignment and position relative to T_i
-T_e1 = np.array([[1, 0, 0, 0],
-                 [0, 1, 0, -vtk_l_p],
-                 [0, 0, 1, 0],
-                 [0, 0, 0, 1]])
+T_front_rotor = np.array([[1, 0, 0, 0],
+                          [0, 1, 0, -vtk_l_p],
+                          [0, 0, 1, 0],
+                          [0, 0, 0, 1]])
 
-T_e2 = np.array([[1, 0, 0, 0],
-                 [0, 1, 0, vtk_l_p],
-                 [0, 0, 1, 0],
-                 [0, 0, 0, 1]])
+T_back_rotor = np.array([[1, 0, 0, 0],
+                         [0, 1, 0, vtk_l_p],
+                         [0, 0, 1, 0],
+                         [0, 0, 0, 1]])
 
-T_e3 = np.array([[1, 0, 0, 0],
-                 [0, 1, 0, 0],
-                 [0, 0, 1, -vtk_l_c],
-                 [0, 0, 0, 1]])
+T_counter_weight = np.array([[1, 0, 0, 0],
+                             [0, 1, 0, 0],
+                             [0, 0, 1, -vtk_l_c],
+                             [0, 0, 0, 1]])
 
 #set T_vtk to identity matrix for no artificial coordinates
 T_vtk = np.array([[1, 0, 0, -(vtk_l_h - vtk_l_c)/2],
