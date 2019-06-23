@@ -1,6 +1,6 @@
 import vtk
 import numpy as np
-from ModelConstants import RandomizedConstants as mc
+from ModelConstants import OriginalConstants as mc
 
 vtk_l_a = mc.l_h
 vtk_l_h = mc.l_h
@@ -50,6 +50,7 @@ T_vtk = np.array([[1, 0, 0, -(vtk_l_h - vtk_l_c)/2],
                   [0, 0, 1, -vtk_l_a/2],
                   [0, 0, 0, 1]])
 
+
 def drawLineFromMatrixToMatr(lineSource, T1, T2):
     """Draws a line between the position vectors of two transformation matrices.
     Furthermore it transforms the points so that the center of the model is in the origin"""
@@ -57,6 +58,7 @@ def drawLineFromMatrixToMatr(lineSource, T1, T2):
     T2_ = np.dot(T_vtk, T2)
     lineSource.SetPoint1(T1_[0][3], T1_[1][3], T1_[2][3])
     lineSource.SetPoint2(T2_[0][3], T2_[1][3], T2_[2][3])
+
 
 def setPokeMatrixWithMatr(actor, T):
     '''
