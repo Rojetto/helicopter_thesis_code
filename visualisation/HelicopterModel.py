@@ -9,8 +9,7 @@ def getDHBTable(travel, elevation, pitch):
 
 
 class HelicopterModel(object):
-    def __init__(self):
-        self.state = [0, 0, 0]  # travel, elevation, pitch
+    def __init__(self, renderer):
         self.axesActor = vtk.vtkAxesActor()
 
         self.joint_travel = Joint(0.1, 0.025, T_joint_travel)
@@ -21,8 +20,6 @@ class HelicopterModel(object):
         self.joint_pitch.addEndeffector(T_front_rotor)
         self.joint_pitch.addEndeffector(T_back_rotor)
 
-    def addAllActors(self, renderer):
-        """Must be called from main script in order to add all actors to the renderer"""
         self.joint_travel.addActor(renderer)
         self.joint_elevation.addActor(renderer)
         self.joint_pitch.addActor(renderer)
@@ -35,12 +32,12 @@ class HelicopterModel(object):
         In this function this bug was simply fixed by multiplying the angles with -1."""
         elevation = -elevation
         pitch = -pitch
-        self.state = [travel, elevation, pitch]
         dhb_table = getDHBTable(travel, elevation, pitch)
         T_0 = np.eye(4)
         T_1 = self.joint_travel.updatePosition(T_0, travel, dhb_table[0])
         T_2 = self.joint_elevation.updatePosition(T_1, elevation, dhb_table[1])
         T_3 = self.joint_pitch.updatePosition(T_2, pitch, dhb_table[2])
+
 
 def getDHBMatrix(theta, d, a, alpha):
     """Returns the homogenous i-1/i-Denavit-Hartenberg-Transformation-Matrix. Parameters have the index i"""

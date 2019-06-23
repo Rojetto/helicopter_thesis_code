@@ -70,8 +70,7 @@ class mainWindow(QtWidgets.QMainWindow):
         #joystick_window.show()
 
         # Initialize helicopter model
-        self.heliModel = HelicopterModel()
-        self.heliModel.addAllActors(vtk_renderer)
+        self.heliModel = HelicopterModel(vtk_renderer)
         # Initialize helicopter model for visualising the estimated state
         self.heliModelEst = HelicopterModelEstimated()
         self.heliModelEst.addAllActors(vtk_renderer)
