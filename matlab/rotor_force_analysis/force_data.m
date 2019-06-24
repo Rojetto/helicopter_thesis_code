@@ -6,7 +6,7 @@ Vs_low = [2, 2.5, 3, 3.5, 4, 4.5];
 Fs_high = [35, 45, 55, 67, 80, 95, 110, 125, 140, 155, 170, 180, 180] / 100;
 Fs_low = [10, 14, 22, 30, 42, 52] / 100;
 
-data_low = [
+data_pos_low = [
     2, 10;
     2.25, 11;
     2.5, 12.5;
@@ -27,7 +27,9 @@ data_low = [
     6.25, 100
 ];
 
-data_high = [
+data_pos_low(:,2) = data_pos_low(:,2)*0.01; % g to N
+
+data_pos_high = [
     4, 45;
     4.25, 50;
     4.5, 57;
@@ -55,12 +57,57 @@ data_high = [
     10, 210
 ];
 
+data_pos_high(:,2) = data_pos_high(:,2)*0.01;
+
+data_neg = [
+    2, 10;
+    2.25, 11;
+    2.5, 12;
+    2.75, 12;
+    3, 13;
+    3.25, 15;
+    3.5, 17;
+    3.75, 20;
+    4, 22;
+    4.25, 25;
+    4.5, 28;
+    4.75, 30;
+    5, 33;
+    5.25, 36;
+    5.5, 39;
+    5.75, 42;
+    6, 45;
+    6.25, 48;
+    6.5, 51;
+    6.75, 54;
+    7, 56;
+    7.25, 59;
+    7.5, 62;
+    7.75, 65;
+    8, 66;
+    8.25, 70;
+    8.5, 72;
+    8.75, 75;
+    9, 77;
+    9.25, 80;
+    9.5, 84;
+    9.75, 87;
+    10, 89    
+];
+
+l_h = 0.66;
+l_c = 0.49;
+
+data_neg(:, 1) = -data_neg(:, 1);
+data_neg(:, 2) = -l_c/l_h*0.01*data_neg(:, 2);
+
 figure(5)
 hold on
-plot(data_low(:,1), data_low(:,2), 'bx')
-plot(data_high(:,1), data_high(:,2), 'rx')
-xlim([0, 10])
-ylim([0, 250])
+plot(data_pos_low(:,1), data_pos_low(:,2), 'bx')
+plot(data_pos_high(:,1), data_pos_high(:,2), 'rx')
+plot(data_neg(:,1), data_neg(:,2), 'gx')
+xlim([-10, 10])
+ylim([-1, 2.5])
 
 Vs_combined = [Vs_low, Vs_high(4:end-2)];
 Fs_combined = [Fs_low, Fs_high(4:end-2)];
