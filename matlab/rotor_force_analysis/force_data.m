@@ -132,11 +132,15 @@ d2_opt = param2(3)
 
 Vs_plot = 0:0.1:10;
 
+combined_normalized_data = [
+    data_neg(end:-1:1,1), data_neg(end:-1:1,2)+d2_opt;
+    data_pos(:,1), data_pos(:,2)-d1_opt
+];
+
 figure(2)
 title('Fitted Data')
 hold on
-plot(data_pos(:,1), data_pos(:,2)-d1_opt, 'bx')
-plot(data_neg(:,1), data_neg(:,2)+d2_opt, 'bx')
+plot(combined_normalized_data(:,1), combined_normalized_data(:,2), 'bx')
 plot(Vs_plot, Fs(Vs_plot, p1_opt, q1_opt), 'r')
 plot(-Vs_plot, -Fs(Vs_plot, p2_opt, q2_opt), 'r')
 line([2*q1_opt/p1_opt, 2*q1_opt/p1_opt], [0, 10])
@@ -146,3 +150,40 @@ ylim([-1, 2.5])
 xlabel('Vs [V]')
 ylabel('Fs [g]')
 grid on
+
+
+
+%% -- eps equilibriums --
+
+load eps_steps_equilibrium
+t = log.time;
+vf = log.signals(1).values;
+vb = log.signals(2).values;
+eps = log.signals(4).values;
+
+figure
+hold on
+plot(t, rad2deg(eps))
+stairs(0:5:((numel(eps_seq)-1)*5), eps_seq)
+grid
+
+
+start_times = (28:5:228);
+end_times = start_times + 2;
+sections = [start_times', end_times'];
+
+sections_size = size(sections);
+n_datapoints = sections_size(1);
+
+avg_eps = zeros(n_datapoints, 1);        
+avg_vf = zeros(n_datapoints, 1);
+avg_vb = zeros(n_datapoints, 1);
+
+for i=1:n_datapoints
+    indices = t > sections(i,1) & t < sections(i,2);
+    avg_eps(i) = mean(eps(indices));
+    avg_vf(i) = mean(vf(indices));
+    avg_vb(i) = mean(vb(indices));
+end
+
+stairs(25:5:225, rad2deg(avg_eps))
