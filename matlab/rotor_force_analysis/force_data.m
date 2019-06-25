@@ -1,11 +1,3 @@
-function force_data()
-% Sum of voltages in V
-Vs_high = [3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5];
-Vs_low = [2, 2.5, 3, 3.5, 4, 4.5];
-% Upwards force in g
-Fs_high = [35, 45, 55, 67, 80, 95, 110, 125, 140, 155, 170, 180, 180] / 100;
-Fs_low = [10, 14, 22, 30, 42, 52] / 100;
-
 data_pos_low = [
     2, 10;
     2.25, 11;
@@ -101,75 +93,56 @@ l_c = 0.49;
 data_neg(:, 1) = -data_neg(:, 1);
 data_neg(:, 2) = -l_c/l_h*0.01*data_neg(:, 2);
 
-figure(5)
+figure(1)
+title('Original Data')
 hold on
 plot(data_pos_low(:,1), data_pos_low(:,2), 'bx')
 plot(data_pos_high(:,1), data_pos_high(:,2), 'rx')
 plot(data_neg(:,1), data_neg(:,2), 'gx')
 xlim([-10, 10])
 ylim([-1, 2.5])
+grid on
 
-Vs_combined = [Vs_low, Vs_high(4:end-2)];
-Fs_combined = [Fs_low, Fs_high(4:end-2)];
 
-xs = Vs_combined;
-ys = Fs_combined;
+overlap_i_low = 9;
+overlap_i_high = 10;
 
-param_guess = [1, 1];
+overlap_high = data_pos_high(1:overlap_i_high,:);
+overlap_low = data_pos_low(overlap_i_low:end,:);
+pos_data_offset = mean(overlap_high(:,2) - overlap_low(:,2));
+
+overlap_data = ([overlap_high(:, 1), overlap_high(:,2) - pos_data_offset] + overlap_low)/2;
+
+data_pos = [data_pos_low(1:overlap_i_low-1, :);
+            overlap_data;
+            data_pos_high(overlap_i_high+1:end,1), data_pos_high(overlap_i_high+1:end,2)-pos_data_offset];
+
+param_guess = [1, 1, 0.1];
 opts = optimoptions('lsqnonlin', 'Jacobian', 'on', 'TolFun', 1e-12);
-param = lsqnonlin(@compute_error_vector, param_guess, [], [], opts);
+param1 = lsqnonlin(@(p) compute_error_vector(p, data_pos(1:end-3,1), data_pos(1:end-3,2)), param_guess, [], [], opts);
+param2 = lsqnonlin(@(p) compute_error_vector(p, -data_neg(1:end,1), -data_neg(1:end,2)), param_guess, [], [], opts);
 
-p_opt = param(1)
-q_opt = param(2)
+p1_opt = param1(1)
+q1_opt = param1(2)
+d1_opt = param1(3)
+
+p2_opt = param2(1)
+q2_opt = param2(2)
+d2_opt = param2(3)
 
 Vs_plot = 0:0.1:10;
 
-figure(1)
+figure(2)
+title('Fitted Data')
 hold on
-plot(Vs_high, Fs_high, 'bx')
-plot(Vs_low, Fs_low, 'rx')
-plot(Vs_combined, Fs_combined)
-plot(Vs_plot, Fs(Vs_plot, p_opt, q_opt))
-xlim([0, 10])
-ylim([0, 2])
+plot(data_pos(:,1), data_pos(:,2)-d1_opt, 'bx')
+plot(data_neg(:,1), data_neg(:,2)+d2_opt, 'bx')
+plot(Vs_plot, Fs(Vs_plot, p1_opt, q1_opt), 'r')
+plot(-Vs_plot, -Fs(Vs_plot, p2_opt, q2_opt), 'r')
+line([2*q1_opt/p1_opt, 2*q1_opt/p1_opt], [0, 10])
+line([-2*q2_opt/p2_opt, -2*q2_opt/p2_opt], [-10, 0])
+xlim([-10, 10])
+ylim([-1, 2.5])
 xlabel('Vs [V]')
 ylabel('Fs [g]')
-
-function [e, J] = compute_error_vector(param)
-    n = numel(xs);
-    e = zeros(n, 1);
-    J = zeros(n, 2);
-    
-    p = param(1);
-    q = param(2);
-    
-    for i = 1:n
-        x = xs(i);
-        if x <= 2 * q/p
-            y = p^2/(4*q) * x^2;
-            J(i, 1) = p/(4*q)*x^2;
-            J(i, 2) = - p^2/(4*q^2) * x^2;
-        else
-            y = p * x - q;
-            J(i, 1) = x;
-            J(i, 2) = -1;
-        end
-        
-        e(i) = y - ys(i);
-    end
-end
-
-function out = Fs(Vs, p, q)
-    out = zeros(numel(Vs), 1);
-    
-    for i=1:numel(Vs)
-        x = Vs(i);
-        
-        if x <= 2 * q/p
-            out(i) = p^2/(4*q) * x^2;
-        else
-            out(i) = p * x - q;
-        end
-    end
-end
-end
+grid on
