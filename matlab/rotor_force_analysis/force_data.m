@@ -148,42 +148,21 @@ line([-2*q2_opt/p2_opt, -2*q2_opt/p2_opt], [-10, 0])
 xlim([-10, 10])
 ylim([-1, 2.5])
 xlabel('Vs [V]')
-ylabel('Fs [g]')
+ylabel('Fs [N]')
 grid on
 
 
 
 %% -- eps equilibriums --
 
-load eps_steps_equilibrium
+load vs_slow_ramp
+
 t = log.time;
-vf = log.signals(1).values;
-vb = log.signals(2).values;
-eps = log.signals(4).values;
+i = t <= 90 | (t >= 120 & t <= 210);
+eps = log.signals(4).values(i);
+vs = log.signals(1).values(i)+log.signals(2).values(i);
 
-figure
-hold on
-plot(t, rad2deg(eps))
-stairs(0:5:((numel(eps_seq)-1)*5), eps_seq)
-grid
+[vs, i_sort] = sort(vs);
+eps = eps(i_sort);
 
-
-start_times = (28:5:228);
-end_times = start_times + 2;
-sections = [start_times', end_times'];
-
-sections_size = size(sections);
-n_datapoints = sections_size(1);
-
-avg_eps = zeros(n_datapoints, 1);        
-avg_vf = zeros(n_datapoints, 1);
-avg_vb = zeros(n_datapoints, 1);
-
-for i=1:n_datapoints
-    indices = t > sections(i,1) & t < sections(i,2);
-    avg_eps(i) = mean(eps(indices));
-    avg_vf(i) = mean(vf(indices));
-    avg_vb(i) = mean(vb(indices));
-end
-
-stairs(25:5:225, rad2deg(avg_eps))
+plot(vs, sin(eps)*2.1361)
