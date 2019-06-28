@@ -48,19 +48,31 @@ avg_vs = avg_vf + avg_vb;
 
 Fs_norm = cos(avg_eps);
 
+% figure
+% plot(avg_vs, Fs_norm)
+% hold on
+% plot(avg_vs, Fs_norm, 'rx')
+% xlabel('Vs')
+% ylabel('cos(eps)')
+
 figure
-plot(avg_vs, Fs_norm)
+plot(rad2deg(avg_eps), avg_vs, 'rx')
 hold on
-plot(avg_vs, Fs_norm, 'rx')
-xlabel('Vs')
-ylabel('cos(eps)')
 
-figure
-plot(avg_vs, rad2deg(avg_eps), 'rx')
-xlabel('Vs')
-ylabel('eps (deg)')
+mp=0.3855;
+mc=0.96375;
+lh=0.65;
+lc=0.4822;
+ld=-0.035;
+KVF=0.077;
+eps_theory = deg2rad(-25:25);
+vs_theory = ((2*lh*mp-lc*mc)*cos(eps_theory)-2*ld*mp*sin(eps_theory))*9.81/lh/KVF;
+plot(rad2deg(eps_theory), vs_theory)
 
-figure
-plot(avg_vs, sin(avg_eps), 'rx')
-xlabel('Vs')
-ylabel('sin(eps)')
+ylabel('Vs')
+xlabel('eps (deg)')
+
+% figure
+% plot(avg_vs, sin(avg_eps), 'rx')
+% xlabel('Vs')
+% ylabel('sin(eps)')
