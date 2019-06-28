@@ -6,74 +6,34 @@ q2 = 0.7637/2;
 lp = 0.178;
 lh = 0.67;
 
-h = 0.002;
+%% get phi parameters for exp1
 
-load friction_pitch_strings
+%[t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp1_open_rect_a1_f0_3');
+%[t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp1_open_rect_a0_5_f0_2');
+%[t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp1_open_sine_a0_5_f0_2');
+%[t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp1_open_sine_a0_5_f0_2_higher_vs');
+%[t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp1_open_sine_a1_f0_2');
+%[t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp1_feedback_sine_a25_f0_3');
+%[t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp1_feedback_sine_a40_f0_2');
+[t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp1_feedback_sine_a40_f0_3', 0, 10);
 
-t = log.time;
-Ff = min(Fr(log.signals(1).values, p1, q1, p2, q2), 5);
-Fb = min(Fr(log.signals(2).values, p1, q1, p2, q2), 5);
-phi = log.signals(3).values;
-eps = log.signals(4).values;
-
-cutoff = 1.5;
-[b, a] = butter(5, 2*cutoff*h);
-%freqz(b, a)
-phi_filter = filtfilt(b, a, phi);
-eps_filter = filtfilt(b, a, eps);
-
-dphi = numdiff(phi_filter, h, 1, 2);
-ddphi = numdiff(phi_filter, h, 2, 2);
-
-deps = numdiff(eps_filter, h, 1, 2);
-ddeps = numdiff(eps_filter, h, 2, 2);
-
-
-%sample_shift = 52;
-close all
-
-figure('Name', 'phi and numerical derivatives')
-hold on
-plot(t, phi)
-plot(t, phi_filter)
-plot(t, dphi)
-plot(t, ddphi)
-%plot(t(3:end-2-sample_shift), dphi_int(1+sample_shift:end))
-%plot(t(3:end-2-sample_shift), phi_int(1+sample_shift:end))
-
-figure('Name', 'eps and numerical derivatives');
-hold on
-plot(t, eps)
-plot(t, eps_filter)
-plot(t, deps)
-plot(t, ddeps)
-
-
+Ff = Fr(uf, p1, q1, p2, q2);
+Fb = Fr(ub, p1, q1, p2, q2);
 n = numel(t);
 
-%% only phi
-A = zeros(n, 2);
+A = zeros(n, 3);
 b = zeros(n, 1);
 A(:,1) = ddphi;
 A(:,2) = dphi;
+A(:,3) = sin(phi);
 
 b(:) = lp.*(Ff-Fb);
 
 p = (A'*A) \ (A'*b)
 
-%% phi and eps simultaneously
-A = zeros(2*n, 6);
-b = zeros(2*n, 1);
 
-A(1:2:end, 1) = ddphi;
-A(1:2:end, 2) = dphi;
-A(2:2:end, 3) = ddeps;
-A(2:2:end, 4) = deps;
-A(2:2:end, 5) = sin(eps);
-A(2:2:end, 6) = cos(eps);
+%% using nlgreybox
+id_sys = idnlgrey('grey_exp1', [1, 2, 2], [0.2; 0.01; 0.4], [0; 0]);
+id_data = iddata([phi], [uf, ub], 0.002);
 
-b(1:2:end) = lp.*(Ff-Fb);
-b(2:2:end) = lh.*cos(phi).*(Ff+Fb);
-
-%p = (A'*A) \ (A'*b)
-p = lsqlin(A, b, [0 -1 0 0 0 0; 0 0 0 -1 0 0], [0; 0])
+sys = nlgreyest(id_data, id_sys);
