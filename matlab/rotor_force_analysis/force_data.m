@@ -140,11 +140,18 @@ combined_normalized_data = [
 figure(2)
 title('Fitted Data')
 hold on
-plot(combined_normalized_data(:,1), combined_normalized_data(:,2), 'bx')
-plot(Vs_plot, Fs(Vs_plot, p1_opt, q1_opt), 'r')
-plot(-Vs_plot, -Fs(Vs_plot, p2_opt, q2_opt), 'r')
+
+plot(combined_normalized_data(:,1), combined_normalized_data(:,2), 'bx', 'DisplayName', 'Direct force measurements')
+
+Fs_plot_pos = Fs(Vs_plot, p1_opt, q1_opt);
+Fs_plot_neg = -Fs(Vs_plot, p2_opt, q2_opt);
+Fs_plot = [Fs_plot_neg(end:-1:1); Fs_plot_pos];
+Vs_plot = [-Vs_plot(end:-1:1), Vs_plot];
+plot(Vs_plot, Fs_plot, 'r', 'DisplayName', 'Fitted curve')
+
 line([2*q1_opt/p1_opt, 2*q1_opt/p1_opt], [0, 10])
 line([-2*q2_opt/p2_opt, -2*q2_opt/p2_opt], [-10, 0])
+
 xlim([-10, 10])
 ylim([-1, 2.5])
 xlabel('Vs [V]')
@@ -152,8 +159,7 @@ ylabel('Fs [N]')
 grid on
 
 
-
-%% -- eps equilibriums --
+% -- eps equilibriums --
 
 load vs_slow_ramp
 
@@ -165,4 +171,6 @@ vs = log.signals(1).values(i)+log.signals(2).values(i);
 [vs, i_sort] = sort(vs);
 eps = eps(i_sort);
 
-plot(vs, sin(eps)*2.1361)
+plot(vs, sin(eps)*2.1361, 'x', 'DisplayName', 'Eps equilibriums')
+
+legend('-DynamicLegend')

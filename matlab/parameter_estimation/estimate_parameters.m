@@ -6,7 +6,7 @@ q2 = 0.7637/2;
 lp = 0.178;
 lh = 0.67;
 
-sample_decimation = 100;
+sample_decimation = 20;
 
 %% get phi parameters for exp1 but ignore friction coefficient result
 
@@ -139,6 +139,68 @@ plot_meas_and_fit(sys, id_data, 'eps free swing')
 
 disp('Friction coefficient for eps:')
 mu_eps = sys.Report.Parameters.ParVector(2)
+
+
+%% get exp0 only eps parameters
+t0 = 10.73;
+te = 40;
+eps0 = 0.018;
+deps0 = 0;
+[t, ~, ~, ~, eps, deps, ~, ~, ~, ~, uf, ub] = load_and_diff('exp0_sine_elevation', t0, te);
+id_data = iddata([eps], [uf, ub], 0.002);
+id_data = resample(id_data, 1, sample_decimation);
+
+id_sys = idnlgrey('grey_exp0_only_eps', [1, 2, 2], [1, mu_eps, 1, 1], [eps0; deps0]);
+id_sys.Parameters(1).Minimum = 0;
+id_sys.Parameters(2).Fixed = true;
+id_sys.Parameters(3).Minimum = 0;
+id_sys.Parameters(4).Minimum = 0;
+
+sys = nlgreyest(id_data, id_sys);
+
+plot_meas_and_fit(sys, id_data, 'eps sine')
+
+exp0_only_eps_report = sys.Report;
+
+p_eps_1 = sys.Report.Parameters.ParVector(1)
+p_eps_2 = sys.Report.Parameters.ParVector(3)
+p_eps_3 = sys.Report.Parameters.ParVector(4)
+
+
+%% get exp0 phi and lambda parameters
+t0 = 10;
+te = 30;
+[t, phi, dphi, ~, eps, deps, ~, lamb, dlamb, ~, uf, ub] = load_and_diff('exp0_sine_travel', t0, te);
+id_data = iddata([phi, eps, lamb], [uf, ub], 0.002);
+id_data = resample(id_data, 1, sample_decimation);
+
+init_params = [1, mu_phi, 1, p_eps_1, mu_eps, p_eps_2, p_eps_3, 1, 1];
+init_states = [phi(1); eps(1); lamb(1); dphi(1); deps(1); dlamb(1)];
+
+id_sys = idnlgrey('grey_exp0', [3, 2, 6], init_params, init_states);
+id_sys.Parameters(1).Minimum = 0;
+id_sys.Parameters(2).Fixed = true;
+id_sys.Parameters(3).Minimum = 0;
+id_sys.Parameters(4).Fixed = true;
+id_sys.Parameters(5).Fixed = true;
+id_sys.Parameters(6).Fixed = true;
+id_sys.Parameters(7).Fixed = true;
+id_sys.Parameters(8).Minimum = 0;
+id_sys.Parameters(9).Minimum = 0;
+
+opt = nlgreyestOptions;
+opt.SearchOption.MaxIter = 100;
+sys = nlgreyest(id_data, id_sys, opt);
+
+sim_data = sim(sys, id_data);
+
+figure
+hold on
+plot(id_data.SamplingInstants, id_data.OutputData)
+plot(sim_data.SamplingInstants, sim_data.OutputData)
+legend({'meas phi', 'meas eps', 'meas lamb', 'fit phi', 'fit eps', 'fit lamb'})
+
+exp0_phi_lamb_report = sys.Report;
 
 
 %%
