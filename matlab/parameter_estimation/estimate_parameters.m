@@ -203,6 +203,86 @@ legend({'meas phi', 'meas eps', 'meas lamb', 'fit phi', 'fit eps', 'fit lamb'})
 exp0_phi_lamb_report = sys.Report;
 
 
+%% get exp5 eps parameters
+exp5_files = {'exp5_feedback_rect_a5_f0_1',
+'exp5_feedback_rect_a10_f0_1',
+'exp5_feedback_sine_a10_f0_2',
+'exp5_feedback_sine_a10_f0_4',
+'exp5_open_rect_a0_8_f0_05_off7',
+'exp5_open_rect_a1_f0_05_off6',
+'exp5_open_sine_a0_1_f0_2_off7',
+'exp5_open_sine_a0_5_f0_2_off7'};
+
+t0s = [4, 4, 4, 4, 12, 4, 15, 7];
+
+exp5_ps = zeros(4, 0);
+exp5_reports = {};
+
+for i=1:numel(exp5_files)
+    file_name = exp5_files{i};
+    [t, ~, ~, ~, eps, deps, ~, ~, ~, ~, uf, ub] = load_and_diff(file_name, t0s(i));
+
+    init_params = [0.23, 0.37, 0.215, mu_eps];
+    init_states = [eps(1); deps(1)];
+    
+    % define grey box model
+    id_sys = idnlgrey('grey_exp5', [1, 2, 2], init_params, init_states);
+    id_sys.Parameters(1).Minimum = 0;
+    id_sys.Parameters(2).Minimum = 0;
+    id_sys.Parameters(3).Minimum = 0;
+    id_sys.Parameters(4).Fixed = true;
+    id_data = iddata([eps], [uf, ub], 0.002);
+    id_data = resample(id_data, 1, sample_decimation);
+
+
+    % estimate model parameters
+    sys = nlgreyest(id_data, id_sys);
+
+    exp5_ps(:, end+1) = sys.Report.Parameters.ParVector;
+    exp5_reports{end+1} = sys.Report;
+
+    plot_meas_and_fit(sys, id_data, file_name)
+end
+
+%% get exp4 phi parameters
+exp4_phi_files = {'exp4_phi_feedback_rect_a5_f0_2_Vs4',
+'exp4_phi_feedback_rect_a20_f0_2_Vs4',
+'exp4_phi_feedback_rect_a20_f0_2_Vs6',
+'exp4_phi_feedback_sine_a20_f0_2_Vs6',
+'exp4_phi_feedback_sine_a45_f0_2_Vs6',
+'exp4_phi_feedback_sine_a45_f0_4_Vs6'};
+
+t0s = [0, 0, 0, 0, 0, 0];
+
+exp4_phi_ps = zeros(4, 0);
+exp4_phi_reports = {};
+
+for i=1:numel(exp4_phi_files)
+    file_name = exp4_phi_files{i};
+    [t, phi, dphi, ~, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff(file_name, t0s(i), 5);
+
+    init_params = [0.15, -0.007, mu_phi, 0];
+    init_states = [phi(1); dphi(1)];
+    
+    % define grey box model
+    id_sys = idnlgrey('grey_exp4_only_phi', [1, 2, 2], init_params, init_states);
+    id_sys.Parameters(1).Minimum = 0;
+    %id_sys.Parameters(2).Maximum = 0;
+    id_sys.Parameters(3).Fixed = true;
+    id_data = iddata([phi], [uf, ub], 0.002);
+    id_data = resample(id_data, 1, sample_decimation);
+
+
+    % estimate model parameters
+    sys = nlgreyest(id_data, id_sys);
+
+    exp4_phi_ps(:, end+1) = sys.Report.Parameters.ParVector;
+    exp4_phi_reports{end+1} = sys.Report;
+
+    plot_meas_and_fit(sys, id_data, file_name)
+end
+
+
 %%
 disp('Done with everything')
 
