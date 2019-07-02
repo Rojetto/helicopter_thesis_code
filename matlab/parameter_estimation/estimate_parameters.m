@@ -230,7 +230,7 @@ for i=1:numel(exp5_files)
     id_sys.Parameters(1).Minimum = 0;
     id_sys.Parameters(2).Minimum = 0;
     id_sys.Parameters(3).Minimum = 0;
-    id_sys.Parameters(4).Fixed = true;
+    id_sys.Parameters(4).Minimum = 0;
     id_data = iddata([eps], [uf, ub], 0.002);
     id_data = resample(id_data, 1, sample_decimation);
 
@@ -243,6 +243,103 @@ for i=1:numel(exp5_files)
 
     plot_meas_and_fit(sys, id_data, file_name)
 end
+
+%% try splitting exp5 data into small clips
+clip_size = 7; % s
+clip_size_samples = clip_size * 500;
+
+exp5_files = {'exp5_feedback_sine_a10_f0_2',
+'exp5_feedback_sine_a10_f0_4',
+'exp5_open_rect_a0_8_f0_05_off7',
+'exp5_open_rect_a1_f0_05_off6',
+'exp5_open_sine_a0_1_f0_2_off7',
+'exp5_open_sine_a0_5_f0_2_off7'};
+
+clips = {};
+
+% cut into clips
+for i=1:numel(exp5_files)
+    file_name = exp5_files{i};
+    [t, ~, ~, ~, eps, deps, ~, ~, ~, ~, uf, ub] = load_and_diff(file_name);
+    
+    i_start = find(eps > deg2rad(-25), 1);
+    
+    while i_start < numel(t)
+        i_end = min(i_start + clip_size_samples - 1, numel(t));
+        
+        samples_clip = i_end - i_start + 1;
+        t_clip = (0:(samples_clip-1))*0.002;
+        eps_clip = eps(i_start:i_end);
+        deps_clip = deps(i_start:i_end);
+        uf_clip = uf(i_start:i_end);
+        ub_clip = ub(i_start:i_end);
+        
+        clips{end+1} = struct('t', t_clip', 'eps', eps_clip, 'deps', deps_clip, 'uf', uf_clip, 'ub', ub_clip);
+        
+        i_start = i_end + 1;
+    end
+end
+
+exp5_clip_ps = zeros(4,0);
+
+% fit clips
+for i=1:numel(clips)
+    clip = clips{i};
+
+    init_params = [0.23, 0.37, 0.215, mu_eps];
+    init_states = [clip.eps(1); clip.deps(1)];
+    
+    % define grey box model
+    id_sys = idnlgrey('grey_exp5', [1, 2, 2], init_params, init_states);
+    id_sys.Parameters(1).Minimum = 0;
+    id_sys.Parameters(2).Minimum = 0;
+    id_sys.Parameters(3).Minimum = 0;
+    id_sys.Parameters(4).Minimum = 0;
+    id_data = iddata(clip.eps, [clip.uf, clip.ub], 0.002);
+    id_data = resample(id_data, 1, sample_decimation);
+
+
+    % estimate model parameters
+    sys = nlgreyest(id_data, id_sys);
+    
+    clips{i}.fitPercent = sys.Report.Fit.FitPercent;
+    clips{i}.fitMSE = sys.Report.Fit.MSE;
+    clips{i}.fitParams = sys.Report.Parameters.ParVector;
+
+    exp5_clip_ps(:, end+1) = sys.Report.Parameters.ParVector;
+
+    plot_meas_and_fit(sys, id_data, file_name)
+end
+
+% average estimated parameters, weighted by inverse of fit MSE
+sum_weight = 0;
+sum_weighted_params = 0;
+for i=1:numel(clips)
+    fitParams = clips{i}.fitParams;
+    weight = 1/clips{i}.fitMSE;
+    
+    sum_weight = sum_weight + weight;
+    sum_weighted_params = sum_weighted_params + weight*fitParams;
+end
+
+sum_weighted_params / sum_weight
+
+%%
+figure
+hold on
+for i=1:numel(clips)
+    clip = clips{i};
+
+    init_params = median_ps;
+    init_states = [clip.eps(1); clip.deps(1)];
+    
+    % define grey box model
+    id_sys = idnlgrey('grey_exp5', [1, 2, 2], init_params, init_states);
+    id_data = iddata(clip.eps, [clip.uf, clip.ub], 0.002);
+
+    plot_meas_and_fit(id_sys, id_data, file_name)
+end
+
 
 %% get exp4 phi parameters
 exp4_phi_files = {'exp4_phi_feedback_rect_a5_f0_2_Vs4',
