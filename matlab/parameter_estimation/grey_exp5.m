@@ -1,7 +1,7 @@
 function [ dx, y ] = grey_exp5( t, x, u, p_eps_1, p_eps_2, p_eps_3, mu_eps, varargin)
-p1 = 0.3117/2;
+p1 = 0.3117;
 q1 = 0.9247/2;
-p2 = 0.1396/2;
+p2 = 0.1396;
 q2 = 0.7637/2;
 
 lp = 0.178;

@@ -1,10 +1,12 @@
-p1 = 0.3117/2;
+p1 = 0.3117;
 q1 = 0.9247/2;
-p2 = 0.1396/2;
+p2 = 0.1396;
 q2 = 0.7637/2;
 
 lp = 0.178;
 lh = 0.67;
+
+g = 9.81;
 
 sample_decimation = 20;
 
@@ -245,7 +247,7 @@ for i=1:numel(exp5_files)
 end
 
 %% try splitting exp5 data into small clips
-clip_size = 7; % s
+clip_size = 10; % s
 clip_size_samples = clip_size * 500;
 
 exp5_files = {'exp5_feedback_sine_a10_f0_2',
@@ -274,7 +276,9 @@ for i=1:numel(exp5_files)
         uf_clip = uf(i_start:i_end);
         ub_clip = ub(i_start:i_end);
         
-        clips{end+1} = struct('t', t_clip', 'eps', eps_clip, 'deps', deps_clip, 'uf', uf_clip, 'ub', ub_clip);
+        clips{end+1} = struct('t', t_clip', 'eps', eps_clip,...
+            'deps', deps_clip, 'uf', uf_clip, 'ub', ub_clip,...
+            'file', file_name, 'tStart', i_start*0.002, 'tEnd', i_end*0.002);
         
         i_start = i_end + 1;
     end
@@ -286,21 +290,30 @@ exp5_clip_ps = zeros(4,0);
 for i=1:numel(clips)
     clip = clips{i};
 
-    init_params = [0.23, 0.37, 0.215, mu_eps];
+    init_params = [0.9, 1.0699, 0.8375, mu_eps];
     init_states = [clip.eps(1); clip.deps(1)];
     
     % define grey box model
     id_sys = idnlgrey('grey_exp5', [1, 2, 2], init_params, init_states);
-    id_sys.Parameters(1).Minimum = 0;
-    id_sys.Parameters(2).Minimum = 0;
-    id_sys.Parameters(3).Minimum = 0;
-    id_sys.Parameters(4).Minimum = 0;
+    id_sys.Parameters(1).Minimum = 0.0;
+    id_sys.Parameters(1).Maximum = 1.4;
+    %id_sys.Parameters(2).Minimum = 0.8;
+    %id_sys.Parameters(2).Maximum = 2.0;
+    id_sys.Parameters(2).Fixed = true;
+    %id_sys.Parameters(3).Minimum = 0.8;
+    %id_sys.Parameters(3).Maximum = 0.9;
+    id_sys.Parameters(3).Fixed = true;
+    id_sys.Parameters(4).Minimum = 0.01;
+    id_sys.Parameters(4).Maximum = 0.09;
     id_data = iddata(clip.eps, [clip.uf, clip.ub], 0.002);
     id_data = resample(id_data, 1, sample_decimation);
+    
+    opt = nlgreyestOptions;
+    opt.Display = 'on';
 
 
     % estimate model parameters
-    sys = nlgreyest(id_data, id_sys);
+    sys = nlgreyest(id_data, id_sys, opt);
     
     clips{i}.fitPercent = sys.Report.Fit.FitPercent;
     clips{i}.fitMSE = sys.Report.Fit.MSE;
@@ -308,7 +321,7 @@ for i=1:numel(clips)
 
     exp5_clip_ps(:, end+1) = sys.Report.Parameters.ParVector;
 
-    plot_meas_and_fit(sys, id_data, file_name)
+    plot_meas_and_fit(sys, id_data, clips{i}.file)
 end
 
 % average estimated parameters, weighted by inverse of fit MSE
@@ -340,6 +353,52 @@ for i=1:numel(clips)
     plot_meas_and_fit(id_sys, id_data, file_name)
 end
 
+%% p_eps_2 and p_eps_3 from static elevation steps
+
+[t, ~, ~, ~, eps, deps, ddeps, ~, ~, ~, uf, ub] = load_and_diff('elevation_steps');
+
+start_times = (11.2:3:161.2);
+end_times = start_times + 0.3;
+
+sections = [start_times', end_times'];
+n_datapoints = size(sections, 1);
+
+avg_eps = zeros(n_datapoints, 1);        
+avg_vf = zeros(n_datapoints, 1);
+avg_vb = zeros(n_datapoints, 1);
+
+all_indices = zeros(numel(t), 1);
+
+for i=1:n_datapoints
+    indices = t > sections(i,1) & t < sections(i,2);
+    all_indices = all_indices | indices;
+    avg_eps(i) = mean(eps(indices));
+    avg_uf(i) = mean(uf(indices));
+    avg_ub(i) = mean(ub(indices));
+end
+
+avg_us = avg_uf + avg_ub;
+Fs = Fr(avg_uf, p1, q1, p2, q2) + Fr(avg_ub, p1, q1, p2, q2);
+
+figure
+hold on
+static_points = abs(ddeps) < 0.05 & abs(deps) < 0.022 & t > 11 & t < 160;
+plot(t, eps)
+plot(t(all_indices), eps(all_indices), 'x')
+plot((start_times + end_times)/2, avg_eps, 'o')
+plot((start_times + end_times)/2, 0.5*(avg_uf + avg_ub), 'o')
+plot((start_times + end_times)/2, Fs, 'o')
+grid
+
+A = [sin(avg_eps), cos(avg_eps)];
+b = lh*Fs;
+
+abc = (A'*A) \ (A'*b)
+
+figure
+hold on
+plot(avg_eps, b, 'x');
+plot(avg_eps, A*abc);
 
 %% get exp4 phi parameters
 exp4_phi_files = {'exp4_phi_feedback_rect_a5_f0_2_Vs4',
@@ -379,6 +438,55 @@ for i=1:numel(exp4_phi_files)
     plot_meas_and_fit(sys, id_data, file_name)
 end
 
+
+%% exp4 lambda parameters
+exp4_lamb_files = {'exp4_lamb_feedback_rect_a10_f0_05',
+'exp4_lamb_feedback_sine_a20_f0_1',
+'exp4_lamb_feedback_sine_a20_f0_2_Vs7',
+'exp4_lamb_open_step_phi_neg',
+'exp4_lamb_open_step_phi_pos'};
+
+t0s = [0, 0, 0, 7, 7];
+
+exp4_lamb_ps = zeros(3, 0);
+exp4_lamb_reports = {};
+
+for i=1:numel(exp4_lamb_files)
+    file_name = exp4_lamb_files{i};
+    [t, phi, ~, ~, ~, ~, ~, lamb, dlamb, ~, uf, ub] = load_and_diff(file_name, t0s(i));
+
+    init_params = [1.3, 0.045, 0];
+    init_states = [lamb(1); dlamb(1)];
+    
+    % define grey box model
+    id_sys = idnlgrey('grey_exp4_only_lamb', [1, 3, 2], init_params, init_states);
+    id_sys.Parameters(1).Minimum = 1.0;
+    id_sys.Parameters(1).Maximum = 1.5;
+    id_sys.Parameters(2).Minimum = 0.03;
+    id_sys.Parameters(2).Maximum = 0.07;
+    id_sys.Parameters(3).Minimum = deg2rad(-10);
+    id_sys.Parameters(3).Maximum = deg2rad(10);
+    id_data = iddata([lamb], [uf, ub, phi], 0.002);
+    id_data = resample(id_data, 1, sample_decimation);
+
+
+    % estimate model parameters
+    sys = nlgreyest(id_data, id_sys, 'Display', 'on');
+
+    exp4_lamb_ps(:, end+1) = sys.Report.Parameters.ParVector;
+    exp4_lamb_reports{end+1} = sys.Report;
+
+    plot_meas_and_fit(sys, id_data, file_name)
+end
+
+%% calculate physical model parameters
+lp
+lh
+mh = p_phi_1 / lp^2
+lc = (p_lamb_1 - (lh^2+lp^2)*mh)/(lh*mh-p_eps_3/g)
+mc = (lh*mh-p_eps_3/g)/lc
+dh = (p_eps_2/g+sqrt(mc*(p_eps_1-lc^2*mc-lh^2*mh)))/mh
+dc = (dh*mh-p_eps_2/g)/mc
 
 %%
 disp('Done with everything')
