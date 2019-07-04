@@ -4,7 +4,12 @@ n_experiments = numel(meas_data.ExperimentNames);
 sim_data = sim(sys, meas_data);
 
 for i=1:n_experiments
-figure('Name', [title ', ' meas_data.ExperimentNames{i}])
+    if exist('title', 'var')
+        fig_title = [title ', ' meas_data.ExperimentNames{i}];
+    else
+        fig_title = meas_data.ExperimentNames{i};
+    end
+figure('Name', fig_title)
 hold on
 plot(meas_data.SamplingInstants{i}, meas_data.OutputData{i})
 plot(sim_data.SamplingInstants{i}, sim_data.OutputData{i})

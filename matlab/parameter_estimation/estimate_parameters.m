@@ -12,7 +12,7 @@ sample_decimation = 20;
 
 %% get phi parameters for exp1 but ignore friction coefficient result
 
-exp1_files = {'exp1_open_rect_a1_f0_3',
+files = {'exp1_open_rect_a1_f0_3',
 'exp1_open_rect_a0_5_f0_2',
 'exp1_open_sine_a0_5_f0_2',
 'exp1_open_sine_a0_5_f0_2_higher_vs',
@@ -21,59 +21,38 @@ exp1_files = {'exp1_open_rect_a1_f0_3',
 'exp1_feedback_sine_a40_f0_2',
 'exp1_feedback_sine_a40_f0_3'};
 
-exp1_ps = zeros(3, 0);
-exp1_reports = {};
+[clips, data, inits] = make_experiment_clips(files, 'phi');
 
-for i=1:numel(exp1_files)
-    file_name = exp1_files{i};
-    [t, phi, ~, ~, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff(file_name, 0, 30);
+sys_init = idnlgrey('grey_exp1', [1, 2, 2], [0.040; 0.005; 0.05], inits);
 
-    % define grey box model
-    id_sys = idnlgrey('grey_exp1', [1, 2, 2], [0.045; 0.005; 0.05], [0; 0]);
-    id_sys.Parameters(1).Minimum = 0;
-    id_sys.Parameters(2).Minimum = 0;
-    id_sys.Parameters(3).Minimum = 0;
-    id_data = iddata([phi], [uf, ub], 0.002);
-    id_data = resample(id_data, 1, sample_decimation);
+% estimate model parameters
+sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
+% plot
+plot_meas_and_fit(sys_est, data, 'Exp1 Parameters except friction')
 
-    % estimate model parameters
-    sys = nlgreyest(id_data, id_sys);
-
-    exp1_ps(:, end+1) = sys.Report.Parameters.ParVector;
-    exp1_reports{end+1} = sys.Report;
-
-    plot_meas_and_fit(sys, id_data, file_name)
-end
+% resulting parameters
+exp1_p_phi_1 = sys_est.Report.Parameters.ParVector(1);
+exp1_p_phi_2 = sys_est.Report.Parameters.ParVector(2);
 
 %% get friction coefficient for phi using free swing experiment
 
-%data
-t0 = 10;
-phi0 = 1.0519;
-dphi0 = 0;
-[t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp1_free_swing_large', t0);
-phi = phi - mean(phi);
-id_data = iddata([phi], [uf, ub], 0.002);
-id_data = resample(id_data, 1, sample_decimation);
+[clips, data, inits] = make_experiment_clips(...
+    {'exp1_free_swing_large', 'exp1_free_swing_small'}, 'phi', ...
+    'StartTimes', [10, 5], 'EndTimes', [41, 26]);
 
-%system
-p1_mean = mean(exp1_ps(1,:));
-p2_mean = mean(exp1_ps(2,:));
-p3_mean = mean(exp1_ps(3,:));
-id_sys = idnlgrey('grey_exp1', [1, 2, 2], [p1_mean, p2_mean, p3_mean], [phi0; dphi0]);
-id_sys.Parameters(1).Fixed = true;
-id_sys.Parameters(2).Minimum = 0;
-id_sys.Parameters(3).Fixed = false;
+sys_init = idnlgrey('grey_exp1', [1, 2, 2], [exp1_p_phi_1; exp1_p_phi_2; 0.04], inits);
+sys_init.Parameters(1).Fixed = true;
+sys_init.Parameters(2).Fixed = false;
 
-%actual estimation
-sys = nlgreyest(id_data, id_sys);
-exp1_reports{end+1} = sys.Report;
+% estimate model parameters
+sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
-plot_meas_and_fit(sys, id_data, 'Phi free swing')
+% plot
+plot_meas_and_fit(sys_est, data, 'Exp1 mu_phi')
 
-disp('Friction coefficient for phi:')
-mu_phi = sys.Report.Parameters.ParVector(2)
+% resulting parameters
+mu_phi = sys_est.Report.Parameters.ParVector(3);
 
 %% get eps parameters for exp3 but ignore friction coefficient result
 

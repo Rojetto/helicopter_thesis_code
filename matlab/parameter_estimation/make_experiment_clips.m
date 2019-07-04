@@ -8,6 +8,7 @@ addRequired(p, 'output_variables', @validate_variables)
 addOptional(p, 'InputVariables', {'uf', 'ub'}, @validate_variables)
 addOptional(p, 'ClipLength', 10)
 addOptional(p, 'StartTimes', zeros(n_files, 1))
+addOptional(p, 'EndTimes', Inf*ones(n_files, 1))
 addOptional(p, 'ResamplingDecimation', 20)
 
 
@@ -17,6 +18,7 @@ output_variables = normalize_variables(output_variables);
 input_variables = normalize_variables(p.Results.InputVariables);
 clip_length = p.Results.ClipLength;
 start_times = p.Results.StartTimes;
+end_times = p.Results.EndTimes;
 resampling_decimation = p.Results.ResamplingDecimation;
 
 %% clip splitting
@@ -36,11 +38,11 @@ clips = struct('t', {},...
 
 for i=1:n_files
     file_name = file_names{i};
-    [t, phi, dphi, ~, eps, deps, ~, lamb, dlamb, ~, uf, ub] = load_and_diff(file_name);
+    [t, phi, dphi, ~, eps, deps, ~, lamb, dlamb, ~, uf, ub] = load_and_diff(file_name, 0, end_times(i));
     
     i_start = start_times(i)*500+1;
     
-    while i_start < numel(t)
+    while i_start <= numel(t) - clip_size_samples/2
         i_end = min(i_start + clip_size_samples - 1, numel(t));
         
         samples_clip = i_end - i_start + 1;
@@ -109,14 +111,14 @@ for i=1:numel(output_variables)
     initial_states(dout_i).Fixed = true(1, n_clips);
     
     if strcmp(output_var, 'phi')
-        initial_states(out_i).Values = arrayfun(@(c) c.phi(1), clips);
-        initial_states(dout_i).Values = arrayfun(@(c) c.dphi(1), clips);
+        initial_states(out_i).Value = arrayfun(@(c) c.phi(1), clips);
+        initial_states(dout_i).Value = arrayfun(@(c) c.dphi(1), clips);
     elseif strcmp(output_var, 'epsilon')
-        initial_states(out_i).Values = arrayfun(@(c) c.eps(1), clips);
-        initial_states(dout_i).Values = arrayfun(@(c) c.deps(1), clips);
+        initial_states(out_i).Value = arrayfun(@(c) c.eps(1), clips);
+        initial_states(dout_i).Value = arrayfun(@(c) c.deps(1), clips);
     elseif strcmp(output_var, 'lambda')
-        initial_states(out_i).Values = arrayfun(@(c) c.lamb(1), clips);
-        initial_states(dout_i).Values = arrayfun(@(c) c.dlamb(1), clips);
+        initial_states(out_i).Value = arrayfun(@(c) c.lamb(1), clips);
+        initial_states(dout_i).Value = arrayfun(@(c) c.dlamb(1), clips);
     end
 end
     
