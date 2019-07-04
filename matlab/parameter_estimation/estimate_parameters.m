@@ -23,7 +23,7 @@ files = {'exp1_open_rect_a1_f0_3',
 
 [clips, data, inits] = make_experiment_clips(files, 'phi');
 
-sys_init = idnlgrey('grey_exp1', [1, 2, 2], [0.040; 0.005; 0.05], inits);
+sys_init = idnlgrey('grey_exp1', [1, 2, 2], [0.044; 0.0022; 0.033], inits);
 
 % estimate model parameters
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
@@ -56,7 +56,7 @@ mu_phi = sys_est.Report.Parameters.ParVector(3);
 
 %% get eps parameters for exp3 but ignore friction coefficient result
 
-exp3_files = {'exp3_feedback_sine_a10_f0_1',
+files = {'exp3_feedback_sine_a10_f0_1',
 'exp3_feedback_sine_a10_f0_2',
 'exp3_open_rect_a1_f0_2_off2',
 'exp3_open_rect_a3_f0_2',
@@ -65,62 +65,39 @@ exp3_files = {'exp3_feedback_sine_a10_f0_1',
 'exp3_open_sine_a3_f0_2',
 'exp3_open_sine_a6_f0_4'};
 
+[clips, data, inits] = make_experiment_clips(files, 'eps');
 
-exp3_ps = zeros(3, 0);
-exp3_reports = {};
+sys_init = idnlgrey('grey_exp3', [1, 2, 2], [1.3; 1.5; 0.05], inits);
 
-for i=1:numel(exp3_files)
-    file_name = exp3_files{i};
-    [t, ~, ~, ~, eps, ~, ~, ~, ~, ~, uf, ub] = load_and_diff(file_name, 0, 30);
+% estimate model parameters
+sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
-    % define grey box model
-    id_sys = idnlgrey('grey_exp3', [1, 2, 2], [0.34; 0.01; 0.38], [0; 0]);
-    id_sys.Parameters(1).Minimum = 0;
-    id_sys.Parameters(2).Minimum = 0;
-    id_sys.Parameters(3).Minimum = 0;
-    id_data = iddata([eps], [uf, ub], 0.002);
-    id_data = resample(id_data, 1, sample_decimation);
+% plot
+plot_meas_and_fit(sys_est, data, 'Exp3 Parameters except friction')
 
-
-    % estimate model parameters
-    sys = nlgreyest(id_data, id_sys);
-
-    exp3_ps(:, end+1) = sys.Report.Parameters.ParVector;
-    exp3_reports{end+1} = sys.Report;
-
-    plot_meas_and_fit(sys, id_data, file_name)
-end
+% resulting parameters
+exp3_p_eps_1 = sys_est.Report.Parameters.ParVector(1);
+exp3_p_eps_2 = sys_est.Report.Parameters.ParVector(2);
 
 
 %% get friction coefficient for eps using free swing experiment
 
-%data
-t0 = 9;
-eps0 = 0.4542;
-deps0 = 0;
-[t, ~, ~, ~, eps, ~, ~, ~, ~, ~, uf, ub] = load_and_diff('exp3_free_swing_large', t0);
-eps = eps - mean(eps);
-id_data = iddata([eps], [uf, ub], 0.002);
-id_data = resample(id_data, 1, sample_decimation);
+[clips, data, inits] = make_experiment_clips(...
+    {'exp3_free_swing_large', 'exp3_free_swing_small'}, 'eps', ...
+    'StartTimes', [9, 6.5], 'EndTimes', [100, 70]);
 
-%system
-p1_mean = mean(exp3_ps(1,:));
-p2_mean = mean(exp3_ps(2,:));
-p3_mean = mean(exp3_ps(3,:));
-id_sys = idnlgrey('grey_exp3', [1, 2, 2], [p1_mean, p2_mean, p3_mean], [eps0; deps0]);
-id_sys.Parameters(1).Fixed = true;
-id_sys.Parameters(2).Minimum = 0;
-id_sys.Parameters(3).Fixed = false;
+sys_init = idnlgrey('grey_exp3', [1, 2, 2], [exp3_p_eps_1; exp3_p_eps_2; 0.076], inits);
+sys_init.Parameters(1).Fixed = true;
+sys_init.Parameters(2).Fixed = false;
 
-%actual estimation
-sys = nlgreyest(id_data, id_sys);
-exp3_reports{end+1} = sys.Report;
+% estimate model parameters
+sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
-plot_meas_and_fit(sys, id_data, 'eps free swing')
+% plot
+plot_meas_and_fit(sys_est, data, 'Exp3 mu_eps')
 
-disp('Friction coefficient for eps:')
-mu_eps = sys.Report.Parameters.ParVector(2)
-
+% resulting parameters
+mu_eps = sys_est.Report.Parameters.ParVector(3);
 
 %% get exp0 only eps parameters
 t0 = 10.73;

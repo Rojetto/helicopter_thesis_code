@@ -1,4 +1,4 @@
-function [ dx, y ] = grey_exp3( t, x, u, ps1, ps2, ps3, varargin)
+function [ dx, y ] = grey_exp3( t, x, u, p_eps_1, p_eps_2, mu_eps, varargin)
 p1 = 0.3117;
 q1 = 0.9247/2;
 p2 = 0.1396;
@@ -14,7 +14,7 @@ eps = x(1);
 deps = x(2);
 
 dx(1) = deps;
-dx(2) = (lh*Fs - ps2*deps - ps3*sin(eps))/ps1;
+dx(2) = (lh*Fs - mu_eps*deps - p_eps_2*sin(eps))/p_eps_1;
 
 y = eps;
 end
