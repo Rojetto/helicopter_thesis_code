@@ -9,21 +9,36 @@ for i=1:n_experiments
     else
         fig_title = meas_data.ExperimentNames{i};
     end
-figure('Name', fig_title)
-hold on
-plot(meas_data.SamplingInstants{i}, meas_data.OutputData{i})
-plot(sim_data.SamplingInstants{i}, sim_data.OutputData{i})
-legend({'Measured', 'Fitted Model Output'})
+    
+    figure('Name', fig_title)
+    hold on
 
-params = sys.Parameters;
-params = [params.Value];
+    meas_t = get_if_cell(meas_data.SamplingInstants, i);
+    meas_y = get_if_cell(meas_data.OutputData, i);
+    sim_t = get_if_cell(sim_data.SamplingInstants, i);
+    sim_y = get_if_cell(sim_data.OutputData, i);
 
-xl = xlim();
-yl = ylim();
+    plot(meas_t, meas_y)
+    plot(sim_t, sim_y)
+    legend({'Measured', 'Fitted Model Output'})
 
-text(xl(1)+0.1*(xl(2)-xl(1)), yl(1)+0.1*(yl(2)-yl(1)), num2str(params));
+    params = sys.Parameters;
+    params = [params.Value];
 
-grid on
+    xl = xlim();
+    yl = ylim();
+
+    text(xl(1)+0.1*(xl(2)-xl(1)), yl(1)+0.1*(yl(2)-yl(1)), num2str(params));
+
+    grid on
+end
+
+function val = get_if_cell(cell_obj, index)
+    if iscell(cell_obj)
+        val = cell_obj{index};
+    else
+        val = cell_obj;
+    end
 end
 end
 

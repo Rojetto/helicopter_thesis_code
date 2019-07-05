@@ -45,7 +45,7 @@ for i=1:n_files
     clip_size_samples = clip_length * sampling_freq;
     i_start = start_times(i)*sampling_freq+1;
     
-    while i_start <= numel(t) - clip_size_samples/2
+    while i_start < numel(t)
         i_end = min(i_start + clip_size_samples - 1, numel(t));
         
         samples_clip = i_end - i_start + 1;

@@ -145,6 +145,66 @@ plot_meas_and_fit(sys_est, data, 'Exp5 p_eps_2 and p_eps_3')
 p_eps_2 = sys_est.Report.Parameters.ParVector(2);
 p_eps_3 = sys_est.Report.Parameters.ParVector(3);
 
+%% get phi parameters from step responses
+files = {'exp6_open_step_neg_Vs0_Vd3_5',
+'exp6_open_step_neg_Vs0_Vd5',
+'exp6_open_step_neg_Vs4_Vd1',
+'exp6_open_step_neg_Vs4_Vd2',
+'exp6_open_step_pos_Vs0_Vd3_5',
+'exp6_open_step_pos_Vs0_Vd5',
+'exp6_open_step_pos_Vs4_Vd1',
+'exp6_open_step_pos_Vs4_Vd2'};
+
+start_times = [0, 0, 13, 13.5, 0, 0, 13, 11.6];
+end_times = [4.2, 2.2, 17.8, 15.6, 5.2, 2.2, 17.45, 13.6];
+
+[clips, data, inits] = make_experiment_clips(files, 'phi', ...
+    'StartTimes', start_times, 'EndTimes', end_times, 'ClipLength', 8);
+
+n_clips = numel(clips);
+
+% add phi offset state that also has to be estimated
+inits(end+1) = struct('Name', 'phi_off',...
+    'Unit', 'rad',...
+    'Value', zeros(1, n_clips),...
+    'Minimum', deg2rad(-10)*ones(1, n_clips),...
+    'Maximum', deg2rad(10)*ones(1, n_clips),...
+    'Fixed', true(1, n_clips));
+
+sys_init = idnlgrey('grey_exp4_only_phi', [1, 2, 3], [0.15; -0.007; mu_phi], inits);
+sys_init.Parameters(2).Maximum = 0;
+sys_init.Parameters(3).Fixed = true;
+
+% estimate model parameters
+sys_est = nlgreyest(data, sys_init, 'Display', 'on');
+
+% plot
+plot_meas_and_fit(sys_est, data, 'Exp6 phi parameters')
+
+% resulting parameters
+p_phi_1 = sys_est.Report.Parameters.ParVector(1);
+p_phi_2 = sys_est.Report.Parameters.ParVector(2);
+
+% for i=1:numel(files)
+%     file_name = files{i};
+%     disp(file_name)
+%     [t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff(file_name);
+%     
+%     figure('Name', file_name)
+%     subplot(211)
+%     hold on
+%     plot(t, phi)
+%     plot(t, dphi)
+%     plot(t, ddphi)
+%     grid
+%     
+%     subplot(212)
+%     hold on
+%     plot(t, uf)
+%     plot(t, ub)
+%     grid
+% end
+
 %% get exp4 phi parameters
 files = {'exp4_phi_feedback_rect_a5_f0_2_Vs4',
 'exp4_phi_feedback_rect_a20_f0_2_Vs4',
