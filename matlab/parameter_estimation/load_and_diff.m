@@ -14,7 +14,7 @@ i = log.time >= t_start & log.time <= t_end;
 
 t = log.time(i);
 
-h = 0.002;
+h = (t(end) - t(1))/(numel(t) - 1);
 cutoff = 1.5;
 [b, a] = butter(5, 2*cutoff*h);
 
