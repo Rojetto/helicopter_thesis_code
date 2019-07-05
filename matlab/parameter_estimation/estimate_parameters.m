@@ -10,6 +10,8 @@ g = 9.81;
 
 sample_decimation = 20;
 
+do_plots = false;
+
 %% get phi parameters for exp1 but ignore friction coefficient result
 
 files = {'exp1_open_rect_a1_f0_3',
@@ -29,7 +31,9 @@ sys_init = idnlgrey('grey_exp1', [1, 2, 2], [0.044; 0.0022; 0.033], inits);
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
 % plot
-plot_meas_and_fit(sys_est, data, 'Exp1 Parameters except friction')
+if do_plots
+    plot_meas_and_fit(sys_est, data, 'Exp1 Parameters except friction')
+end
 
 % resulting parameters
 exp1_p_phi_1 = sys_est.Report.Parameters.ParVector(1);
@@ -49,7 +53,9 @@ sys_init.Parameters(2).Fixed = false;
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
 % plot
-plot_meas_and_fit(sys_est, data, 'Exp1 mu_phi')
+if do_plots
+    plot_meas_and_fit(sys_est, data, 'Exp1 mu_phi')
+end
 
 % resulting parameters
 mu_phi = sys_est.Report.Parameters.ParVector(3);
@@ -73,7 +79,9 @@ sys_init = idnlgrey('grey_exp3', [1, 2, 2], [1.3; 1.5; 0.05], inits);
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
 % plot
-plot_meas_and_fit(sys_est, data, 'Exp3 Parameters except friction')
+if do_plots
+    plot_meas_and_fit(sys_est, data, 'Exp3 Parameters except friction')
+end
 
 % resulting parameters
 exp3_p_eps_1 = sys_est.Report.Parameters.ParVector(1);
@@ -94,7 +102,9 @@ sys_init.Parameters(2).Fixed = false;
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
 % plot
-plot_meas_and_fit(sys_est, data, 'Exp3 mu_eps')
+if do_plots
+    plot_meas_and_fit(sys_est, data, 'Exp3 mu_eps')
+end
 
 % resulting parameters
 mu_eps = sys_est.Report.Parameters.ParVector(3);
@@ -113,7 +123,7 @@ files = {'exp5_feedback_rect_a5_f0_1',
 start_times = [4, 4, 4, 4, 12, 4, 15, 7];
 
 [clips, data, inits] = make_experiment_clips(files, 'eps', ...
-    'StartTimes', start_times, 'EndTimes', end_times, 'ResamplingDecimation', 20);
+    'StartTimes', start_times, 'ResamplingDecimation', 20);
 
 sys_init = idnlgrey('grey_exp5', [1, 2, 2], [0.838; 1.33; 0.838; mu_eps], inits);
 sys_init.Parameters(4).Fixed = true;
@@ -122,7 +132,9 @@ sys_init.Parameters(4).Fixed = true;
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
 % plot
-plot_meas_and_fit(sys_est, data, 'Exp5 p_eps_1')
+if do_plots
+    plot_meas_and_fit(sys_est, data, 'Exp5 p_eps_1')
+end
 
 % resulting parameters
 p_eps_1 = sys_est.Report.Parameters.ParVector(1);
@@ -139,31 +151,29 @@ sys_init.Parameters(4).Fixed = true;
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
 % plot
-plot_meas_and_fit(sys_est, data, 'Exp5 p_eps_2 and p_eps_3')
+if do_plots
+    plot_meas_and_fit(sys_est, data, 'Exp5 p_eps_2 and p_eps_3')
+end
 
 % resulting parameters
 p_eps_2 = sys_est.Report.Parameters.ParVector(2);
 p_eps_3 = sys_est.Report.Parameters.ParVector(3);
 
 %% get phi parameters from step responses
-files = {'exp6_open_step_neg_Vs0_Vd3_5',
-'exp6_open_step_neg_Vs0_Vd5',
-'exp6_open_step_neg_Vs4_Vd1',
+files = {'exp6_open_step_neg_Vs4_Vd1',
 'exp6_open_step_neg_Vs4_Vd2',
-'exp6_open_step_pos_Vs0_Vd3_5',
-'exp6_open_step_pos_Vs0_Vd5',
 'exp6_open_step_pos_Vs4_Vd1',
 'exp6_open_step_pos_Vs4_Vd2'};
 
-start_times = [0, 0, 13, 13.5, 0, 0, 13, 11.6];
-end_times = [4.2, 2.2, 17.8, 15.6, 5.2, 2.2, 17.45, 13.6];
+start_times = [13, 13.5, 13, 11.6];
+end_times = [17.8, 15.6, 17.45, 13.6];
 
 [clips, data, inits] = make_experiment_clips(files, 'phi', ...
     'StartTimes', start_times, 'EndTimes', end_times, 'ClipLength', 8);
 
 n_clips = numel(clips);
 
-% add phi offset state that also has to be estimated
+% add phi offset state
 inits(end+1) = struct('Name', 'phi_off',...
     'Unit', 'rad',...
     'Value', zeros(1, n_clips),...
@@ -171,68 +181,17 @@ inits(end+1) = struct('Name', 'phi_off',...
     'Maximum', deg2rad(10)*ones(1, n_clips),...
     'Fixed', true(1, n_clips));
 
-sys_init = idnlgrey('grey_exp4_only_phi', [1, 2, 3], [0.15; -0.007; mu_phi], inits);
+sys_init = idnlgrey('grey_exp4_only_phi', [1, 2, 3], [0.04; -0.007; mu_phi], inits);
 sys_init.Parameters(2).Maximum = 0;
-sys_init.Parameters(3).Fixed = true;
+sys_init.Parameters(3).Fixed = false;
 
 % estimate model parameters
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
 % plot
-plot_meas_and_fit(sys_est, data, 'Exp6 phi parameters')
-
-% resulting parameters
-p_phi_1 = sys_est.Report.Parameters.ParVector(1);
-p_phi_2 = sys_est.Report.Parameters.ParVector(2);
-
-% for i=1:numel(files)
-%     file_name = files{i};
-%     disp(file_name)
-%     [t, phi, dphi, ddphi, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff(file_name);
-%     
-%     figure('Name', file_name)
-%     subplot(211)
-%     hold on
-%     plot(t, phi)
-%     plot(t, dphi)
-%     plot(t, ddphi)
-%     grid
-%     
-%     subplot(212)
-%     hold on
-%     plot(t, uf)
-%     plot(t, ub)
-%     grid
-% end
-
-%% get exp4 phi parameters
-files = {'exp4_phi_feedback_rect_a5_f0_2_Vs4',
-'exp4_phi_feedback_rect_a20_f0_2_Vs4',
-'exp4_phi_feedback_rect_a20_f0_2_Vs6',
-'exp4_phi_feedback_sine_a20_f0_2_Vs6',
-'exp4_phi_feedback_sine_a45_f0_2_Vs6',
-'exp4_phi_feedback_sine_a45_f0_4_Vs6'};
-
-[clips, data, inits] = make_experiment_clips(files, 'phi');
-
-n_clips = numel(clips);
-
-% add phi offset state that also has to be estimated
-inits(end+1) = struct('Name', 'phi_off',...
-    'Unit', 'rad',...
-    'Value', zeros(1, n_clips),...
-    'Minimum', deg2rad(-10)*ones(1, n_clips),...
-    'Maximum', deg2rad(10)*ones(1, n_clips),...
-    'Fixed', false(1, n_clips));
-
-sys_init = idnlgrey('grey_exp4_only_phi', [1, 2, 3], [0.15; -0.007; mu_phi], inits);
-sys_init.Parameters(3).Fixed = true;
-
-% estimate model parameters
-sys_est = nlgreyest(data, sys_init, 'Display', 'on');
-
-% plot
-plot_meas_and_fit(sys_est, data, 'Exp4 phi parameters')
+if do_plots
+    plot_meas_and_fit(sys_est, data, 'Exp6 phi parameters')
+end
 
 % resulting parameters
 p_phi_1 = sys_est.Report.Parameters.ParVector(1);
@@ -265,7 +224,9 @@ sys_init = idnlgrey('grey_exp4_only_lamb', [1, 3, 3], [1.28, 0.0466], inits);
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
 % plot
-plot_meas_and_fit(sys_est, data, 'Exp4 lambda parameters')
+if do_plots
+    plot_meas_and_fit(sys_est, data, 'Exp4 lambda parameters')
+end
 
 % resulting parameters
 p_lamb_1 = sys_est.Report.Parameters.ParVector(1);
