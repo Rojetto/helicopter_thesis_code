@@ -179,44 +179,37 @@ p_phi_1 = sys_est.Report.Parameters.ParVector(1);
 p_phi_2 = sys_est.Report.Parameters.ParVector(2);
 
 %% exp4 lambda parameters
-exp4_lamb_files = {'exp4_lamb_feedback_rect_a10_f0_05',
+files = {'exp4_lamb_feedback_rect_a10_f0_05',
 'exp4_lamb_feedback_sine_a20_f0_1',
 'exp4_lamb_feedback_sine_a20_f0_2_Vs7',
 'exp4_lamb_open_step_phi_neg',
 'exp4_lamb_open_step_phi_pos'};
 
-t0s = [0, 0, 0, 7, 7];
+start_times = [0, 0, 0, 7, 7];
 
-exp4_lamb_ps = zeros(3, 0);
-exp4_lamb_reports = {};
+[clips, data, inits] = make_experiment_clips(files, 'lamb',...
+    'InputVariables', {'uf', 'ub', 'phi'},...
+    'StartTimes', start_times);
+n_clips = numel(clips);
 
-for i=1:numel(exp4_lamb_files)
-    file_name = exp4_lamb_files{i};
-    [t, phi, ~, ~, ~, ~, ~, lamb, dlamb, ~, uf, ub] = load_and_diff(file_name, t0s(i));
+inits(end+1) = struct('Name', 'phi_off',...
+    'Unit', 'rad',...
+    'Value', zeros(1, n_clips),...
+    'Minimum', deg2rad(-10)*ones(1, n_clips),...
+    'Maximum', deg2rad(10)*ones(1, n_clips),...
+    'Fixed', false(1, n_clips));
 
-    init_params = [1.3, 0.045, 0];
-    init_states = [lamb(1); dlamb(1)];
-    
-    % define grey box model
-    id_sys = idnlgrey('grey_exp4_only_lamb', [1, 3, 2], init_params, init_states);
-    id_sys.Parameters(1).Minimum = 1.0;
-    id_sys.Parameters(1).Maximum = 1.5;
-    id_sys.Parameters(2).Minimum = 0.03;
-    id_sys.Parameters(2).Maximum = 0.07;
-    id_sys.Parameters(3).Minimum = deg2rad(-10);
-    id_sys.Parameters(3).Maximum = deg2rad(10);
-    id_data = iddata([lamb], [uf, ub, phi], 0.002);
-    id_data = resample(id_data, 1, sample_decimation);
+sys_init = idnlgrey('grey_exp4_only_lamb', [1, 3, 3], [1.28, 0.0466], inits);
 
+% estimate model parameters
+sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
-    % estimate model parameters
-    sys = nlgreyest(id_data, id_sys, 'Display', 'on');
+% plot
+plot_meas_and_fit(sys_est, data, 'Exp4 lambda parameters')
 
-    exp4_lamb_ps(:, end+1) = sys.Report.Parameters.ParVector;
-    exp4_lamb_reports{end+1} = sys.Report;
-
-    plot_meas_and_fit(sys, id_data, file_name)
-end
+% resulting parameters
+p_lamb_1 = sys_est.Report.Parameters.ParVector(1);
+mu_lamb = sys_est.Report.Parameters.ParVector(2);
 
 %% calculate physical model parameters
 lp

@@ -1,4 +1,4 @@
-function [ dx, y ] = grey_exp4_only_lamb( t, x, u, p_lamb_1, mu_lamb, phi_off, varargin )
+function [ dx, y ] = grey_exp4_only_lamb( t, x, u, p_lamb_1, mu_lamb, varargin )
 p1 = 0.3117;
 q1 = 0.9247/2;
 p2 = 0.1396;
@@ -19,9 +19,11 @@ Fd = Ff - Fb;
 
 lamb = x(1);
 dlamb = x(2);
+phi_off = x(3);
 
 dx(1) = dlamb;
 dx(2) = (lh*sin(phi - phi_off)*Fs - mu_lamb*dlamb)/p_lamb_1;
+dx(3) = 0;
 
 y = lamb;
 end
