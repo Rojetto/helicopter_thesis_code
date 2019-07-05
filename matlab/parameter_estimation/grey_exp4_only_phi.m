@@ -15,7 +15,7 @@ dphi = x(2);
 phi_off = x(3);
 
 dx(1) = dphi;
-dx(2) = (lp*Fd - p_phi_2*dphi - mu_phi*sin(phi - phi_off))/p_phi_1;
+dx(2) = (lp*Fd - mu_phi*dphi - p_phi_2*sin(phi - phi_off))/p_phi_1;
 dx(3) = 0;
 
 y = phi;
