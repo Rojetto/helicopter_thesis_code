@@ -146,43 +146,37 @@ p_eps_2 = sys_est.Report.Parameters.ParVector(2);
 p_eps_3 = sys_est.Report.Parameters.ParVector(3);
 
 %% get exp4 phi parameters
-exp4_phi_files = {'exp4_phi_feedback_rect_a5_f0_2_Vs4',
+files = {'exp4_phi_feedback_rect_a5_f0_2_Vs4',
 'exp4_phi_feedback_rect_a20_f0_2_Vs4',
 'exp4_phi_feedback_rect_a20_f0_2_Vs6',
 'exp4_phi_feedback_sine_a20_f0_2_Vs6',
 'exp4_phi_feedback_sine_a45_f0_2_Vs6',
 'exp4_phi_feedback_sine_a45_f0_4_Vs6'};
 
-t0s = [0, 0, 0, 0, 0, 0];
+[clips, data, inits] = make_experiment_clips(files, 'phi');
 
-exp4_phi_ps = zeros(4, 0);
-exp4_phi_reports = {};
+n_clips = numel(clips);
 
-for i=1:numel(exp4_phi_files)
-    file_name = exp4_phi_files{i};
-    [t, phi, dphi, ~, ~, ~, ~, ~, ~, ~, uf, ub] = load_and_diff(file_name, t0s(i), 5);
+% add phi offset state that also has to be estimated
+inits(end+1) = struct('Name', 'phi_off',...
+    'Unit', 'rad',...
+    'Value', zeros(1, n_clips),...
+    'Minimum', deg2rad(-10)*ones(1, n_clips),...
+    'Maximum', deg2rad(10)*ones(1, n_clips),...
+    'Fixed', false(1, n_clips));
 
-    init_params = [0.15, -0.007, mu_phi, 0];
-    init_states = [phi(1); dphi(1)];
-    
-    % define grey box model
-    id_sys = idnlgrey('grey_exp4_only_phi', [1, 2, 2], init_params, init_states);
-    id_sys.Parameters(1).Minimum = 0;
-    %id_sys.Parameters(2).Maximum = 0;
-    id_sys.Parameters(3).Fixed = true;
-    id_data = iddata([phi], [uf, ub], 0.002);
-    id_data = resample(id_data, 1, sample_decimation);
+sys_init = idnlgrey('grey_exp4_only_phi', [1, 2, 3], [0.15; -0.007; mu_phi], inits);
+sys_init.Parameters(3).Fixed = true;
 
+% estimate model parameters
+sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
-    % estimate model parameters
-    sys = nlgreyest(id_data, id_sys);
+% plot
+plot_meas_and_fit(sys_est, data, 'Exp4 phi parameters')
 
-    exp4_phi_ps(:, end+1) = sys.Report.Parameters.ParVector;
-    exp4_phi_reports{end+1} = sys.Report;
-
-    plot_meas_and_fit(sys, id_data, file_name)
-end
-
+% resulting parameters
+p_phi_1 = sys_est.Report.Parameters.ParVector(1);
+p_phi_2 = sys_est.Report.Parameters.ParVector(2);
 
 %% exp4 lambda parameters
 exp4_lamb_files = {'exp4_lamb_feedback_rect_a10_f0_05',
