@@ -10,7 +10,7 @@ g = 9.81;
 
 sample_decimation = 20;
 
-do_plots = false;
+do_plots = true;
 
 %% get phi parameters for exp1 but ignore friction coefficient result
 
@@ -201,10 +201,13 @@ p_phi_2 = sys_est.Report.Parameters.ParVector(2);
 files = {'exp4_lamb_feedback_rect_a10_f0_05',
 'exp4_lamb_feedback_sine_a20_f0_1',
 'exp4_lamb_feedback_sine_a20_f0_2_Vs7',
-'exp4_lamb_open_step_phi_neg',
-'exp4_lamb_open_step_phi_pos'};
+%'exp4_lamb_open_step_phi_neg',
+%'exp4_lamb_open_step_phi_pos'
+};
 
-start_times = [0, 0, 0, 7, 7];
+start_times = [0, 0, 0];
+%start_times = [7, 7];
+%start_times = [0, 0, 0, 7, 7];
 
 [clips, data, inits] = make_experiment_clips(files, 'lamb',...
     'InputVariables', {'uf', 'ub', 'phi'},...
@@ -235,11 +238,13 @@ mu_lamb = sys_est.Report.Parameters.ParVector(2);
 %% calculate physical model parameters
 lp
 lh
-mh = p_phi_1 / lp^2
-lc = (p_lamb_1 - (lh^2+lp^2)*mh)/(lh*mh-p_eps_3/g)
-mc = (lh*mh-p_eps_3/g)/lc
-dh = (p_eps_2/g+sqrt(mc*(p_eps_1-lc^2*mc-lh^2*mh)))/mh
-dc = (dh*mh-p_eps_2/g)/mc
+dh = -g*p_phi_1/(2*p_phi_2) - sqrt((g*p_phi_1)^2/(4*p_phi_2^2) - lp^2)
+mh = -p_phi_2/(dh*g)
+intermediate1 = ((dh*g*mh)^2+2*dh*g*mh*p_eps_2+(g*lh*mh)^2-2*g*lh*mh*p_eps_3+p_eps_2^2+p_eps_3^2);
+intermediate2 = (dh^2*mh+lh^2*mh-p_eps_1);
+lc = -g*(g*lh*mh-p_eps_3)*intermediate2/intermediate1
+dc = -g*(dh*g*mh+p_eps_2)*intermediate2/intermediate1
+mc = -intermediate1/(g^2*intermediate2)
 
 %%
 disp('Done with everything')
