@@ -20,7 +20,13 @@ for i=1:n_experiments
 
     plot(meas_t, meas_y)
     plot(sim_t, sim_y)
-    legend({'Measured', 'Fitted Model Output'})
+    n_outputs = numel(meas_data.OutputName);
+    legend_names = cell(n_outputs, 1);
+    for j=1:n_outputs
+        legend_names{j} = ['Meas: ' meas_data.OutputName{j}];
+        legend_names{j+n_outputs} = ['Sim: ' sim_data.OutputName{j}];
+    end
+    legend(legend_names)
 
     params = sys.Parameters;
     params = [params.Value];

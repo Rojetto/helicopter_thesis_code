@@ -197,7 +197,22 @@ end
 p_phi_1 = sys_est.Report.Parameters.ParVector(1);
 p_phi_2 = sys_est.Report.Parameters.ParVector(2);
 
+%% calculate physical model parameters
+lp
+lh
+dh = -g*p_phi_1/(2*p_phi_2) - sqrt((g*p_phi_1)^2/(4*p_phi_2^2) - lp^2)
+mh = -p_phi_2/(dh*g)
+
+%% lc, dc, mc from p_eps_1, p_eps_2, p_eps_e
+intermediate1 = ((dh*g*mh)^2+2*dh*g*mh*p_eps_2+(g*lh*mh)^2-2*g*lh*mh*p_eps_3+p_eps_2^2+p_eps_3^2);
+intermediate2 = (dh^2*mh+lh^2*mh-p_eps_1);
+lc = -g*(g*lh*mh-p_eps_3)*intermediate2/intermediate1
+dc = -g*(dh*g*mh+p_eps_2)*intermediate2/intermediate1
+mc = -intermediate1/(g^2*intermediate2)
+
 %% exp4 lambda parameters
+p_lamb_1 = mh*(lh^2+lp^2) + mc*lc^2;
+
 files = {'exp4_lamb_feedback_rect_a10_f0_05',
 'exp4_lamb_feedback_sine_a20_f0_1',
 'exp4_lamb_feedback_sine_a20_f0_2_Vs7',
@@ -221,7 +236,8 @@ inits(end+1) = struct('Name', 'phi_off',...
     'Maximum', deg2rad(10)*ones(1, n_clips),...
     'Fixed', false(1, n_clips));
 
-sys_init = idnlgrey('grey_exp4_only_lamb', [1, 3, 3], [1.28, 0.0466], inits);
+sys_init = idnlgrey('grey_exp4_only_lamb', [1, 3, 3], [p_lamb_1, 0.25], inits);
+sys_init.Parameters(1).Fixed = true;
 
 % estimate model parameters
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
@@ -232,20 +248,31 @@ if do_plots
 end
 
 % resulting parameters
-p_lamb_1 = sys_est.Report.Parameters.ParVector(1);
+%p_lamb_1 = sys_est.Report.Parameters.ParVector(1);
 mu_lamb = sys_est.Report.Parameters.ParVector(2);
 
-%% calculate physical model parameters
-lp
-lh
-dh = -g*p_phi_1/(2*p_phi_2) - sqrt((g*p_phi_1)^2/(4*p_phi_2^2) - lp^2)
-mh = -p_phi_2/(dh*g)
-intermediate1 = ((dh*g*mh)^2+2*dh*g*mh*p_eps_2+(g*lh*mh)^2-2*g*lh*mh*p_eps_3+p_eps_2^2+p_eps_3^2);
-intermediate2 = (dh^2*mh+lh^2*mh-p_eps_1);
-lc = -g*(g*lh*mh-p_eps_3)*intermediate2/intermediate1
-dc = -g*(dh*g*mh+p_eps_2)*intermediate2/intermediate1
-mc = -intermediate1/(g^2*intermediate2)
+%% lc, dc, mc from p_lamb_1, p_eps_2, p_eps_e
+i1 = (lh^2+lp^2)*mh-p_lamb_1;
+i2 = g*lh*mh-p_eps_3;
 
+%lc = -g*i1/i2
+%dc = -g*(dh*g*mh+p_eps_2)*i1/i2^2
+%mc = -i2^2/(g^2*i1)
+
+%% try simulating full system with all parameters
+[clips, data, inits] = make_experiment_clips({'exp0_sine_elevation'}, ...
+    {'phi', 'eps', 'lamb'}, 'StartTimes', 5, 'ClipLength', 120);
+
+params = [p_phi_1, p_phi_2, mu_phi,...
+          p_eps_1, p_eps_2, p_eps_3, mu_eps,...
+          p_lamb_1, mu_lamb];
+sys_init = idnlgrey('grey_exp0', [3, 2, 6], params, inits);
+
+plot_meas_and_fit(sys_init, data);
+%%
+min_fun = @(p) model_param_solution_cost(p, p_phi_1, p_phi_2, p_eps_1, p_eps_2, p_eps_3, p_lamb_1);
+opts = optimoptions('lsqnonlin', 'Jacobian', 'on', 'MaxIter', 1000);
+%result = lsqnonlin(min_fun, [dh;mh;lc;dc;mc], [], [], opts)
 %%
 disp('Done with everything')
 
