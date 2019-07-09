@@ -273,6 +273,39 @@ plot_meas_and_fit(sys_init, data);
 min_fun = @(p) model_param_solution_cost(p, p_phi_1, p_phi_2, p_eps_1, p_eps_2, p_eps_3, p_lamb_1);
 opts = optimoptions('lsqnonlin', 'Jacobian', 'on', 'MaxIter', 1000);
 %result = lsqnonlin(min_fun, [dh;mh;lc;dc;mc], [], [], opts)
+
+%%
+start_times = [4.5, 26, 27.78, 39.13];
+end_times = [7, 27, 28.84, 41.6];
+file_names = cell(1, numel(start_times));
+file_names(:) = {'exp5_weird_thing'};
+[clips, data, inits] = make_experiment_clips(file_names, ...
+    'eps', 'StartTimes', start_times, 'EndTimes', end_times, 'ClipLength', 120);
+n_clips = numel(clips);
+inits(end+1) = struct('Name', 'uf',...
+    'Unit', 'V',...
+    'Value', [4, 0, 4, 4],...
+    'Minimum', -5,...
+    'Maximum', 5,...
+    'Fixed', true(1, n_clips));
+inits(end+1) = struct('Name', 'ub',...
+    'Unit', 'V',...
+    'Value', [4, 0, 4, 4],...
+    'Minimum', -5,...
+    'Maximum', 5,...
+    'Fixed', true(1, n_clips));
+params = [p_eps_1; p_eps_2; p_eps_3; mu_eps; 0.01];
+sys_init = idnlgrey('grey_exp5_pt1', [1, 2, 4], params, inits);
+sys_init.Parameters(1).Fixed = false;
+sys_init.Parameters(2).Fixed = false;
+sys_init.Parameters(3).Fixed = false;
+sys_init.Parameters(4).Fixed = true;
+sys_init.Parameters(4).Minimum = 0;
+sys_init.Parameters(5).Fixed = false;
+
+sys_est = nlgreyest(data, sys_init, 'Display', 'on');
+
+plot_meas_and_fit(sys_est, data)
 %%
 disp('Done with everything')
 
