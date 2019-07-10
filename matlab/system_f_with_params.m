@@ -55,8 +55,8 @@ function dx = system_f_with_params(x, u, ...
 %         syms Fr(w)
 %         Fr(w) = piecewise(w<=-2*q2/p2, p2*w+q2, -2*q2/p2<w<=0,-p2^2/(4*q2)*w^2,0<w<=2*q1/p1,p1^2/(4*q1) * w^2,p1*w-q1);
 
-        Ff = Fr(wf);
-        Fb = Fr(wb);
+        Ff = Fr(wf, p1, q1, p2, q2);
+        Fb = Fr(wb, p1, q1, p2, q2);
     else
         Ff = wf;
         Fb = wb;
@@ -99,17 +99,5 @@ function dx = system_f_with_params(x, u, ...
     ddlamb = ddlamb_rhs / p_lamb_1;
 
     dx = [dphi; deps; dlamb; ddphi; ddeps; ddlamb; dwf; dwb];
-
-    function out = Fr(w)
-        if w <= -2 * q2 / p2
-            out = p2*w + q2;
-        elseif -2 * q2 / p2 < w && w <= 0
-            out = - p2^2/(4*q2) * w^2;
-        elseif 0 < w && w <= 2 * q1/p1
-            out = p1^2/(4*q1) * w^2;
-        else
-            out = p1 * w - q1;
-        end
-    end
 end
 

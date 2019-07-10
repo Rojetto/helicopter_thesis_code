@@ -1,5 +1,4 @@
 classdef ExtendedKalmanFilter < matlab.System ...
-        & matlab.system.mixin.SampleTime ...
         & matlab.system.mixin.Propagates
     properties (Access = private)
         N
@@ -7,7 +6,7 @@ classdef ExtendedKalmanFilter < matlab.System ...
     end
     
     properties (Nontunable)
-        x0 = [0; deg2rad(-29); 0; 0; 0; 0]
+        x0 = [0; deg2rad(-29); 0; 0; 0; 0; 0; 0]
         P_diag = [0, 0, 0, 0, 0, 0, 0, 0]
         N_diag = [(0.25/50)^2, (0.25/50)^2]
         W_diag = [(0.5/180*pi)^2, (0.5/180*pi)^2, (0.5/180*pi)^2]
@@ -23,20 +22,27 @@ classdef ExtendedKalmanFilter < matlab.System ...
         function setupImpl(obj)
             obj.N = diag(obj.N_diag);
             obj.W = diag(obj.W_diag);
+            
+            global current_u current_A
+            current_u = zeros(2, 1);
+            current_A = zeros(8, 8);
         end
 
         function x = stepImpl(obj, y, u)
-            f = @(t_, x_) system_f(x_, u);
+            global current_u current_A
+            current_u = u;
+            %f = @(t_, x_) system_f(x_, u);
             
-            [~, x_ode] = ode45(f, [0, obj.step_width], obj.x);
+            [~, x_ode] = ode45(@ExtendedKalmanFilter.f, [0, obj.step_width/2, obj.step_width], obj.x);
             x_predicted = x_ode(end, :)';
             A = compute_A_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
             B = compute_B_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
             C = [1 0 0 0 0 0 0 0; 0 1 0 0 0 0 0 0; 0 0 1 0 0 0 0 0];
             D = [0 0; 0 0; 0 0];
             
+            current_A = A;
             F = expm(A * obj.step_width);
-            H = integrate_matrix(@(t) expm(A*t), 0, obj.step_width, 10)*B;
+            H = integrate_matrix(@ExtendedKalmanFilter.expm_A, 0, obj.step_width, 10)*B;
             
             P_predicted = F * obj.P * F' + H * obj.N * H';
             
@@ -92,6 +98,20 @@ classdef ExtendedKalmanFilter < matlab.System ...
                 dt = 'double';
                 cp = false;
             end
+        end
+    end
+    
+    methods (Static)
+        function out = f(t, x)
+            global current_u
+            
+            out = system_f(x, current_u);
+        end
+        
+        function out = expm_A(t)
+            global current_A
+            
+            out = expm(current_A*t);
         end
     end
 end
