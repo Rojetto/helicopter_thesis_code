@@ -149,8 +149,8 @@ class ObserverNoiseFrame(QtWidgets.QFrame):
         scroll_area_layout.addWidget(groupbox_param_uncertainty)
 
         # initialize parameter edit
-        text = ("l_p = " + str(imc.l_p) + "\nl_h = " + str(imc.l_h) + "\nl_c = " + str(imc.l_c) + "\nm_p = " +
-                str(imc.m_p) + "\nm_c_max = " + str(imc.m_c_max) + "\nm_c = " + str(imc.m_c) + "\nm_m = " + str(
+        text = ("l_p = " + str(imc.l_p) + "\nl_h = " + str(imc.l_h) + "\nl_c = " + str(imc.l_c) + "\nm_h = " +
+                str(imc.m_h) + "\nm_c_max = " + str(imc.m_c_max) + "\nm_c = " + str(imc.m_c) + "\nm_m = " + str(
                     imc.m_m) +
                 "\nr_m = " + str(imc.r_m) + "\nJ_m = " + str(imc.J_m) + "\nd_p = " + str(imc.d_p) + "\nd_e = " +
                 str(imc.d_e) + "\nd_l = " + str(imc.d_l) + "\nT_f = " + str(imc.T_f) + "\nT_b = " + str(imc.T_b) +
@@ -167,8 +167,8 @@ class ObserverNoiseFrame(QtWidgets.QFrame):
         upper_boundary = float(self.upper_boundary_line_edit.text()) / 100
         imc.scrambleParameters(lower_boundary, upper_boundary)
         # display the new values in the text edit
-        text = ("l_p = " + str(imc.l_p) + "\nl_h = " + str(imc.l_h) + "\nl_c = " + str(imc.l_c) + "\nm_p = " +
-                str(imc.m_p) + "\nm_c_max = " + str(imc.m_c_max) + "\nm_c = " + str(imc.m_c) + "\nm_m = " + str(imc.m_m) +
+        text = ("l_p = " + str(imc.l_p) + "\nl_h = " + str(imc.l_h) + "\nl_c = " + str(imc.l_c) + "\nm_h = " +
+                str(imc.m_h) + "\nm_c_max = " + str(imc.m_c_max) + "\nm_c = " + str(imc.m_c) + "\nm_m = " + str(imc.m_m) +
                 "\nr_m = " + str(imc.r_m) + "\nJ_m = " + str(imc.J_m) + "\nd_p = " + str(imc.d_p) + "\nd_e = " +
                 str(imc.d_e) + "\nd_l = " + str(imc.d_l) + "\nT_f = " + str(imc.T_f) + "\nT_b = " + str(imc.T_b) +
                 "\nK_f = " + str(imc.K_f) + "\nK_b = " + str(imc.K_b) + "\nK = " + str(imc.K) + "\nK_m = " +

@@ -94,11 +94,11 @@ class StateLimits(object):
     Helper class just for saving which states have reached their limit at the current time step,
     but also for saving some attributes about the limits
     """
-    p_max = 80 / 180.0 * np.pi
+    p_max = 100 / 180.0 * np.pi
     p_min = -p_max
-    e_max = 70.0 / 180.0 * np.pi
+    e_max = 29 / 180.0 * np.pi
     e_min = -e_max
-    lamb_max = 120 / 180.0 * np.pi
+    lamb_max = 180 / 180.0 * np.pi
     lamb_min = -lamb_max
     # these epsillon values are necessary for set_current_state_and_time_and_check_limits
     eps_p = 1 / 180.0 * np.pi
@@ -132,26 +132,29 @@ def system_f(x, u, model_type: ModelType, dynamic_inertia):
     g = 9.81
 
     phi, eps, lamb, dphi, deps, dlamb, wf, wb = x
-    vf, vb = u
+    uf, ub = u
+
+    m_h, m_c, l_h, l_c, l_p, d_h, d_c = mc.m_h, mc.m_c, mc.l_h, mc.l_c, mc.l_p, mc.d_h, mc.d_c
 
     if term_dynamic_inertia:
-        J_phi = 2 * mc.m_p * mc.l_p**2
-        J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2 * sin(phi) ** 2)
-        J_eps_2 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h ** 2 - mc.l_p ** 2 * sin(phi) ** 2)
-        J_lamb = mc.m_c * (mc.l_c * cos(eps)) ** 2 + 2 * mc.m_p * (
-                (mc.l_h * cos(eps)) ** 2 + (mc.l_p * sin(phi) * sin(eps)) ** 2 + (mc.l_p * cos(phi)) ** 2)
+        p_phi_1 = m_h*(l_p**2+d_h**2)
+        p_eps_1 = m_c*(l_c**2+d_c**2) + m_h*(l_h**2+d_h**2) + m_h*sin(phi)**2*(l_p**2-d_h**2)
+        p_lamb_1 = -d_c**2*m_c*cos(eps)**2-d_c*l_c*m_c*sin(2*eps)-d_h**2*m_h*cos(eps)**2*cos(phi)**2+d_h**2*m_h - d_h*l_h*m_h/2*(sin(2*eps-phi)+sin(2*eps+phi))+l_c**2*m_c*cos(eps)**2+l_h**2*m_h*cos(eps)**2+l_p**2*m_h*cos(eps)**2*cos(phi)**2-l_p**2*m_h*cos(eps)**2+l_p**2*m_h
     else:
-        J_phi = 2 * mc.m_p * mc.l_p**2
-        J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * mc.l_h**2
-        J_eps_2 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * mc.l_h**2
-        J_lamb = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2)
+        p_phi_1 = m_h*(l_p**2+d_h**2)
+        p_eps_1 = m_c*(l_c**2+d_c**2) + m_h*(l_h**2+d_h**2)
+        p_lamb_1 = m_h*(l_h**2+l_p**2) + m_c*l_c**2
+
+    p_phi_2 = - g*d_h*m_h*cos(eps)
+    p_eps_2 = g*(d_c*m_c - d_h*m_h*cos(phi))
+    p_eps_3 = g*(l_h*m_h - m_c*l_c)
 
     if term_motor_pt1:
-        dwf = 1 / mc.T_w * (mc.K_w * vf - wf)
-        dwb = 1 / mc.T_w * (mc.K_w * vb - wb)
+        dwf = 1 / mc.T_w * (mc.K_w * uf - wf)
+        dwb = 1 / mc.T_w * (mc.K_w * ub - wb)
     else:
-        wf = vf
-        wb = vb
+        wf = uf
+        wb = ub
         dwf = 0
         dwb = 0
 
@@ -168,31 +171,34 @@ def system_f(x, u, model_type: ModelType, dynamic_inertia):
     ws = wf + wb
     wd = wf - wb
 
-    ddphi_rhs = Fd * mc.l_p
-    ddeps_rhs = g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p) * cos(eps) + Fs * mc.l_h * cos(phi)
-    ddlamb_rhs = Fs * mc.l_h * cos(eps) * sin(phi)
+    ddphi_rhs = -p_phi_2 * sin(phi) + Fd * l_p
+    ddeps_rhs = -p_eps_2 * sin(eps) - p_eps_3 * cos(eps) + Fs * l_h * cos(phi)
+    ddlamb_rhs = Fs * l_h * cos(eps) * sin(phi) - Fd * l_p * sin(eps)
 
     if term_centripetal:
-        ddphi_rhs = ddphi_rhs + J_phi * cos(phi) * sin(phi) * (deps ** 2 - cos(eps) ** 2 * dlamb ** 2)
-        ddeps_rhs = ddeps_rhs - J_eps_2 * cos(eps) * sin(eps) * dlamb ** 2
+        #ddphi_rhs = ddphi_rhs + p_phi_1 * cos(phi) * sin(phi) * (deps ** 2 - cos(eps) ** 2 * dlamb ** 2)
+        #ddeps_rhs = ddeps_rhs - J_eps_2 * cos(eps) * sin(eps) * dlamb ** 2
+        pass
 
     if term_friction:
-        ddphi_rhs = ddphi_rhs - mc.d_p * dphi
-        ddeps_rhs = ddeps_rhs - mc.d_e * deps
-        ddlamb_rhs = ddlamb_rhs - mc.d_l * dlamb
+        ddphi_rhs = ddphi_rhs - mc.mu_phi * dphi
+        ddeps_rhs = ddeps_rhs - mc.mu_eps * deps
+        ddlamb_rhs = ddlamb_rhs - mc.mu_lamb * dlamb
 
     if term_motor_reaction:
-        ddeps_rhs = ddeps_rhs + sin(phi) * mc.K_m * wd
-        ddlamb_rhs = ddlamb_rhs - cos(eps) * cos(phi) * mc.K_m * wd
+        #ddeps_rhs = ddeps_rhs + sin(phi) * mc.K_m * wd
+        #ddlamb_rhs = ddlamb_rhs - cos(eps) * cos(phi) * mc.K_m * wd
+        pass
 
     if term_rotor_gyro:
-        ddphi_rhs = ddphi_rhs - mc.J_m * cos(phi) * deps * wd + mc.J_m * sin(phi) * cos(eps) * dlamb * wd
-        ddeps_rhs = ddeps_rhs + mc.J_m * cos(phi) * dphi * wd - mc.J_m * cos(phi) * sin(eps) * dlamb * wd
-        ddlamb_rhs = ddlamb_rhs + mc.J_m * sin(phi) * cos(eps) * dphi * wd
+        #ddphi_rhs = ddphi_rhs - mc.J_m * cos(phi) * deps * wd + mc.J_m * sin(phi) * cos(eps) * dlamb * wd
+        #ddeps_rhs = ddeps_rhs + mc.J_m * cos(phi) * dphi * wd - mc.J_m * cos(phi) * sin(eps) * dlamb * wd
+        #ddlamb_rhs = ddlamb_rhs + mc.J_m * sin(phi) * cos(eps) * dphi * wd
+        pass
 
-    ddphi = ddphi_rhs / J_phi
-    ddeps = ddeps_rhs / J_eps_1
-    ddlamb = ddlamb_rhs / J_lamb
+    ddphi = ddphi_rhs / p_phi_1
+    ddeps = ddeps_rhs / p_eps_1
+    ddlamb = ddlamb_rhs / p_lamb_1
 
     if isinstance(dphi, sp.Expr):
         dx = sp.Matrix([dphi, deps, dlamb, ddphi, ddeps, ddlamb, dwf, dwb])
@@ -215,7 +221,7 @@ event_pmax.terminal = True
 def event_pdt0(t, x):
     """Checks if the second derivative has crossed zero."""
     z_phi, z_eps, z_lamb, z_wf, z_wb = EventParams.current_disturbance
-    J_phi, J_eps1, J_eps2, J_lamb = getInertia(x, EventParams.dynamic_inertia_torque)
+    J_phi, J_eps1, J_lamb = getInertia(x, EventParams.dynamic_inertia_torque)
 
     u = np.array([(EventParams.V_s + EventParams.V_d) / 2, (EventParams.V_s - EventParams.V_d) / 2])
     dx = system_f(x, u, EventParams.model_type, EventParams.dynamic_inertia_torque)
@@ -240,7 +246,7 @@ event_emax.terminal = True
 def event_edt0(t, x):
     """Checks if the second derivative has crossed zero."""
     z_phi, z_eps, z_lamb, z_wf, z_wb = EventParams.current_disturbance
-    J_phi, J_eps1, J_eps2, J_lamb = getInertia(x, EventParams.dynamic_inertia_torque)
+    J_phi, J_eps1, J_lamb = getInertia(x, EventParams.dynamic_inertia_torque)
 
     u = np.array([(EventParams.V_s + EventParams.V_d) / 2, (EventParams.V_s - EventParams.V_d) / 2])
     dx = system_f(x, u, EventParams.model_type, EventParams.dynamic_inertia_torque)
@@ -264,7 +270,7 @@ event_lambmax.terminal = True
 def event_lambdt0(t, x):
     """Checks if the second derivative has crossed zero."""
     z_phi, z_eps, z_lamb, z_wf, z_wb = EventParams.current_disturbance
-    J_phi, J_eps1, J_eps2, J_lamb = getInertia(x, EventParams.dynamic_inertia_torque)
+    J_phi, J_eps1, J_lamb = getInertia(x, EventParams.dynamic_inertia_torque)
 
     u = np.array([(EventParams.V_s + EventParams.V_d) / 2, (EventParams.V_s - EventParams.V_d) / 2])
     dx = system_f(x, u, EventParams.model_type, EventParams.dynamic_inertia_torque)
@@ -280,19 +286,23 @@ def getInertia(x, dynamic_inertia_torque):
     """Computes inertia torque dependend on """
     phi, eps, lamb, dphi, deps, dlamb, wf, wb = x
 
-    if dynamic_inertia_torque:
-        J_phi = 2 * mc.m_p * mc.l_p**2
-        J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2 * sin(phi) ** 2)
-        J_eps_2 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h ** 2 - mc.l_p ** 2 * sin(phi) ** 2)
-        J_lamb = mc.m_c * (mc.l_c * cos(eps)) ** 2 + 2 * mc.m_p * (
-                (mc.l_h * cos(eps)) ** 2 + (mc.l_p * sin(phi) * sin(eps)) ** 2 + (mc.l_p * cos(phi)) ** 2)
-    else:
-        J_phi = 2 * mc.m_p * mc.l_p**2
-        J_eps_1 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * mc.l_h**2
-        J_eps_2 = mc.m_c * mc.l_c**2 + 2 * mc.m_p * mc.l_h**2
-        J_lamb = mc.m_c * mc.l_c**2 + 2 * mc.m_p * (mc.l_h**2 + mc.l_p**2)
+    m_h, m_c, l_h, l_c, l_p, d_h, d_c = mc.m_h, mc.m_c, mc.l_h, mc.l_c, mc.l_p, mc.d_h, mc.d_c
 
-    return np.array([J_phi, J_eps_1, J_eps_2, J_lamb])
+    if dynamic_inertia_torque:
+        J_phi = m_h * (l_p ** 2 + d_h ** 2)
+        J_eps = m_c * (l_c ** 2 + d_c ** 2) + m_h * (l_h ** 2 + d_h ** 2) + m_h * sin(phi) ** 2 * (
+                    l_p ** 2 - d_h ** 2)
+        J_lamb = -d_c ** 2 * m_c * cos(eps) ** 2 - d_c * l_c * m_c * sin(2 * eps) - d_h ** 2 * m_h * cos(
+            eps) ** 2 * cos(phi) ** 2 + d_h ** 2 * m_h - d_h * l_h * m_h / 2 * (
+                               sin(2 * eps - phi) + sin(2 * eps + phi)) + l_c ** 2 * m_c * cos(
+            eps) ** 2 + l_h ** 2 * m_h * cos(eps) ** 2 + l_p ** 2 * m_h * cos(eps) ** 2 * cos(
+            phi) ** 2 - l_p ** 2 * m_h * cos(eps) ** 2 + l_p ** 2 * m_h
+    else:
+        J_phi = m_h * (l_p ** 2 + d_h ** 2)
+        J_eps = m_c * (l_c ** 2 + d_c ** 2) + m_h * (l_h ** 2 + d_h ** 2)
+        J_lamb = m_h * (l_h ** 2 + l_p ** 2) + m_c * l_c ** 2
+
+    return np.array([J_phi, J_eps, J_lamb])
 
 
 class HeliSimulation(object):
@@ -311,7 +321,7 @@ class HeliSimulation(object):
         state derivative, not dependend on the discrete limit state."""
         z_phi, z_eps, z_lamb, z_wf, z_wb = current_disturbance
 
-        J_phi, J_eps1, J_eps2, J_lamb = getInertia(x, self.dynamic_inertia_torque)
+        J_phi, J_eps1, J_lamb = getInertia(x, self.dynamic_inertia_torque)
 
         u = np.array([(v_s+v_d)/2, (v_s-v_d)/2])
         dx = system_f(x, u, self.model_type, self.dynamic_inertia_torque)

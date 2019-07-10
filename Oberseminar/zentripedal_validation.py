@@ -39,14 +39,14 @@ def calcInputs_numeric(dl, e, rad=True):
     L4 = mc.l_h
     J_p, J_e, J_l = getInertia([0, e, 0, 0, 0, 0, 0, 0], False)
 
-    p_ana = np.arctan(mc.d_l * dl * L3 / ((J_e * np.cos(e) * np.sin(e) - L2 * np.cos(e)) * L4 * np.cos(e)))
+    p_ana = np.arctan(mc.mu_lamb * dl * L3 / ((J_e * np.cos(e) * np.sin(e) - L2 * np.cos(e)) * L4 * np.cos(e)))
     Vd_ana = J_p * np.cos(p_ana) * np.sin(p_ana) * np.cos(e)**2 * dl ** 2 / L1
     Vs_ana = (J_e * np.cos(e) * np.sin(e) * dl ** 2 - L2 * np.cos(e)) / (L3 * np.cos(p_ana))
 
     dp, de = 0, 0
-    ddp = lambda Vs,Vd,p : (L1 / J_p) * Vd - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dl ** 2)
-    dde = lambda Vs,Vd,p : (L2 / J_e) * np.cos(e) + (L3 / J_e) * np.cos(p) * Vs - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dl ** 2
-    ddlamb = lambda Vs,Vd,p : (L4 / J_l) * np.cos(e) * np.sin(p) * Vs - (mc.d_l / J_l) * dl
+    ddp = lambda Vs,Vd,p : (L1 / J_p) * Vd - (mc.mu_phi / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dl ** 2)
+    dde = lambda Vs,Vd,p : (L2 / J_e) * np.cos(e) + (L3 / J_e) * np.cos(p) * Vs - (mc.mu_eps / J_e) * de - np.cos(e) * np.sin(e) * dl ** 2
+    ddlamb = lambda Vs,Vd,p : (L4 / J_l) * np.cos(e) * np.sin(p) * Vs - (mc.mu_lamb / J_l) * dl
 
     Vs, Vd, p = n_solve([ddp, dde, ddlamb], [Vs_ana,Vd_ana, p_ana])
 
@@ -72,20 +72,20 @@ def calculateInputs_DL_E(dl, e, rad=True):
     L4 = mc.l_h
     J_p, J_e, J_l = getInertia([0, e, 0, 0, 0, 0, 0, 0], False)
 
-    p = np.arctan(mc.d_l * dl * L3 / ((J_e * np.cos(e) * np.sin(e) - L2 * np.cos(e)) * L4 * np.cos(e)))
+    p = np.arctan(mc.mu_lamb * dl * L3 / ((J_e * np.cos(e) * np.sin(e) - L2 * np.cos(e)) * L4 * np.cos(e)))
 
     Vd = J_p * np.cos(p) * np.sin(p) * np.cos(e)**2 * dl ** 2 / L1
 
     Vs = (J_e * np.cos(e) * np.sin(e) * dl ** 2 - L2 * np.cos(e)) / (L3 * np.cos(p))
-    Vs2 = mc.d_l * dl / (L4 * np.cos(e) * np.sin(p))
+    Vs2 = mc.mu_lamb * dl / (L4 * np.cos(e) * np.sin(p))
 
 
 
     #test this function:
     dp, de = 0,0
-    ddp = (L1 / J_p) * Vd - (mc.d_p / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dl ** 2)
-    dde = (L2 / J_e) * np.cos(e) + (L3 / J_e) * np.cos(p) * Vs - (mc.d_e / J_e) * de - np.cos(e) * np.sin(e) * dl ** 2
-    ddlamb = (L4 / J_l) * np.cos(e) * np.sin(p) * Vs - (mc.d_l / J_l) * dl
+    ddp = (L1 / J_p) * Vd - (mc.mu_phi / J_p) * dp + np.cos(p) * np.sin(p) * (de ** 2 - np.cos(e) ** 2 * dl ** 2)
+    dde = (L2 / J_e) * np.cos(e) + (L3 / J_e) * np.cos(p) * Vs - (mc.mu_eps / J_e) * de - np.cos(e) * np.sin(e) * dl ** 2
+    ddlamb = (L4 / J_l) * np.cos(e) * np.sin(p) * Vs - (mc.mu_lamb / J_l) * dl
 
     max_error = 2 / 180 * np.pi # rad/s^2
     #if (np.abs(ddp)>max_error) or (np.abs(dde)>max_error) or (np.abs(ddlamb)>max_error) :
@@ -116,8 +116,8 @@ def calculateInputs_E_P(e, p, rad=True):
     L4 = mc.l_h
     J_p, J_e, J_l = getInertia([p, e, 0, 0, 0, 0, 0, 0], True)
 
-    P = - L3 * np.cos(p) * mc.d_l ** 2 / (J_e * L4 ** 2 * np.cos(e) ** 2 * np.sin(e) * np.sin(p))
-    Q = - L2 * mc.d_l ** 2 / (J_e * L4 ** 2 * np.cos(e) * np.sin(e) * np.sin(p))
+    P = - L3 * np.cos(p) * mc.mu_lamb ** 2 / (J_e * L4 ** 2 * np.cos(e) ** 2 * np.sin(e) * np.sin(p))
+    Q = - L2 * mc.mu_lamb ** 2 / (J_e * L4 ** 2 * np.cos(e) * np.sin(e) * np.sin(p))
 
     z = P ** 2 / 4 - Q
 
@@ -127,8 +127,8 @@ def calculateInputs_E_P(e, p, rad=True):
     Vs1 = - P / 2 + np.sqrt(z)
     Vs2 = - P / 2 - np.sqrt(z)
 
-    dl1 = Vs1 * L4 * np.cos(e) * np.sin(e) / mc.d_l
-    dl2 = Vs2 * L4 * np.cos(e) * np.sin(e) / mc.d_l
+    dl1 = Vs1 * L4 * np.cos(e) * np.sin(e) / mc.mu_lamb
+    dl2 = Vs2 * L4 * np.cos(e) * np.sin(e) / mc.mu_lamb
 
     Vd1 = J_p * np.cos(p) * np.sin(p) * np.cos(e) * dl1 ** 2 / L1
     Vd2 = J_p * np.cos(p) * np.sin(p) * np.cos(e) * dl2 ** 2 / L1
@@ -229,19 +229,19 @@ def analyzeSystem(Vs_op,Vd_op,p_op,e_op,dl_op):
     dp_rhs = dp
     de_rhs = de
     dl_rhs = dl
-    ddp_rhs = 1/(2*mc.m_p*mc.l_p**2) * (2*mc.m_p*mc.l_p**2*sp.cos(p)*sp.sin(p)*(de**2-sp.cos(e)**2*dl**2)
-                                        - mc.d_p * dp
-                                        + mc.l_p*(Vf-Vb)
+    ddp_rhs = 1/(2*mc.m_p*mc.l_p**2) * (2 * mc.m_p * mc.l_p ** 2 * sp.cos(p) * sp.sin(p) * (de**2-sp.cos(e)**2*dl**2)
+                                        - mc.mu_phi * dp
+                                        + mc.l_p * (Vf-Vb)
                                         )
     dde_rhs = 1/(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2+mc.l_p**2*sp.sin(p)**2))*(
-        - sp.cos(e)*sp.sin(e)*(mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2-mc.l_p**2*sp.sin(p)**2))*dl**2
-        - mc.d_e*de
-        + mc.g*(mc.m_c*mc.l_c-2*mc.m_p*mc.l_h)*sp.cos(e)
-        + mc.l_h*sp.cos(p)*(Vf+Vb)
+            - sp.cos(e) * sp.sin(e) * (mc.m_c*mc.l_c**2+2*mc.m_p*(mc.l_h**2-mc.l_p**2*sp.sin(p)**2)) * dl ** 2
+            - mc.mu_eps * de
+            + mc.g * (mc.m_c*mc.l_c-2*mc.m_p*mc.l_h) * sp.cos(e)
+            + mc.l_h * sp.cos(p) * (Vf+Vb)
     )
     ddl_rhs = 1/(mc.m_c*(mc.l_c*sp.cos(e))**2+2*mc.m_p*((mc.l_h*sp.cos(e))**2+(mc.l_p*sp.sin(p)*sp.sin(e))**2+(mc.l_p*sp.cos(p))**2))*(
-        mc.l_h*sp.cos(e)*sp.sin(p)*(Vf+Vb)
-        - mc.d_l*dl
+            mc.l_h * sp.cos(e) * sp.sin(p) * (Vf+Vb)
+            - mc.mu_lamb * dl
     )
 
     ss_rhs = sp.Matrix([dp_rhs, de_rhs, dl_rhs, ddp_rhs, dde_rhs, ddl_rhs])

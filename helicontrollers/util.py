@@ -7,13 +7,13 @@ import numpy as np
 import sympy as sp
 
 L1 = mc.l_p
-L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
+L2 = mc.g * (mc.l_c * mc.m_c - mc.l_h * mc.m_h)
 L3 = mc.l_h
 L4 = mc.l_h
 
-Jp = 2 * mc.m_p * mc.l_p ** 2
-Je = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
-Jl = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
+Jp = mc.m_h * mc.l_p ** 2
+Je = mc.m_c * mc.l_c ** 2 + mc.m_h * mc.l_h ** 2
+Jl = mc.m_c * mc.l_c ** 2 + mc.m_h * (mc.l_h ** 2 + mc.l_p ** 2)
 
 
 class FeedForwardMethod(Enum):
@@ -70,9 +70,9 @@ def compute_linear_ss(model_type: ModelType, e_op):
         A = np.array([[0, 0, 0, 1, 0, 0],
                       [0, 0, 0, 0, 1, 0],
                       [0, 0, 0, 0, 0, 1],
-                      [0, 0, 0, - mc.d_p / Jp, 0, 0],
-                      [0, -L2 * sin(e_op) / Je, 0, 0, - mc.d_e / Je, 0],
-                      [L4 * Vs_op * cos(e_op) / Jl, 0, 0, 0, 0, - mc.d_l / Jl]])
+                      [0, 0, 0, - mc.mu_phi / Jp, 0, 0],
+                      [0, -L2 * sin(e_op) / Je, 0, 0, - mc.mu_eps / Je, 0],
+                      [L4 * Vs_op * cos(e_op) / Jl, 0, 0, 0, 0, - mc.mu_lamb / Jl]])
     else:
         # TODO: Implement for remaining model types
         print("Unsupported model type while trying to linearize system")
@@ -206,82 +206,51 @@ def compute_pitch_and_inputs_flatness_simple(e_and_derivatives, lambda_and_deriv
     return np.array([p, dp1, dp2]), np.array([Vf, Vb])
 
 
-def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_derivatives):
-    e = e_and_derivatives[0]
-    de1 = e_and_derivatives[1]
-    de2 = e_and_derivatives[2]
-    de3 = e_and_derivatives[3]
-    de4 = e_and_derivatives[4]
+def compute_pitch_and_inputs_flatness_centripetal(eps_derivs, lamb_derivs):
+    eps = eps_derivs[0]
+    deps1 = eps_derivs[1]
+    deps2 = eps_derivs[2]
+    deps3 = eps_derivs[3]
+    deps4 = eps_derivs[4]
 
-    l = lambda_and_derivatives[0]
-    dl1 = lambda_and_derivatives[1]
-    dl2 = lambda_and_derivatives[2]
-    dl3 = lambda_and_derivatives[3]
-    dl4 = lambda_and_derivatives[4]
+    lamb = lamb_derivs[0]
+    dlamb1 = lamb_derivs[1]
+    dlamb2 = lamb_derivs[2]
+    dlamb3 = lamb_derivs[3]
+    dlamb4 = lamb_derivs[4]
 
-    a = Jl * dl2
-    b = mc.d_l * dl1
-    c = cos(e)
-    d = Je * de2
-    e_ = mc.d_e * de1
-    f = Je * cos(e) * sin(e) * dl1**2
-    g = -L2 * cos(e)
+    p_phi_1 = mc.m_h * mc.d_h**2 + mc.m_h * mc.l_p**2
+    p_phi_2 = -mc.g*mc.d_h*mc.m_h
+    p_eps_1 = mc.m_h*(mc.l_h**2+mc.d_h**2) + mc.m_c * (mc.l_c**2 + mc.d_c**2)
+    p_eps_2 = mc.g*(mc.m_c*mc.d_c - mc.m_h * mc.d_h)
+    p_eps_3 = mc.g*(mc.m_h*mc.l_h - mc.m_c*mc.l_c)
+    p_lamb_1 = mc.m_h*(mc.l_h**2+mc.l_p**2) + mc.m_c*mc.l_c**2
 
-    da1 = Jl * dl3
-    db1 = mc.d_l * dl2
-    dc1 = -sin(e) * de1
-    dd1 = Je * de3
-    de_1 = mc.d_e * de2
-    # f
-    k = cos(e) * sin(e)
-    l_ = dl1**2
-    dk1 = de1 * (cos(e)**2 - sin(e)**2)
-    dl_1 = 2 * dl1 * dl2
-    df1 = Je * (dk1 * l_ + k * dl_1)
-    dg1 = L2 * sin(e) * de1
+    A = p_eps_1*deps2 + mc.mu_eps*deps1+p_eps_2*sin(eps)+p_eps_3*cos(eps)
+    B = p_lamb_1 * dlamb2 + mc.mu_lamb*dlamb1
 
-    da2 = Jl * dl4
-    db2 = mc.d_l * dl3
-    dc2 = -cos(e) * de1 ** 2 - sin(e) * de2
-    dd2 = Je * de4
-    de_2 = mc.d_e * de3
-    # f
-    dk2 = de2 * (cos(e)**2 - sin(e)**2) - 4 * sin(e) * cos(e) * de1 **2
-    dl_2 = 2 * (dl2**2 + dl1 * dl3)
-    df2 = Je * (dk2 * l_ + 2*dk1 *dl_1 + k * dl_2)
-    dg2 = L2 * (cos(e) * de1**2 + sin(e) * de2)
+    dA1 = p_eps_1*deps3+mc.mu_eps*deps2+p_eps_2*deps1*cos(eps)-p_eps_3*deps1*sin(eps)
+    dB1 = p_lamb_1*dlamb3+mc.mu_lamb*dlamb2
 
-    h = a+b
-    i = d + e_ + f + g
-    j = c * i
+    dA2 = p_eps_1*deps4+mc.mu_eps*deps3+p_eps_2*(deps2*cos(eps)-deps1**2*sin(eps))-p_eps_3*(deps2*sin(eps)+deps1**2*cos(eps))
+    dB2 = p_lamb_1*dlamb4+mc.mu_lamb*dlamb3
 
-    dh1 = da1 + db1
-    di1 = dd1 + de_1 + df1 + dg1
-    dj1 = dc1 * i + c * di1
+    D = dB1*A*cos(eps)-B*(dA1*cos(eps)-A*sin(eps)*deps1)
+    E = (A*cos(eps))**2
 
-    dh2 = da2 + db2
-    di2 = dd2 + de_2 + df2 + dg2
-    dj2 = dc2 * i + 2*dc1*di1 + c * di2
+    dD1 = dB2*A*cos(eps)-B*(dA2*cos(eps)-2*dA1*sin(eps)*deps1-A*(deps2*sin(eps)+deps1**2*cos(eps)))
+    dE1 = 2*A*cos(eps)*(dA1*cos(eps)-A*deps1*sin(eps))
 
-    A = h / j
-    dA1 = (dh1 * j - h * dj1) / (j ** 2)
-    dA2 = ((dh2 * j - h * dj2) * j - (dh1 * j - h * dj1) * 2 * dj1) / (j**3)
+    C = B/(A*cos(eps))
+    dC1 = D/E
+    dC2 = (dD1*E-D*dE1)/E**2
 
-    x = (L3/L4) * A
-    dx1 = (L3/L4) * dA1
-    dx2 = (L3/L4) * dA2
+    phi = arctan(C)
+    dphi1 = dC1/(1+C**2)
+    dphi2 = (dC2*(1+C**2)-2*C*dC1**2)/(1+C**2)**2
 
-    # p = arctan((L3/L4) * A)
-    # dp1 = (L3 / L4) * 1/(1+((L3/L4) * A)**2) * dA1
-    # dp2 = (L3 / L4) * (dA2 * (1+((L3/L4) * A)**2) - (L3/L4) * dA1**2) / ((1+((L3/L4) * A)**2)**2)
-    p = arctan(x)
-    dp1 = dx1/(1+x**2)
-    dp2 = ((1+x**2) * dx2 - 2 * x * dx1**2)/((1+x**2)**2)
-
-    # Vs = (Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e) * sin(p))
-    # Vs without Singularity
-    Fs = (((Jl * dl2 + mc.d_l * dl1) / (L4 * cos(e))) ** 2 + ((Je * de2 + mc.d_e * de1 + Je * cos(e) * sin(e) * dl1**2 - L2 * cos(e)) / L3) ** 2) ** (1 / 2)
-    Fd = (1/L1) * (Jp * dp2 + mc.d_p * dp1 - Jp * cos(p) * sin(p) * (de1**2 - cos(e)**2 * dl1**2))
+    Fs = 1/mc.l_h * sqrt(A**2 + (B/cos(eps))**2)
+    Fd = 1/mc.l_p * (p_phi_1*dphi2 + p_phi_2*sin(phi)+mc.mu_phi*dphi1)
 
     Ff = (Fs + Fd) / 2
     Fb = (Fs - Fd) / 2
@@ -289,4 +258,4 @@ def compute_pitch_and_inputs_flatness_centripetal(e_and_derivatives, lambda_and_
     uf = Fr_inverse(Ff)
     ub = Fr_inverse(Fb)
 
-    return np.array([p, dp1, dp2]), np.array([uf, ub])
+    return np.array([phi, dphi1, dphi2]), np.array([uf, ub])

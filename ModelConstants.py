@@ -32,31 +32,30 @@ class ModelType(OrderedEnum):
 
 class OriginalConstants:
     # l_a = ? (not given in Fig. 7)
-    l_p = 0.18  # m
-    l_h = 0.65
-    l_c = 0.52
-    d_c = 0.2
-    d_h = 0.03
-    m_p = 0.5 * 0.771  # kg
-    m_c_max = 2 * l_h/l_c * m_p
-    m_c = 0.93 * m_c_max  # arbitrary, but has to be smaller than m_c_max
+    l_p = 0.178  # m
+    l_h = 0.67
+    l_c = 0.4069
+    d_c = 0.0639
+    d_h = 0.0027
+    m_h = 1.2  # kg
+    m_c = 1.7638
 
     # motor characteristics
-    m_m = 0.2 * m_p
+    m_m = 0.2 * m_h
     r_m = l_p/8
     J_m = 0.5 * m_m * r_m**2
 
-    p1 = 1
-    q1 = 0.5
-    p2 = 0.6
-    q2 = 0.3
+    p1 = 0.3117
+    q1 = 0.4623
+    p2 = 0.1396
+    q2 = 0.3819
 
-    d_p = 0.048  # dissipation coefficient in Nms
-    d_e = 0.053
-    d_l = 0.274
+    mu_phi = 0.0334  # dissipation coefficient in Nms
+    mu_eps = 0.0755
+    mu_lamb = 0.2596
 
     # PT1 charakteristics for ROTOR SPEED
-    T_w = 0.1
+    T_w = 0.01
     K_w = 1
     K = 1
     K_m = 0.1
@@ -64,6 +63,7 @@ class OriginalConstants:
     g = 9.81  # m/s^2
 
 
+"""
 class RandomizedConstants:
     random.seed(1234)
     # l_a = ? (not given in Fig. 7)
@@ -158,4 +158,4 @@ class UpperBoundConstants:
     K = OriginalConstants.K * 1.1
     K_m = OriginalConstants.K_m * 1.1
 
-    g = OriginalConstants.g
+    g = OriginalConstants.g"""

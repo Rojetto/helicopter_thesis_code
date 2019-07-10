@@ -7,13 +7,13 @@ from observer import InaccurateModelConstants as mc
 from observer.HeliKalmanSimulation import HeliKalmanSimulation
 
 L1 = mc.l_p
-L2 = mc.g * (mc.l_c * mc.m_c - 2 * mc.l_h * mc.m_p)
+L2 = mc.g * (mc.l_c * mc.m_c - mc.l_h * mc.m_h)
 L3 = mc.l_h
 L4 = mc.l_h
 
-Jp_static = 2 * mc.m_p * mc.l_p ** 2
-Je_static = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * mc.l_h ** 2
-Jl_static = mc.m_c * mc.l_c ** 2 + 2 * mc.m_p * (mc.l_h ** 2 + mc.l_p ** 2)
+Jp_static = 2 * mc.m_h * mc.l_p ** 2
+Je_static = mc.m_c * mc.l_c ** 2 + 2 * mc.m_h * mc.l_h ** 2
+Jl_static = mc.m_c * mc.l_c ** 2 + 2 * mc.m_h * (mc.l_h ** 2 + mc.l_p ** 2)
 
 
 def getLinearizedMatrices(model_type: ModelType, operating_point, Vf_op, Vb_op):

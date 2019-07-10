@@ -32,9 +32,9 @@ class FeedbackLinearizationController(AbstractController):
     def control(self, t, x, e_traj, lambda_traj):
         p, e, l, dp, de, dl, wf, wb = x
 
-        mup = OriginalConstants.d_p
-        mue = OriginalConstants.d_e
-        mul = OriginalConstants.d_l
+        mup = OriginalConstants.mu_phi
+        mue = OriginalConstants.mu_eps
+        mul = OriginalConstants.mu_lamb
 
         v1 = e_traj[2] - self.ke[1] * (de - e_traj[1]) - self.ke[0] * (e - e_traj[0])
         v2 = lambda_traj[2] - self.kl[1] * (dl - lambda_traj[1]) - self.kl[0] * (l - lambda_traj[0])

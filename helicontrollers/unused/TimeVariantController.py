@@ -44,14 +44,14 @@ def getLinearizedMatrices(model_type: ModelType, operating_point, Vf_op, Vb_op):
         A = np.array([[0, 0, 0, 1, 0, 0],
                       [0, 0, 0, 0, 1, 0],
                       [0, 0, 0, 0, 0, 1],
-                      [0, 0, 0, -mc.d_p / Jp, 0, 0],
-                      [-L3 * Vs_op * sin(p_op) / Je, -L2 * sin(e_op) / Je, 0, 0, -mc.d_e / Je, 0],
-                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl, -L4 * Vs_op * sin(p_op) * sin(e_op) / Jl, 0, 0, 0, -mc.d_l / Jl]])
+                      [0, 0, 0, -mc.mu_phi / Jp, 0, 0],
+                      [-L3 * Vs_op * sin(p_op) / Je, -L2 * sin(e_op) / Je, 0, 0, -mc.mu_eps / Je, 0],
+                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl, -L4 * Vs_op * sin(p_op) * sin(e_op) / Jl, 0, 0, 0, -mc.mu_lamb / Jl]])
     elif model_type == ModelType.CENTRIPETAL:
         A = np.array([[0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1],
-                      [-(de_op ** 2 - dlamb_op ** 2 * cos(e_op) ** 2) * sin(p_op) ** 2 + (de_op ** 2 - dlamb_op ** 2 * cos(e_op) ** 2) * cos(p_op) ** 2, 2 * dlamb_op ** 2 * sin(p_op) * sin(e_op) * cos(p_op) * cos(e_op), 0, -mc.d_p / Jp, 2 * de_op * sin(p_op) * cos(p_op), -2 * dlamb_op * sin(p_op) * cos(p_op) * cos(e_op) ** 2],
-                      [-L3 * Vs_op * sin(p_op) / Je, dlamb_op ** 2 * sin(e_op) ** 2 - dlamb_op ** 2 * cos(e_op) ** 2 - L2 * sin(e_op) / Je, 0, 0, -mc.d_e / Je, -2 * dlamb_op * sin(e_op) * cos(e_op)],
-                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl, -L4 * Vs_op * sin(p_op) * sin(e_op) / Jl, 0, 0, 0, -mc.d_l / Jl]])
+                      [-(de_op ** 2 - dlamb_op ** 2 * cos(e_op) ** 2) * sin(p_op) ** 2 + (de_op ** 2 - dlamb_op ** 2 * cos(e_op) ** 2) * cos(p_op) ** 2, 2 * dlamb_op ** 2 * sin(p_op) * sin(e_op) * cos(p_op) * cos(e_op), 0, -mc.mu_phi / Jp, 2 * de_op * sin(p_op) * cos(p_op), -2 * dlamb_op * sin(p_op) * cos(p_op) * cos(e_op) ** 2],
+                      [-L3 * Vs_op * sin(p_op) / Je, dlamb_op ** 2 * sin(e_op) ** 2 - dlamb_op ** 2 * cos(e_op) ** 2 - L2 * sin(e_op) / Je, 0, 0, -mc.mu_eps / Je, -2 * dlamb_op * sin(e_op) * cos(e_op)],
+                      [L4 * Vs_op * cos(p_op) * cos(e_op) / Jl, -L4 * Vs_op * sin(p_op) * sin(e_op) / Jl, 0, 0, 0, -mc.mu_lamb / Jl]])
 
     B = np.array([[0, 0],
                   [0, 0],
@@ -86,18 +86,18 @@ def get_p_and_first_derivative_centripetal(model_type: ModelType, e_and_derivati
     dl4 = lambda_and_derivatives[4]
 
     a = Jl * dl2
-    b = mc.d_l * dl1
+    b = mc.mu_lamb * dl1
     c = cos(e)
     d = Je * de2
-    e_ = mc.d_e * de1
+    e_ = mc.mu_eps * de1
     f = Je * cos(e) * sin(e) * dl1**2
     g = -L2 * cos(e)
 
     da1 = Jl * dl3
-    db1 = mc.d_l * dl2
+    db1 = mc.mu_lamb * dl2
     dc1 = -sin(e) * de1
     dd1 = Je * de3
-    de_1 = mc.d_e * de2
+    de_1 = mc.mu_eps * de2
     # f
     k = cos(e) * sin(e)
     l_ = dl1**2
@@ -107,10 +107,10 @@ def get_p_and_first_derivative_centripetal(model_type: ModelType, e_and_derivati
     dg1 = L2 * sin(e) * de1
 
     da2 = Jl * dl4
-    db2 = mc.d_l * dl3
+    db2 = mc.mu_lamb * dl3
     dc2 = -cos(e) * de1 ** 2 - sin(e) * de2
     dd2 = Je * de4
-    de_2 = mc.d_e * de3
+    de_2 = mc.mu_eps * de3
     # f
     dk2 = de2 * (cos(e)**2 - sin(e)**2) - 4 * sin(e) * cos(e) * de1 **2
     dl2 = 2 * (dl2**2 + dl1 * dl3)

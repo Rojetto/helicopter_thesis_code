@@ -16,7 +16,7 @@ def scrambleParameters(lower_boundary, upper_boundary):
     '''Randomly alters the parameters.
     :arg lower_boundary: e.g. 0.8 ==> the lowest value of a variable will be 0.8 * real_value
     :arg upper_boundary: eg. 1.2 ==> the highest value of a variable will be 1.2 * real_value'''
-    global l_p, l_h, l_c, m_p, m_c_max, m_c, m_m, r_m, J_m, d_p, d_e, d_l, T_f, T_b, K_f, K_b, K, K_m, g
+    global l_p, l_h, l_c, m_h, m_c_max, m_c, m_m, r_m, J_m, d_p, d_e, d_l, T_f, T_b, K_f, K_b, K, K_m, g
     randNrs = [None] * 15
     for i in range(0, 15):
         randNrs[i] = random.uniform(lower_boundary, upper_boundary)
@@ -24,19 +24,19 @@ def scrambleParameters(lower_boundary, upper_boundary):
     l_p = randNrs[0] * real_mc.l_p
     l_h = randNrs[1] * real_mc.l_h
     l_c = randNrs[2] * real_mc.l_c
-    m_p = randNrs[3] * real_mc.m_p
+    m_h = randNrs[3] * real_mc.m_h
 
-    m_c_max = 2 * l_h/l_c * m_p
+    m_c_max = l_h/l_c * m_h
 
     m_c = randNrs[4] * real_mc.m_c
 
-    m_m = 0.2 * m_p
+    m_m = 0.2 * m_h
     r_m = l_p/8
     J_m = 0.5 * m_m * r_m**2
 
-    d_p = randNrs[5] * real_mc.d_p
-    d_e = randNrs[6] * real_mc.d_e
-    d_l = randNrs[7] * real_mc.d_l
+    d_p = randNrs[5] * real_mc.mu_phi
+    d_e = randNrs[6] * real_mc.mu_eps
+    d_l = randNrs[7] * real_mc.mu_lamb
 
     T_f = randNrs[8] * real_mc.T_f
     T_b = randNrs[9] * real_mc.T_b
@@ -52,19 +52,19 @@ def scrambleParameters(lower_boundary, upper_boundary):
 l_p = real_mc.l_p #m
 l_h = real_mc.l_h
 l_c = real_mc.l_c
-m_p = real_mc.m_p #kg
-m_c_max = 2 * l_h/l_c * m_p
+m_h = real_mc.m_h #kg
+m_c_max = l_h/l_c * m_h
 m_c = real_mc.m_c  # arbitrary, but has to be smaller than m_c_max
 
 # motor characteristics
-m_m = 0.2 * m_p
+m_m = 0.2 * m_h
 r_m = l_p/8
 J_m = 0.5 * m_m * r_m**2
 
 
-d_p = real_mc.d_p  # dissipation coefficient in Nms
-d_e = real_mc.d_e
-d_l = real_mc.d_l
+d_p = real_mc.mu_phi  # dissipation coefficient in Nms
+d_e = real_mc.mu_eps
+d_l = real_mc.mu_lamb
 
 # PT1 charakteristics for ROTOR SPEED
 T_f = real_mc.T_w
