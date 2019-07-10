@@ -10,7 +10,7 @@ g = 9.81;
 
 sample_decimation = 20;
 
-do_plots = true;
+do_plots = false;
 
 %% get phi parameters for exp1 but ignore friction coefficient result
 
@@ -110,6 +110,56 @@ end
 mu_eps = sys_est.Report.Parameters.ParVector(3);
 
 
+%% p_eps_2 and p_eps_3 from static elevation steps
+if false
+[t, ~, ~, ~, eps, deps, ddeps, ~, ~, ~, uf, ub] = load_and_diff('elevation_steps');
+
+start_times = (11.2:3:161.2);
+end_times = start_times + 0.3;
+
+sections = [start_times', end_times'];
+n_datapoints = size(sections, 1);
+
+avg_eps = zeros(n_datapoints, 1);        
+avg_vf = zeros(n_datapoints, 1);
+avg_vb = zeros(n_datapoints, 1);
+
+all_indices = zeros(numel(t), 1);
+
+for i=1:n_datapoints
+    indices = t > sections(i,1) & t < sections(i,2);
+    all_indices = all_indices | indices;
+    avg_eps(i) = mean(eps(indices));
+    avg_uf(i) = mean(uf(indices));
+    avg_ub(i) = mean(ub(indices));
+end
+
+avg_us = avg_uf + avg_ub;
+Fs = Fr(avg_uf, p1, q1, p2, q2) + Fr(avg_ub, p1, q1, p2, q2);
+
+figure
+hold on
+static_points = abs(ddeps) < 0.05 & abs(deps) < 0.022 & t > 11 & t < 160;
+plot(t, eps)
+plot(t(all_indices), eps(all_indices), 'x')
+plot((start_times + end_times)/2, avg_eps, 'o')
+plot((start_times + end_times)/2, 0.5*(avg_uf + avg_ub), 'o')
+plot((start_times + end_times)/2, Fs, 'o')
+grid
+
+A = [sin(avg_eps), cos(avg_eps)];
+b = lh*Fs;
+
+abc = (A'*A) \ (A'*b);
+
+p_eps_2 = abc(1)
+p_eps_3 = abc(2)
+
+figure
+hold on
+plot(avg_eps, b, 'x');
+plot(avg_eps, A*abc);
+end
 %% get exp5 p_eps_1
 files = {'exp5_feedback_rect_a5_f0_1',
 'exp5_feedback_rect_a10_f0_1',
@@ -251,15 +301,26 @@ end
 %p_lamb_1 = sys_est.Report.Parameters.ParVector(1);
 mu_lamb = sys_est.Report.Parameters.ParVector(2);
 
+
+%%
+if false
+mc = -(dh*g*mh+p_eps_2)^2/(g^2*(dh^2*mh-lp^2*mh+p_lamb_1-p_eps_1))
+dc = (p_eps_2+dh*mh)/mc
+lc = -lh/2 + sqrt(g*mc*(g*lh^2*mc-4*g*lp^2*mh+4*g*p_lamb_1-4*lh*p_eps_3))/(2*g*mc)
+ma = (p_eps_3+lc*mc)/lh - mh
+end
 %% lc, dc, mc from p_lamb_1, p_eps_2, p_eps_e
+if false
 i1 = (lh^2+lp^2)*mh-p_lamb_1;
 i2 = g*lh*mh-p_eps_3;
 
-%lc = -g*i1/i2
-%dc = -g*(dh*g*mh+p_eps_2)*i1/i2^2
-%mc = -i2^2/(g^2*i1)
+lc = -g*i1/i2
+dc = -g*(dh*g*mh+p_eps_2)*i1/i2^2
+mc = -i2^2/(g^2*i1)
+end
 
 %% try simulating full system with all parameters
+if false
 [clips, data, inits] = make_experiment_clips({'exp0_sine_elevation'}, ...
     {'phi', 'eps', 'lamb'}, 'StartTimes', 5, 'ClipLength', 120);
 
@@ -269,12 +330,16 @@ params = [p_phi_1, p_phi_2, mu_phi,...
 sys_init = idnlgrey('grey_exp0', [3, 2, 6], params, inits);
 
 plot_meas_and_fit(sys_init, data);
+end
 %%
+if false
 min_fun = @(p) model_param_solution_cost(p, p_phi_1, p_phi_2, p_eps_1, p_eps_2, p_eps_3, p_lamb_1);
 opts = optimoptions('lsqnonlin', 'Jacobian', 'on', 'MaxIter', 1000);
-%result = lsqnonlin(min_fun, [dh;mh;lc;dc;mc], [], [], opts)
+result = lsqnonlin(min_fun, [dh;mh;lc;dc;mc], [], [], opts)
+end
 
 %%
+if false
 start_times = [4.5, 26, 27.78, 39.13];
 end_times = [7, 27, 28.84, 41.6];
 file_names = cell(1, numel(start_times));
@@ -306,6 +371,7 @@ sys_init.Parameters(5).Fixed = false;
 sys_est = nlgreyest(data, sys_init, 'Display', 'on');
 
 plot_meas_and_fit(sys_est, data)
+end
 %%
 disp('Done with everything')
 
