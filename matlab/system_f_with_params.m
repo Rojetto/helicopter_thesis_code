@@ -1,20 +1,20 @@
 function dx = system_f_with_params(x, u, ...
-    m_c, m_p, l_c, l_p, l_h, ...
+    m_c, m_h, l_c, l_h, l_p, d_c, d_h,...
     mup, mue, mul, ...
     T_w, K_w, ...
     p1, q1, p2, q2, ...
     J_m, K_m)
-    term_centripetal = true;
+
+    term_centripetal = false;
     term_friction = true;
     term_dynamic_inertia = true;
     term_motor_pt1 = true;
     term_motor_nonlinear = true;
-    term_motor_reaction = true;
-    term_rotor_gyro = true;
+    term_motor_reaction = false;
+    term_rotor_gyro = false;
 
     g = 9.81;
     
-
     phi = x(1);
     eps = x(2);
     lamb = x(3);
@@ -28,16 +28,18 @@ function dx = system_f_with_params(x, u, ...
     vb = u(2);
 
     if term_dynamic_inertia
-        J_phi = 2 * m_p * l_p^2;
-        J_eps_1 = m_c*l_c^2 + 2*m_p*(l_h^2+l_p^2*sin(phi)^2);
-        J_eps_2 = m_c*l_c^2 + 2*m_p*(l_h^2-l_p^2*sin(phi)^2);
-        J_lamb = m_c*(l_c*cos(eps))^2 + 2*m_p*((l_h*cos(eps))^2 + (l_p*sin(phi)*sin(eps))^2 + (l_p * cos(phi))^2);
+        p_phi_1 = m_h*(l_p^2+d_h^2);
+        p_eps_1 = m_c*(l_c^2+d_c^2) + m_h*(l_h^2+d_h^2) + m_h*sin(phi)^2*(l_p^2-d_h^2);
+        p_lamb_1 = -d_c^2*m_c*cos(eps)^2-d_c*l_c*m_c*sin(2*eps)-d_h^2*m_h*cos(eps)^2*cos(phi)^2+d_h^2*m_h - d_h*l_h*m_h/2*(sin(2*eps-phi)+sin(2*eps+phi))+l_c^2*m_c*cos(eps)^2+l_h^2*m_h*cos(eps)^2+l_p^2*m_h*cos(eps)^2*cos(phi)^2-l_p^2*m_h*cos(eps)^2+l_p^2*m_h;
     else
-        J_phi = 2 * m_p * l_p^2;
-        J_eps_1 = m_c * l_c^2 + 2 * m_p * l_h^2;
-        J_eps_2 = m_c * l_c^2 + 2 * m_p * l_h^2;
-        J_lamb = m_c * l_c^2 + 2 * m_p * (l_h^2 + l_p^2);
+        p_phi_1 = m_h*(l_p^2+d_h^2);
+        p_eps_1 = m_c*(l_c^2+d_c^2) + m_h*(l_h^2+d_h^2);
+        p_lamb_1 = m_h*(l_h^2+l_p^2) + m_c*l_c^2;
     end
+    
+    p_phi_2 = - g*d_h*m_h*cos(eps);
+    p_eps_2 = g*(d_c*m_c - d_h*m_h*cos(phi));
+    p_eps_3 = g*(l_h*m_h - m_c*l_c);
 
     if term_motor_pt1
         dwf = 1/T_w * (K_w * vf - wf);
@@ -50,8 +52,8 @@ function dx = system_f_with_params(x, u, ...
     end
 
     if term_motor_nonlinear
-        %syms Fr(w)
-        %Fr(w) = piecewise(w<=-2*q2/p2, p2*w+q2, -2*q2/p2<w<=0,-p2^2/(4*q2)*w^2,0<w<=2*q1/p1,p1^2/(4*q1) * w^2,p1*w-q1);
+        syms Fr(w)
+        Fr(w) = piecewise(w<=-2*q2/p2, p2*w+q2, -2*q2/p2<w<=0,-p2^2/(4*q2)*w^2,0<w<=2*q1/p1,p1^2/(4*q1) * w^2,p1*w-q1);
 
         Ff = Fr(wf);
         Fb = Fr(wb);
@@ -66,9 +68,9 @@ function dx = system_f_with_params(x, u, ...
     ws = wf + wb;
     wd = wf - wb;
 
-    ddphi_rhs = Fd * l_p;
-    ddeps_rhs = g * (l_c * m_c - 2 * l_h * m_p) * cos(eps) + Fs * l_h * cos(phi);
-    ddlamb_rhs = Fs * l_h * cos(eps) * sin(phi);
+    ddphi_rhs = -p_phi_2 * sin(phi) + Fd * l_p;
+    ddeps_rhs = -p_eps_2 * sin(eps) - p_eps_3 * cos(eps) + Fs * l_h * cos(phi);
+    ddlamb_rhs = Fs * l_h * cos(eps) * sin(phi) - Fd * l_p * sin(eps);
 
     if term_centripetal
         ddphi_rhs = ddphi_rhs + J_phi * cos(phi) * sin(phi) * (deps^2 - cos(eps)^2*dlamb^2);
@@ -92,22 +94,22 @@ function dx = system_f_with_params(x, u, ...
         ddlamb_rhs = ddlamb_rhs + J_m * sin(phi) * cos(eps) * dphi * wd;
     end
 
-    ddphi = ddphi_rhs / J_phi;
-    ddeps = ddeps_rhs / J_eps_1;
-    ddlamb = ddlamb_rhs / J_lamb;
+    ddphi = ddphi_rhs / p_phi_1;
+    ddeps = ddeps_rhs / p_eps_1;
+    ddlamb = ddlamb_rhs / p_lamb_1;
 
     dx = [dphi; deps; dlamb; ddphi; ddeps; ddlamb; dwf; dwb];
 
-    function out = Fr(w)
-        if w <= -2 * q2 / p2
-            out = p2*w + q2;
-        elseif -2 * q2 / p2 < w && w <= 0
-            out = - p2^2/(4*q2) * w^2;
-        elseif 0 < w && w <= 2 * q1/p1
-            out = p1^2/(4*q1) * w^2;
-        else
-            out = p1 * w - q1;
-        end
-    end
+%     function out = Fr(w)
+%         if w <= -2 * q2 / p2
+%             out = p2*w + q2;
+%         elseif -2 * q2 / p2 < w && w <= 0
+%             out = - p2^2/(4*q2) * w^2;
+%         elseif 0 < w && w <= 2 * q1/p1
+%             out = p1^2/(4*q1) * w^2;
+%         else
+%             out = p1 * w - q1;
+%         end
+%     end
 end
 

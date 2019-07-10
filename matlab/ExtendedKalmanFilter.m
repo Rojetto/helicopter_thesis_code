@@ -7,7 +7,7 @@ classdef ExtendedKalmanFilter < matlab.System ...
     end
     
     properties (Nontunable)
-        x0 = [0; 0; 0; 0; 0; 0; 0; 0]
+        x0 = [0; deg2rad(-29); 0; 0; 0; 0]
         P_diag = [0, 0, 0, 0, 0, 0, 0, 0]
         N_diag = [(0.25/50)^2, (0.25/50)^2]
         W_diag = [(0.5/180*pi)^2, (0.5/180*pi)^2, (0.5/180*pi)^2]

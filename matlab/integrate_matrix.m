@@ -9,6 +9,6 @@ function result = integrate_matrix(fun, t_start, t_end, steps)
     end
     
     Q = trapz(ts, xs, 1);
-    result = reshape(Q(1, :, :), 8, 8);
+    result = reshape(Q(1, :, :), size_x(1), size_x(2));
 end
 
