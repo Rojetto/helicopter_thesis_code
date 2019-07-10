@@ -105,8 +105,8 @@ classdef CascadePid < HeliController
                 uf = wf_d - obj.front_rotor_pid.compute_fd(t, x(7) - wf_d);
                 ub = wb_d - obj.back_rotor_pid.compute_fd(t, x(8) - wb_d);
             else
-                uf = Ff_d;
-                ub = Fb_d;
+                uf = obj.Fr_inv(Ff_d);
+                ub = obj.Fr_inv(Fb_d);
             end
 
             u = [uf; ub];
