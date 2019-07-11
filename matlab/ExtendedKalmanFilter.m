@@ -22,25 +22,20 @@ classdef ExtendedKalmanFilter < matlab.System ...
         function setupImpl(obj)
             obj.N = diag(obj.N_diag);
             obj.W = diag(obj.W_diag);
-            
-            global current_u current_A
-            current_u = zeros(2, 1);
-            current_A = zeros(8, 8);
         end
 
         function x = stepImpl(obj, y, u)
-            global current_u current_A
-            current_u = u;
+            ExtendedKalmanFilter.ode_f(0, zeros(8), u)
             %f = @(t_, x_) system_f(x_, u);
             
-            [~, x_ode] = ode45(@ExtendedKalmanFilter.f, [0, obj.step_width/2, obj.step_width], obj.x);
+            [~, x_ode] = ode45(@ExtendedKalmanFilter.ode_f, [0, obj.step_width/2, obj.step_width], obj.x);
             x_predicted = x_ode(end, :)';
             A = compute_A_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
             B = compute_B_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
             C = [1 0 0 0 0 0 0 0; 0 1 0 0 0 0 0 0; 0 0 1 0 0 0 0 0];
             D = [0 0; 0 0; 0 0];
             
-            current_A = A;
+            ExtendedKalmanFilter.expm_A(0, A)
             F = expm(A * obj.step_width);
             H = integrate_matrix(@ExtendedKalmanFilter.expm_A, 0, obj.step_width, 10)*B;
             
@@ -102,14 +97,30 @@ classdef ExtendedKalmanFilter < matlab.System ...
     end
     
     methods (Static)
-        function out = f(t, x)
-            global current_u
+        function out = ode_f(t, x, u)
+            persistent current_u
+            
+            if isempty(current_u)
+                current_u = zeros(2, 1);
+            end
+            
+            if nargin == 3
+                current_u = u;
+            end
             
             out = system_f(x, current_u);
         end
         
-        function out = expm_A(t)
-            global current_A
+        function out = expm_A(t, A)
+            persistent current_A
+            
+            if isempty(current_A)
+                current_A = zeros(8, 8);
+            end
+            
+            if nargin == 2
+                current_A = A;
+            end
             
             out = expm(current_A*t);
         end
