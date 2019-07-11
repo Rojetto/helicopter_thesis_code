@@ -5,7 +5,7 @@ classdef ExtendedKalmanFilter < matlab.System ...
         W
     end
     
-    properties (Nontunable)
+    properties
         x0 = [0; deg2rad(-29); 0; 0; 0; 0; 0; 0]
         P_diag = [0, 0, 0, 0, 0, 0, 0, 0]
         N_diag = [(0.25/50)^2, (0.25/50)^2]
@@ -25,7 +25,7 @@ classdef ExtendedKalmanFilter < matlab.System ...
         end
 
         function x = stepImpl(obj, y, u)
-            ExtendedKalmanFilter.ode_f(0, zeros(8), u)
+            ExtendedKalmanFilter.ode_f(0, zeros(8), u);
             %f = @(t_, x_) system_f(x_, u);
             
             [~, x_ode] = ode45(@ExtendedKalmanFilter.ode_f, [0, obj.step_width/2, obj.step_width], obj.x);
@@ -35,7 +35,7 @@ classdef ExtendedKalmanFilter < matlab.System ...
             C = [1 0 0 0 0 0 0 0; 0 1 0 0 0 0 0 0; 0 0 1 0 0 0 0 0];
             D = [0 0; 0 0; 0 0];
             
-            ExtendedKalmanFilter.expm_A(0, A)
+            ExtendedKalmanFilter.expm_A(0, A);
             F = expm(A * obj.step_width);
             H = integrate_matrix(@ExtendedKalmanFilter.expm_A, 0, obj.step_width, 10)*B;
             

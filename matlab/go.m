@@ -1,0 +1,3 @@
+load e_-10_10_l_0_120_t_20.mat
+addpath parameter_estimation
+open heli_master_2015b
