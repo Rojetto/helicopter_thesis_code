@@ -25,7 +25,7 @@ classdef ExtendedKalmanFilter < matlab.System ...
         end
 
         function x = stepImpl(obj, y, u)
-            ExtendedKalmanFilter.ode_f(0, zeros(9), u);
+            ExtendedKalmanFilter.ode_f(0, zeros(9, 1), u);
             %f = @(t_, x_) system_f(x_, u);
             
             [~, x_ode] = ode45(@ExtendedKalmanFilter.ode_f, [0, obj.step_width/2, obj.step_width], obj.x);
