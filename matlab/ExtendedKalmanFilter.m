@@ -6,10 +6,10 @@ classdef ExtendedKalmanFilter < matlab.System ...
     end
     
     properties
-        x0 = [0; deg2rad(-29); 0; 0; 0; 0; 0; 0]
-        P_diag = [0, 0, 0, 0, 0, 0, 0, 0]
-        N_diag = [(0.25/50)^2, (0.25/50)^2]
-        W_diag = [(0.5/180*pi)^2, (0.5/180*pi)^2, (0.5/180*pi)^2]
+        x0 = [0; deg2rad(-29); 0; 0; 0; 0; 0; 0; 0]
+        P_diag = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+        N_diag = [ 1000, 1000 ]
+        W_diag = [ 0.01, 0.0001, 0.0001 ]
         step_width = 0.002
     end
 
@@ -25,14 +25,18 @@ classdef ExtendedKalmanFilter < matlab.System ...
         end
 
         function x = stepImpl(obj, y, u)
-            ExtendedKalmanFilter.ode_f(0, zeros(8), u);
+            ExtendedKalmanFilter.ode_f(0, zeros(9), u);
             %f = @(t_, x_) system_f(x_, u);
             
             [~, x_ode] = ode45(@ExtendedKalmanFilter.ode_f, [0, obj.step_width/2, obj.step_width], obj.x);
             x_predicted = x_ode(end, :)';
-            A = compute_A_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
-            B = compute_B_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
-            C = [1 0 0 0 0 0 0 0; 0 1 0 0 0 0 0 0; 0 0 1 0 0 0 0 0];
+            A_without_offset = compute_A_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
+            A = zeros(9);
+            A(1:8,1:8) = A_without_offset;
+            B_without_offset = compute_B_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
+            B = zeros(9, 2);
+            B(1:8,:) = B_without_offset;
+            C = [1 0 0 0 0 0 0 0 1; 0 1 0 0 0 0 0 0 0; 0 0 1 0 0 0 0 0 0];
             D = [0 0; 0 0; 0 0];
             
             ExtendedKalmanFilter.expm_A(0, A);
@@ -45,7 +49,7 @@ classdef ExtendedKalmanFilter < matlab.System ...
             
             K = P_predicted * C' * inv(C * P_predicted * C' + obj.W);
             x_corrected = x_predicted + K * (y - y_predicted);
-            P_corrected = (eye(8) - K * C) * P_predicted;
+            P_corrected = (eye(9) - K * C) * P_predicted;
             
             obj.x = x_corrected;
             obj.P = P_corrected;
@@ -67,7 +71,7 @@ classdef ExtendedKalmanFilter < matlab.System ...
         end
         
         function [out1] = getOutputSizeImpl(~)
-            out1 = 8;
+            out1 = 9;
         end
         
         function [out1] = getOutputDataTypeImpl(~)
@@ -85,11 +89,11 @@ classdef ExtendedKalmanFilter < matlab.System ...
         
         function [sz, dt, cp] = getDiscreteStateSpecificationImpl(~, prop_name)
             if strcmp(prop_name, 'x')
-                sz = [8, 1];
+                sz = [9, 1];
                 dt = 'double';
                 cp = false;
             elseif strcmp(prop_name, 'P')
-                sz = [8, 8];
+                sz = [9, 9];
                 dt = 'double';
                 cp = false;
             end
@@ -108,14 +112,16 @@ classdef ExtendedKalmanFilter < matlab.System ...
                 current_u = u;
             end
             
-            out = system_f(x, current_u);
+            out = zeros(9, 1);
+            out(1:8) = system_f(x, current_u);
+            out(9) = 0; % dphi_off = 0
         end
         
         function out = expm_A(t, A)
             persistent current_A
             
             if isempty(current_A)
-                current_A = zeros(8, 8);
+                current_A = zeros(9, 9);
             end
             
             if nargin == 2
