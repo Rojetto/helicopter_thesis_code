@@ -51,6 +51,11 @@ classdef ExtendedKalmanFilter < matlab.System ...
             x_corrected = x_predicted + K * (y - y_predicted);
             P_corrected = (eye(9) - K * C) * P_predicted;
             
+            % clamp phi_off for weird edge case where it completely
+            % diverges
+            phi_off_limit = 10 / 180 * pi;
+            x_corrected(9) = max(min(x_corrected(9), phi_off_limit), -phi_off_limit);
+            
             obj.x = x_corrected;
             obj.P = P_corrected;
             
