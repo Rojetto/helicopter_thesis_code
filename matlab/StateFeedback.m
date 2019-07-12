@@ -1,20 +1,15 @@
-classdef StateFeedback < HeliController
-    properties (Access = private)
-        trajectory
-    end
-    
+classdef StateFeedback < HeliController    
     properties (Nontunable)
-        K = zeros(2, 6);
+        K = zeros(2, 8);
     end
     
     methods
         function obj = StateFeedback()
-            obj.trajectory = Trajectory([], [], [], [], [], []);
         end
         
-        function u = control(obj, t, x)
-            x = reshape(x(1:6), 6, 1);
-            traj_eval = obj.trajectory.eval(t);
+        function u = control(obj, t, x_in)
+            x = reshape(x_in(1:8), 8, 1);
+            traj_eval = eval_trajectory(obj.trajectory, t);
             x_d = [
                 traj_eval.phi(1); 
                 traj_eval.eps(1); 
@@ -22,14 +17,15 @@ classdef StateFeedback < HeliController
                 traj_eval.phi(2); 
                 traj_eval.eps(2); 
                 traj_eval.lamb(2);
+                traj_eval.vf(1);
+                traj_eval.vb(1);
             ];
             u_d = [traj_eval.vf(1); traj_eval.vb(1)];
             
             u = u_d - obj.K * (x - x_d);
         end
         
-        function initialize(obj, trajectory)
-            obj.trajectory = trajectory;
+        function initialize(obj)
         end
     end
 end
