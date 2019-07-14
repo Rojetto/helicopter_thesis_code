@@ -1,42 +1,24 @@
 classdef TimeVariantLQR < HeliController
     properties (Access=private)
-        Q
-        R
         R_inv
-        S
+    end
+    
+    properties (Nontunable)
+        Q = diag([3, 50, 20, 2, 1, 5, 1, 1])
+        R = diag([1, 1])
+        S = diag([3, 50, 20, 2, 1, 5, 1, 1])
+        
         riccati_tau
         riccati_P_triu_tau
     end
     
-    properties
-        Q_diag = [3, 50, 20, 2, 1, 5, 1, 1]
-        R_diag = [1, 1]
-        S_diag = [3, 50, 20, 2, 1, 5, 1, 1]
-        riccati_step_width = 0.1
-    end
-    
-    properties (Constant)
-        riccati_samples = 200
-    end
-    
     methods
         function obj = TimeVariantLQR()
-            obj.Q = zeros(8);
-            obj.R = zeros(2);
             obj.R_inv = zeros(2);
-            obj.S = zeros(8);
-            
-            obj.riccati_tau = zeros(1000, 1);
-            obj.riccati_P_triu_tau = zeros(1000, 36);
         end
         
         function initialize(obj)
-            obj.Q = diag(obj.Q_diag);
-            obj.R = diag(obj.R_diag);
             obj.R_inv = inv(obj.R);
-            obj.S = diag(obj.S_diag);
-            
-            obj.solve_riccati()
         end
         
         function out = control(obj, t, x_in)
@@ -72,21 +54,6 @@ classdef TimeVariantLQR < HeliController
                 out = u_d;
             end
         end
-        
-        function solve_riccati(obj)
-            tau_e = obj.trajectory.t(end);
-            %n_taus = floor(tau_e/obj.riccati_step_width + 1);
-            n_taus = obj.riccati_samples;
-            taus = linspace(0, tau_e, n_taus);
-            
-            P_triu_0 = TimeVariantLQR.full_to_triu(obj.S);
-            
-            TimeVariantLQR.riccati_rhs(0, P_triu_0, obj.trajectory, obj.R_inv, obj.Q);
-            [~, P_trius] = ode45(@TimeVariantLQR.riccati_rhs, taus, P_triu_0);
-            
-            obj.riccati_tau(1:n_taus) = taus;
-            obj.riccati_P_triu_tau(1:n_taus, :) = P_trius;
-        end
     end
     
     methods (Static)
@@ -108,21 +75,7 @@ classdef TimeVariantLQR < HeliController
             out(indices') = only_lower(indices');
         end
         
-        function d_P_triu = riccati_rhs(tau, P_triu, trajectory_, R_inv_, Q_)
-            persistent trajectory R_inv Q
-            
-            if isempty(trajectory)
-                trajectory = struct('t', 0, 'phi', [0 0 0], 'eps', [0 0 0 0 0], 'lamb', [0 0 0 0 0], 'vf', 0, 'vb', 0);
-                R_inv = zeros(2);
-                Q = zeros(8);
-            end
-            
-            if nargin==5
-                trajectory = trajectory_;
-                R_inv = R_inv_;
-                Q = Q_;
-            end
-            
+        function d_P_triu = riccati_rhs(tau, P_triu, trajectory, R_inv, Q)
             te = trajectory.t(end);
             [A, B] = TimeVariantLQR.get_SS_at_time(trajectory, te - tau);
             P = TimeVariantLQR.triu_to_full(P_triu);
