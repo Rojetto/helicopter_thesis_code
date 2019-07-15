@@ -1,59 +1,40 @@
 classdef TimeVariantLQRI < HeliController
     properties (Access=private)
-        Q
-        R
         R_inv
-        S
-        riccati_tau
-        riccati_P_triu_tau
         yi
-        
-        trajectory
     end
     
     properties (Nontunable)
-        Q_diag = [3, 50, 20, 2, 1, 5, 1, 1, 0.1, 10, 10]
-        R_diag = [1, 1]
-        S_diag = [3, 50, 20, 2, 1, 5, 1, 1, 0.1, 10, 10 ]
-        riccati_step_width = 0.1
-        sim_step_width = 1/60
+        Q = diag([3, 50, 20, 2, 1, 5, 1, 1, 0.1, 10, 10])
+        R = diag([1, 1])
+        S = diag([3, 50, 20, 2, 1, 5, 1, 1, 0.1, 10, 10])
+        
+        riccati_tau
+        riccati_P_triu_tau
+        
+        step_width = 0.002;
     end
     
     methods
         function obj = TimeVariantLQRI()
-            obj.trajectory = Trajectory([], [], [], [], [], []);
-            
-            obj.Q = zeros(11);
-            obj.R = zeros(2);
             obj.R_inv = zeros(2);
-            obj.S = zeros(11);
-            
-            obj.riccati_tau = [];
-            obj.riccati_P_triu_tau = [];
             
             obj.yi = zeros(3, 1);
         end
         
-        function initialize(obj, trajectory)
-            obj.trajectory = trajectory;
-            
-            obj.Q = diag(obj.Q_diag);
-            obj.R = diag(obj.R_diag);
+        function initialize(obj)
             obj.R_inv = inv(obj.R);
-            obj.S = diag(obj.S_diag);
             
             obj.yi = zeros(3, 1);
-            
-            obj.solve_riccati()
         end
         
-        function out = control(obj, t, x)
-            x = reshape(x(1:8), 8, 1);
+        function out = control(obj, t, x_in)
+            x = reshape(x_in(1:8), 8, 1);
             te = obj.trajectory.t(end);
             if t > te
                 t = te;
             end
-            traj_eval = obj.trajectory.eval(t);
+            traj_eval = eval_trajectory(obj.trajectory, t);
             u_d = [traj_eval.vf(1); traj_eval.vb(1)];
             x_d = [
                 traj_eval.phi(1); 
@@ -65,18 +46,15 @@ classdef TimeVariantLQRI < HeliController
                 traj_eval.vf(1);
                 traj_eval.vb(1)
             ];
-            x_diff = [x - x_d];
-            obj.yi = obj.yi + x_diff(1:3)*obj.sim_step_width;
+            x_diff = x - x_d;
+            obj.yi = obj.yi + x_diff(1:3)*obj.step_width;
             
             x_bar = [x_diff; obj.yi];
-            %x_bars = evalin('base', 'x_bars');
-            %x_bars(end+1, :) = x_bar';
-            %assignin('base', 'x_bars', x_bars);
             
             tau = te - t;
             P_triu = interp1(obj.riccati_tau, obj.riccati_P_triu_tau, tau);
             P = TimeVariantLQRI.triu_to_full(P_triu);
-            [~, B] = obj.get_SS_at_time(t);
+            [~, B] = TimeVariantLQRI.get_SS_at_time(obj.trajectory, t);
             
             u_diff = - obj.R_inv * B' * P * x_bar;
             
@@ -86,18 +64,38 @@ classdef TimeVariantLQRI < HeliController
                 out = u_d;
             end
         end
-        
-        function solve_riccati(obj)
-            tau_e = obj.trajectory.t(end);
-            P_triu_0 = TimeVariantLQRI.full_to_triu(obj.S);
+    end
+    
+    methods (Static)
+        function out = full_to_triu(full_mat)
+            n = size(full_mat, 1);
+            indices = logical(triu(ones(n)));
             
-            [ode_tau, P_triu] = ode45(@(tau, P_triu) TimeVariantLQRI.riccati_rhs(obj, tau, P_triu), [0, tau_e], P_triu_0);
-            obj.riccati_tau = ode_tau;
-            obj.riccati_P_triu_tau = P_triu;
+            out = full_mat(indices);
         end
         
-        function [A, B] = get_SS_at_time(obj, t)
-            traj_eval = obj.trajectory.eval(t);
+        function out = triu_to_full(triu_mat)
+            k = length(triu_mat);
+            n = (sqrt(1+8*k)-1)/2;
+            indices = logical(triu(ones(n)));
+            
+            out = zeros(n);
+            out(indices) = triu_mat;
+            only_lower = out';
+            out(indices') = only_lower(indices');
+        end
+        
+        function d_P_triu = riccati_rhs(tau, P_triu, trajectory, R_inv, Q)
+            te = trajectory.t(end);
+            [A, B] = TimeVariantLQRI.get_SS_at_time(trajectory, te - tau);
+            P = TimeVariantLQRI.triu_to_full(P_triu);
+            
+            d_P = - P * B * R_inv * B' * P' + P * A + A' * P + Q;
+            d_P_triu = TimeVariantLQRI.full_to_triu(d_P);
+        end
+        
+        function [A, B] = get_SS_at_time(trajectory, t)
+            traj_eval = eval_trajectory(trajectory, t);
             
             x1 = traj_eval.phi(1);
             x2 = traj_eval.eps(1);
@@ -116,32 +114,6 @@ classdef TimeVariantLQRI < HeliController
             A(9:11, 1:3) = eye(3);
             B = zeros(11, 2);
             B(1:8,:) = compute_B_full(x1, x2, x3, x4, x5, x6, x7, x8, u1, u2);
-        end
-    end
-    
-    methods (Static)
-        function out = full_to_triu(full_mat)
-            indices = logical(triu(ones(11)));
-            
-            out = full_mat(indices);
-        end
-        
-        function out = triu_to_full(triu_mat)
-            indices = logical(triu(ones(11)));
-            
-            out = zeros(11);
-            out(indices) = triu_mat;
-            only_lower = out';
-            out(indices') = only_lower(indices');
-        end
-        
-        function d_P_triu = riccati_rhs(obj, tau, P_triu)
-            te = obj.trajectory.t(end);
-            [A, B] = obj.get_SS_at_time(te - tau);
-            P = TimeVariantLQRI.triu_to_full(P_triu);
-            
-            d_P = - P * B * obj.R_inv * B' * P' + P * A + A' * P + obj.Q;
-            d_P_triu = TimeVariantLQRI.full_to_triu(d_P);
         end
     end
 end
