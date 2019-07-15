@@ -94,7 +94,7 @@ class TypePolynomialFlatness(TrajectoryType):
         elevation_planner = PolynomialPlanner(elevation_d_start, elevation_d_end, 0.0, self.t_end, self.derivative_order)
         travel_planner = PolynomialPlanner(travel_d_start, travel_d_end, 0.0, self.t_end, self.derivative_order)
 
-        num_samples = int(self.t_end * self.sample_rate)
+        num_samples = int(self.t_end * self.sample_rate) + 1
         t = linspace(0.0, self.t_end, num_samples)
         eps = elevation_planner.eval_vec(t)
         lamb = travel_planner.eval_vec(t)
