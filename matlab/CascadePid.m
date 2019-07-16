@@ -13,11 +13,11 @@ classdef CascadePid < HeliController
     
     properties
         %elevation_pid_gains Elevation PID
-        elevation_pid_gains = [30, 20, 20]
+        elevation_pid_gains = [15, 0.1, 7]
         %travel_pitch_pid_gains Travel-Pitch PID
-        travel_pitch_pid_gains = [0.8, 0.005, 1.3]
+        travel_pitch_pid_gains = [2, 0, 2]
         %pitch_vd_pid_gains Pitch-Vd PID
-        pitch_vd_pid_gains = [8, 0.5, 3.5]
+        pitch_vd_pid_gains = [4, 0.1, 2]
         %k_rotor Rotor PD
         k_rotor = [0, 0]
     end
