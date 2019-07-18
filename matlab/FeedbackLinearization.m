@@ -1,18 +1,7 @@
 classdef FeedbackLinearization < HeliController
-    %CascadePid Linear PID controllers in cascade structure.
+    %FeedbackLinearization Controller
     properties (Access = private)
-        front_rotor_pid
-        back_rotor_pid
         c
-        
-        trajectory
-    end
-
-    properties (Nontunable, Logical)
-        %friction_centripetal Include friction and centripetal forces
-        friction_centripetal = true
-        %rotor_speed_controller Rotor speed controller
-        rotor_speed_controller = true
     end
 
     properties (Nontunable)
@@ -22,78 +11,72 @@ classdef FeedbackLinearization < HeliController
         kl = [1, 0.8]
         %kp k Pitch
         kp = [150, 20]
-        %k_rotor Rotor PD
-        k_rotor = [5, 0]
     end
     
     methods
         function obj = FeedbackLinearization()
-            obj.front_rotor_pid = pidAlgorithm(zeros(3,1));
-            obj.back_rotor_pid = pidAlgorithm(zeros(3,1));
-
             obj.c = Constants();
-            obj.trajectory = Trajectory([], [], [], [], [], []);
         end
 
-        function initialize(obj, trajectory)
-            obj.front_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
-            obj.front_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
-            
-            obj.trajectory = trajectory;
+        function initialize(obj)
         end
         
         function u = control(obj, t, x)
-            p = x(1);
-            e = x(2);
-            l = x(3);
-            dp = x(4);
-            de = x(5);
-            dl = x(6);
+            phi = x(1);
+            eps = x(2);
+            lamb = x(3);
+            dphi = x(4);
+            deps = x(5);
+            dlamb = x(6);
             
-            traj_eval = obj.trajectory.eval(t);
+            traj_eval = eval_trajectory(obj.trajectory, t);
             e_traj = traj_eval.eps;
             lambda_traj = traj_eval.lamb;
 
-            if obj.rotor_speed_controller
-                wf = x(7);
-                wb = x(8);
-            end
+            v1 = e_traj(3) - obj.ke(2) * (deps - e_traj(2)) - obj.ke(1) * (eps - e_traj(1));
+            v2 = lambda_traj(3) - obj.kl(2) * (dlamb - lambda_traj(2)) - obj.kl(1) * (lamb - lambda_traj(1));
+            
+            m_h = obj.c.m_h;
+            m_c = obj.c.m_c;
+            l_h = obj.c.l_h;
+            l_c = obj.c.l_c;
+            l_p = obj.c.l_p;
+            d_h = obj.c.d_h;
+            d_c = obj.c.d_c;
+            
+            mup = obj.c.mup;
+            mue = obj.c.mue;
+            mul = obj.c.mul;
+            
+            p_phi_1 = m_h*(l_p^2+d_h^2);
+            p_eps_1 = m_c*(l_c^2+d_c^2) + m_h*(l_h^2+d_h^2) + m_h*sin(phi)^2*(l_p^2-d_h^2);
+            p_lamb_1 = -d_c^2*m_c*cos(eps)^2-d_c*l_c*m_c*sin(2*eps)-d_h^2*m_h*cos(eps)^2*cos(phi)^2+d_h^2*m_h - d_h*l_h*m_h/2*(sin(2*eps-phi)+sin(2*eps+phi))+l_c^2*m_c*cos(eps)^2+l_h^2*m_h*cos(eps)^2+l_p^2*m_h*cos(eps)^2*cos(phi)^2-l_p^2*m_h*cos(eps)^2+l_p^2*m_h;
+            
+            p_phi_2 = - g*d_h*m_h*cos(eps);
+            p_eps_2 = g*(d_c*m_c - d_h*m_h*cos(phi));
+            p_eps_3 = g*(l_h*m_h - m_c*l_c);
+            
+            u1v = 1/l_h * (p_eps_1*v1 + p_eps_2*sin(eps)+p_eps_3*cos(eps)+mue*deps);
+            u2v = 1/l_h * (p_lamb_1*v2 + mul*dlamb);
 
-            v1 = e_traj(3) - obj.ke(2) * (de - e_traj(2)) - obj.ke(1) * (e - e_traj(1));
-            v2 = lambda_traj(3) - obj.kl(2) * (dl - lambda_traj(2)) - obj.kl(1) * (l - lambda_traj(1));
+            Fs = sqrt(u1v^2 + u2v^2)*sign(u1v);
 
-            if obj.friction_centripetal
-                u1v = 1/obj.c.L3 * (obj.c.Je*v1 - obj.c.L2*cos(e) + obj.c.mue*de + obj.c.Je*cos(e)*sin(e)*dl^2);
-                u2v = 1/(obj.c.L4*cos(e))*(obj.c.Jl*v2 + obj.c.mul*dl);
-            else
-                u1v = 1/obj.c.L3 * (- obj.c.L2 * cos(e) + obj.c.Je * v1);
-                u2v = obj.c.Jl / (obj.c.L4 * cos(e)) * v2;
-            end
-
-            Vs = sqrt(u1v^2 + u2v^2)*sign(u1v);
-
-            pd = atan(u2v / u1v);
+            phi_d = atan(u2v / u1v);
 
             dpd = 0;
             ddpd = 0;
 
-            v3 = ddpd - obj.kp(2) * (dp - dpd) - obj.kp(1) * (p - pd);
+            v3 = ddpd - obj.kp(2) * (dphi - dpd) - obj.kp(1) * (phi - phi_d);
 
-            if obj.friction_centripetal
-                Vd = 1/obj.c.L1 * (obj.c.Jp * v3 + obj.c.mup * dp - obj.c.Jp*cos(p)*sin(p)*(de^2-cos(e)^2*dl^2));
-            else
-                Vd = obj.c.Jp/obj.c.L1 * v3;
-            end
+            Fd = 1/l_p * (p_phi_1*v3 + p_phi_2 * sin(phi) + mup*dphi);
 
-            Vf = (Vs + Vd) / 2;
-            Vb = (Vs - Vd) / 2;
+            Ff = (Fs + Fd) / 2;
+            Fb = (Fs - Fd) / 2;
+            
+            uf = Fr_inv(Ff, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
+            ub = Fr_inv(Fb, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
 
-            if obj.rotor_speed_controller
-                Vf = Vf + obj.front_rotor_pid.compute_fd(t, Vf - wf);
-                Vb = Vb + obj.back_rotor_pid.compute_fd(t, Vb - wb);
-            end
-
-            u = [Vf; Vb];
+            u = [uf; ub];
         end
     end
 end

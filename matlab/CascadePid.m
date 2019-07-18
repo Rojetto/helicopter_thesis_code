@@ -112,28 +112,12 @@ classdef CascadePid < HeliController
             u = [uf; ub];
         end
         
-        function F = Fr(obj, w)
-            if w <= -2 * obj.c.q2 / obj.c.p2
-                F = obj.c.p2*w + obj.c.q2;
-            elseif w <= 0
-                F = - obj.c.p2^2/(4*obj.c.q2) * w^2;
-            elseif w <= 2 * obj.c.q1/obj.c.p1
-                F = obj.c.p1^2/(4*obj.c.q1) * w^2;
-            else
-                F = obj.c.p1 * w - obj.c.q1;
-            end
+        function F = Fr(obj, w)            
+            F = Fr(w, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
         end
         
         function w = Fr_inv(obj, F)
-            if F <= - obj.c.q2
-                w = (F - obj.c.q2) / obj.c.p2;
-            elseif F < 0
-                w = - sqrt(-4*obj.c.q2*F) / obj.c.p2;
-            elseif F < obj.c.q1
-                w = sqrt(4*obj.c.q1*F) / obj.c.p1;
-            else
-                w = (F + obj.c.q1) / obj.c.p1;
-            end
+            w = Fr_inv(F, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
         end
     end
 end
