@@ -7,7 +7,7 @@ classdef StateFeedback < HeliController
         function obj = StateFeedback()
         end
         
-        function u = control(obj, t, x_in)
+        function [u, debug_out] = control(obj, t, x_in)
             x = reshape(x_in(1:8), 8, 1);
             traj_eval = eval_trajectory(obj.trajectory, t);
             x_d = [
@@ -23,6 +23,7 @@ classdef StateFeedback < HeliController
             u_d = [traj_eval.vf(1); traj_eval.vb(1)];
             
             u = u_d - obj.K * (x - x_d);
+            debug_out = [];
         end
         
         function initialize(obj)

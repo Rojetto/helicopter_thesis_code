@@ -28,7 +28,7 @@ classdef TimeVariantLQRI < HeliController
             obj.yi = zeros(3, 1);
         end
         
-        function out = control(obj, t, x_in)
+        function [out, debug_out] = control(obj, t, x_in)
             x = reshape(x_in(1:8), 8, 1);
             te = obj.trajectory.t(end);
             if t > te
@@ -63,6 +63,8 @@ classdef TimeVariantLQRI < HeliController
             if t == te
                 out = u_d;
             end
+            
+            debug_out = [];
         end
     end
     

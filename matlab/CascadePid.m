@@ -44,7 +44,7 @@ classdef CascadePid < HeliController
         function initialize(obj)
         end
         
-        function u = control(obj, t, x)
+        function [u, debug_out] = control(obj, t, x)
             obj.elevation_pid.gains = obj.elevation_pid_gains;
             obj.travel_pitch_pid.gains = obj.travel_pitch_pid_gains;
             obj.pitch_vd_pid.gains = obj.pitch_vd_pid_gains;
@@ -110,6 +110,7 @@ classdef CascadePid < HeliController
             end
 
             u = [uf; ub];
+            debug_out = [];
         end
         
         function F = Fr(obj, w)            

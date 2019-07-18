@@ -45,7 +45,7 @@ classdef (Abstract) HeliController < matlab.System ...
             obj.trajectory = struct('t', t_d, 'phi', phi_d, 'eps', eps_d, 'lamb', lamb_d, 'vf', vf_d, 'vb', vb_d);
         end
         
-        function u = stepImpl(obj, t, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
+        function [u, debug_out] = stepImpl(obj, t, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
             if ~obj.is_initialized
                 obj.trajectory.t = t_d;
                 obj.trajectory.phi = phi_d;
@@ -58,23 +58,33 @@ classdef (Abstract) HeliController < matlab.System ...
                 obj.is_initialized = true;
             end
             
-            u = obj.control(t, x);
+            [u, debug_out_controller] = obj.control(t, x);
+            
+            if len(debug_out_controller) > 0
+                debug_out = debug_out_controller;
+            else
+                debug_out = 0;
+            end
         end
         
-        function [out1] = isOutputFixedSizeImpl(~)
+        function [out1, out2] = isOutputFixedSizeImpl(~)
             out1 = true;
+            out2 = true;
         end
         
-        function [out1] = isOutputComplexImpl(~)
+        function [out1, out2] = isOutputComplexImpl(~)
             out1 = false;
+            out2 = false;
         end
         
-        function [out1] = getOutputSizeImpl(~)
+        function [out1, out2] = getOutputSizeImpl(obj)
             out1 = 2;
+            out2 = obj.getDebugOutputSize();
         end
         
-        function [out1] = getOutputDataTypeImpl(~)
+        function [out1, out2] = getOutputDataTypeImpl(~)
             out1 = 'double';
+            out2 = 'double';
         end
     
         function [in1, in2, in3, in4, in5, in6, in7, in8] = getInputNamesImpl(~)
@@ -88,8 +98,14 @@ classdef (Abstract) HeliController < matlab.System ...
             in8 = 'Traj Vb';
         end
         
-        function [out_name] = getOutputNamesImpl(~)
-            out_name = 'Control';
+        function [out1, out2] = getOutputNamesImpl(~)
+            out1 = 'Control';
+            out2 = 'Debug';
+        end
+        
+        % override in subclass
+        function out = getDebugOutputSize(~)
+            out = 1;
         end
     end
 end

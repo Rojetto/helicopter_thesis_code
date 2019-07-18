@@ -49,7 +49,7 @@ classdef GainSchedulingPid < HeliController
         function initialize(obj)
         end
         
-        function u = control(obj, t, x)
+        function [u, debug_out] = control(obj, t, x)
             obj.retune(x(2))
             
             obj.elevation_pid.gains = obj.elevation_pid_gains;
@@ -117,6 +117,7 @@ classdef GainSchedulingPid < HeliController
             end
 
             u = [uf; ub];
+            debug_out = [];
         end
         
         function F = Fr(obj, w)

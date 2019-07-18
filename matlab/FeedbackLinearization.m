@@ -21,7 +21,7 @@ classdef FeedbackLinearization < HeliController
         function initialize(obj)
         end
         
-        function u = control(obj, t, x)
+        function [u, debug_out] = control(obj, t, x)
             phi = x(1);
             eps = x(2);
             lamb = x(3);
@@ -77,6 +77,13 @@ classdef FeedbackLinearization < HeliController
             ub = Fr_inv(Fb, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
 
             u = [uf; ub];
+            debug_out = [phi_d, u1v, u2v];
+        end
+    end
+    
+    methods (Access=protected)
+        function out = getDebugOutputSize(~)
+            out = 3;
         end
     end
 end
