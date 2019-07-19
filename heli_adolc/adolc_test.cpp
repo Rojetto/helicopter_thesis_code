@@ -1,6 +1,7 @@
 #include <math.h>
 #include "adolc/adouble.h"
 #include "adolc/adutils.h"
+#include "adolc_test.h"
 
 void Duffing(short int tape)
 {
