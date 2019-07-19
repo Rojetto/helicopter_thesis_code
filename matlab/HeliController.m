@@ -60,7 +60,7 @@ classdef (Abstract) HeliController < matlab.System ...
             
             [u, debug_out_controller] = obj.control(t, x);
             
-            if len(debug_out_controller) > 0
+            if length(debug_out_controller) > 0
                 debug_out = debug_out_controller;
             else
                 debug_out = 0;
