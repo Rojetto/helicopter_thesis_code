@@ -42,6 +42,16 @@ classdef CascadePid < HeliController
         end
 
         function initialize(obj)
+            coder.updateBuildInfo('addIncludePaths', 'C:\Users\robertph\Desktop\HeliControl\matlab\include')
+            coder.updateBuildInfo('addLinkObjects', 'heli_adolc.lib', 'C:\Users\robertph\Desktop\HeliControl\matlab\lib', '', true, true)
+            coder.updateBuildInfo('addLinkObjects', 'adolc.lib', 'C:\Users\robertph\Desktop\HeliControl\matlab\lib', '', true, true)
+            coder.updateBuildInfo('addNonBuildFiles', 'C:\Users\robertph\Desktop\HeliControl\matlab\adolc.dll')
+            
+            coder.cinclude('adolc_test.h')
+            
+            if ~coder.target('MATLAB')
+                coder.ceval('generateTape');
+            end
         end
         
         function [u, debug_out] = control(obj, t, x)
@@ -110,6 +120,9 @@ classdef CascadePid < HeliController
             end
 
             u = [uf; ub];
+            if ~coder.target('MATLAB')
+                coder.ceval('evaluateTape');
+            end
             debug_out = [];
         end
         
