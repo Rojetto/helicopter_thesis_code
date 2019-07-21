@@ -1,7 +1,14 @@
 #include <math.h>
 #include "adolc/adouble.h"
 #include "adolc/adutils.h"
+#include "adolc/lie/drivers.h"
 #include "heli_adolc.h"
+
+const int tapeF = 0;
+int tapeH1 = 1;
+int tapeH2 = 2;
+int tapeFG1 = 3;
+int tapeFG2 = 4;
 
 
 void functionF(adouble *X, adouble *Y)
@@ -90,7 +97,6 @@ void buildTapes()
     double Zp = 0.0;
 
     // Tape for f
-    int tapeF = 0;
     trace_on(tapeF);
 
     for (int i = 0; i < n; i++)
@@ -108,7 +114,6 @@ void buildTapes()
     trace_off();
 
     // Tape for h1
-    int tapeH1 = 1;
     trace_on(tapeH1);
 
     for (int i = 0; i < n; i++)
@@ -123,7 +128,6 @@ void buildTapes()
     trace_off();
 
     // Tape for h2
-    int tapeH2 = 2;
     trace_on(tapeH2);
 
     for (int i = 0; i < n; i++)
@@ -138,7 +142,6 @@ void buildTapes()
     trace_off();
 
     // Tape for f+g1
-    int tapeFG1 = 3;
     trace_on(tapeFG1);
 
     for (int i = 0; i < n; i++)
@@ -162,7 +165,6 @@ void buildTapes()
     trace_off();
 
     // Tape for f+g2
-    int tapeFG2 = 4;
     trace_on(tapeFG2);
 
     for (int i = 0; i < n; i++)
@@ -193,12 +195,45 @@ void buildTapes()
     delete[] X;
 }
 
-
-void fForward(int d, double **X, double **Y)
+void calcGamma(double *X, double *Y)
 {
-    short tape = 0;
+    int d = 4;
     int n = 8;
-    int m = 8;
 
-    forward(tape, m, n, d, 1, X, Y);
+    double *result = myalloc(d + 1);
+
+    lie_scalar(tapeF, tapeH1, n, X, d, result);
+    Y[0] = result[d];
+    lie_scalar(tapeF, tapeH2, n, X, d, result);
+    Y[1] = result[d];
+
+    myfree(result);
+}
+
+void calcLambda(double *X, double **Y)
+{
+    int r = 4;
+    int n = 8;
+
+    double *result = myalloc(r+1);
+
+    lie_scalar(tapeF, tapeH1, n, X, r, result);
+    double Lfh1 = result[r];
+    lie_scalar(tapeF, tapeH2, n, X, r, result);
+    double Lfh2 = result[r];
+    lie_scalar(tapeFG1, tapeH1, n, X, r, result);
+    double Lfg1h1 = result[r];
+    lie_scalar(tapeFG1, tapeH2, n, X, r, result);
+    double Lfg1h2 = result[r];
+    lie_scalar(tapeFG2, tapeH1, n, X, r, result);
+    double Lfg2h1 = result[r];
+    lie_scalar(tapeFG2, tapeH2, n, X, r, result);
+    double Lfg2h2 = result[r];
+
+    Y[0][0] = Lfg1h1 - Lfh1;
+    Y[0][1] = Lfg2h1 - Lfh1;
+    Y[1][0] = Lfg1h2 - Lfh2;
+    Y[1][1] = Lfg2h2 - Lfh2;
+
+    myfree(result);
 }
