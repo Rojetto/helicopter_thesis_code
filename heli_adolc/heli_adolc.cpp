@@ -4,7 +4,7 @@
 #include "heli_adolc.h"
 
 
-void f(adouble *X, adouble *Y)
+void functionF(adouble *X, adouble *Y)
 {
     adouble phi = X[0];
     adouble eps = X[1];
@@ -35,23 +35,70 @@ void f(adouble *X, adouble *Y)
     Y[7] = 0.0;
 }
 
+void functionG1(adouble *X, adouble *Y)
+{
+    Y[0] = 0.0;
+    Y[1] = 0.0;
+    Y[2] = 0.0;
+
+    Y[3] = 0.0;
+    Y[4] = 0.0;
+    Y[5] = 0.0;
+
+    Y[6] = 0.0;
+    Y[7] = 1.0;
+}
+
+void functionG2(adouble *X, adouble *Y)
+{
+    adouble p_phi_1 = m_h*(pow(l_p,2)+pow(d_h,2));
+
+    Y[0] = 0.0;
+    Y[1] = 0.0;
+    Y[2] = 0.0;
+
+    Y[3] = l_p / p_phi_1;
+    Y[4] = 0.0;
+    Y[5] = 0.0;
+
+    Y[6] = 0.0;
+    Y[7] = 0.0;
+}
+
+void functionH1(adouble *X, adouble *Y)
+{
+    adouble eps = X[1];
+    *Y = eps;
+}
+
+void functionH2(adouble *X, adouble *Y)
+{
+    adouble lamb = X[2];
+    *Y = lamb;
+}
+
 void buildTapes()
 {
-    short tape = 0;
     int n = 8;
 
     adouble *X = new adouble[n];
     adouble *Y = new adouble[n];
+    adouble *Y1 = new adouble[n];
+    adouble *Y2 = new adouble[n];
+    adouble Z;
     double *Yp = myalloc(n);
+    double Zp = 0.0;
 
-    trace_on(tape);
+    // Tape for f
+    int tapeF = 0;
+    trace_on(tapeF);
 
     for (int i = 0; i < n; i++)
     {
         X[i] <<= 0;
     }
 
-    f(X, Y);
+    functionF(X, Y);
 
     for (int i = 0; i < n; i++)
     {
@@ -60,7 +107,88 @@ void buildTapes()
 
     trace_off();
 
+    // Tape for h1
+    int tapeH1 = 1;
+    trace_on(tapeH1);
+
+    for (int i = 0; i < n; i++)
+    {
+        X[i] <<= 0;
+    }
+
+    functionH1(X, &Z);
+
+    Z >>= Zp;
+
+    trace_off();
+
+    // Tape for h2
+    int tapeH2 = 2;
+    trace_on(tapeH2);
+
+    for (int i = 0; i < n; i++)
+    {
+        X[i] <<= 0;
+    }
+
+    functionH2(X, &Z);
+
+    Z >>= Zp;
+
+    trace_off();
+
+    // Tape for f+g1
+    int tapeFG1 = 3;
+    trace_on(tapeFG1);
+
+    for (int i = 0; i < n; i++)
+    {
+        X[i] <<= 0;
+    }
+
+    functionF(X, Y1);
+    functionG1(X, Y2);
+
+    for (int i = 0; i < n; i++)
+    {
+        Y[i] = Y1[i] + Y2[i];
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        Y[i] >>= Yp[i];
+    }
+
+    trace_off();
+
+    // Tape for f+g2
+    int tapeFG2 = 4;
+    trace_on(tapeFG2);
+
+    for (int i = 0; i < n; i++)
+    {
+        X[i] <<= 0;
+    }
+
+    functionF(X, Y1);
+    functionG2(X, Y2);
+
+    for (int i = 0; i < n; i++)
+    {
+        Y[i] = Y1[i] + Y2[i];
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        Y[i] >>= Yp[i];
+    }
+
+    trace_off();
+
+
     myfree(Yp);
+    delete[] Y2;
+    delete[] Y1;
     delete[] Y;
     delete[] X;
 }
