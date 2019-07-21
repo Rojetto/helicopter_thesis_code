@@ -1,4 +1,5 @@
 /venv
+/matlab/codegen
 .idea/
 cmake-build-debug/
 /**/__pycache__

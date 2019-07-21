@@ -11,6 +11,7 @@ int main()
 
     double *X = myalloc(n);
     double *gamma = myalloc(m);
+    double *lambda_result = myalloc(m*m);
     double **lambda = myalloc2(m, m);
 
     X[0] = 1.0;
@@ -23,7 +24,12 @@ int main()
     X[7] = 8.0;
 
     calcGamma(X, gamma);
-    calcLambda(X, lambda);
+    calcLambda(X, lambda_result);
+
+    lambda[0][0] = lambda_result[0];
+    lambda[1][0] = lambda_result[1];
+    lambda[0][1] = lambda_result[2];
+    lambda[1][1] = lambda_result[3];
 
     cout << "Gamma: " << gamma[0] << "\t" << gamma[1] << "\n";
     cout << "Lambda:\n" << lambda[0][0] << "\t" << lambda[0][1] << "\n" << lambda[1][0] << "\t" << lambda[1][1] << "\n";

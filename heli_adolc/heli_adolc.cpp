@@ -210,7 +210,7 @@ void calcGamma(double *X, double *Y)
     myfree(result);
 }
 
-void calcLambda(double *X, double **Y)
+void calcLambda(double *X, double *Y)
 {
     int r = 4;
     int n = 8;
@@ -230,10 +230,10 @@ void calcLambda(double *X, double **Y)
     lie_scalar(tapeFG2, tapeH2, n, X, r, result);
     double Lfg2h2 = result[r];
 
-    Y[0][0] = Lfg1h1 - Lfh1;
-    Y[0][1] = Lfg2h1 - Lfh1;
-    Y[1][0] = Lfg1h2 - Lfh2;
-    Y[1][1] = Lfg2h2 - Lfh2;
+    Y[0] = Lfg1h1 - Lfh1;
+    Y[1] = Lfg1h2 - Lfh2;
+    Y[2] = Lfg2h1 - Lfh1;
+    Y[3] = Lfg2h2 - Lfh2;
 
     myfree(result);
 }
