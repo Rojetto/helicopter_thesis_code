@@ -1,3 +1,7 @@
-load e_-10_10_l_0_120_t_20.mat
 addpath parameter_estimation
+addpath controllers
+addpath simulations
+addpath util
+addpath autodiff
+load trajectories/e_-10_10_l_0_120_t_20.mat
 open heli_master_2015b
