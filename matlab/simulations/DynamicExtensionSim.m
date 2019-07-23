@@ -3,12 +3,15 @@ classdef DynamicExtensionSim < matlab.System ...
     % Simulates the nonlinear system with dynamic extension of Fs input using automatic differentiation.
 
     properties
-        %x0 Initial state
-        x0 = zeros(8, 1)
+        %z0 Initial state in linearized coordinates
+        z0 = [0;0;-0.215515513016254;0.019412610514001;0;0;0;0]
+        %x0 Initial state in original coordinates
+        x0 = [0;0;0;0;0;0;1;0]
         step_width = 0.002
     end
 
     properties (DiscreteState)
+        z
         x
     end
 
@@ -21,15 +24,18 @@ classdef DynamicExtensionSim < matlab.System ...
             end
         end
 
-        function x = stepImpl(obj, ddFs, Fd)
+        function z = stepImpl(obj, ddFs, Fd)
             u = [ddFs; Fd];
             h = obj.step_width;
             
-            x = ode_step(@DynamicExtensionSim.ode_rhs, obj.x, u, h);
-            obj.x = x;
+            z = ode_step(@DynamicExtensionSim.ode_rhs, obj.z, u, h, obj.x);
+            obj.z = z;
+            
+            obj.x = phi_inv(z, obj.x);
         end
 
         function resetImpl(obj)
+            obj.z = obj.z0;
             obj.x = obj.x0;
         end
         
@@ -50,7 +56,11 @@ classdef DynamicExtensionSim < matlab.System ...
         end
         
         function [sz, dt, cp] = getDiscreteStateSpecificationImpl(~, prop_name)
-            if strcmp(prop_name, 'x')
+            if strcmp(prop_name, 'z')
+                sz = [8, 1];
+                dt = 'double';
+                cp = false;
+            elseif strcmp(prop_name, 'x')
                 sz = [8, 1];
                 dt = 'double';
                 cp = false;
@@ -59,7 +69,12 @@ classdef DynamicExtensionSim < matlab.System ...
     end
     
     methods (Static)
-        function dx = ode_rhs(x, u)
+        function dz = ode_rhs(z, u, params)
+            %% Calculate state in original coordinates
+            last_x = params;
+            x = phi_inv(z, last_x);
+
+            %% Calculate Gamma and Lambda from state in orig coords
             if coder.target('MATLAB')
                 gamma = c_calcGamma_mex(x);
                 lambda = c_calcLambda_mex(x);
@@ -67,18 +82,18 @@ classdef DynamicExtensionSim < matlab.System ...
                 gamma = c_calcGamma(x);
                 lambda = c_calcLambda(x);
             end
-            
-            dx = zeros(8, 1);
-            
-            dx(1) = x(2);
-            dx(2) = x(3);
-            dx(3) = x(4);
-            
-            dx(5) = x(6);
-            dx(6) = x(7);
-            dx(7) = x(8);
-            
-            dx([4,8]) = gamma + lambda * u;
+            %% Calculate derivative of linearized state
+            dz = zeros(8, 1);
+
+            dz(1) = z(2);
+            dz(2) = z(3);
+            dz(3) = z(4);
+
+            dz(5) = z(6);
+            dz(6) = z(7);
+            dz(7) = z(8);
+
+            dz([4,8]) = gamma + lambda * u;
         end
     end
 end
