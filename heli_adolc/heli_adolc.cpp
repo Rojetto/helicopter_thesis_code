@@ -253,3 +253,53 @@ void calcLambda(double *X, double *Y)
 
     myfree(result);
 }
+
+void calcPhi(double *X, double *Y)
+{
+    int r = 4;
+    int n = 8;
+
+    double *result = myalloc(r);
+
+    lie_scalar(tapeF, tapeH1, n, X, r - 1, result);
+    for (int i = 0; i < r; i++)
+    {
+        Y[i] = result[i];
+    }
+
+    lie_scalar(tapeF, tapeH2, n, X, r - 1, result);
+    for (int i = 0; i < r; i++)
+    {
+        Y[i+r] = result[i];
+    }
+
+    myfree(result);
+}
+
+void calcPhiJacobian(double *X, double*Y)
+{
+    int r = 4;
+    int n = 8;
+
+    double **result = myalloc2(n, r);
+
+    lie_gradient(tapeF, tapeH1, n, X, r - 1, result);
+    for (int i = 0; i < r; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            Y[i + j*n] = result[j][i];
+        }
+    }
+
+    lie_gradient(tapeF, tapeH2, n, X, r - 1, result);
+    for (int i = 0; i < r; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            Y[i + r + j*n] = result[j][i];
+        }
+    }
+
+    myfree(result);
+}
