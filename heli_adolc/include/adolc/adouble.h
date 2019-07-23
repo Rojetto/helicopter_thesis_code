@@ -24,7 +24,7 @@
 /****************************************************************************/
 /*                                                         THIS FILE IS C++ */
 #ifdef __cplusplus
-#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1900)
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1800)
 #define COMPILER_HAS_CXX11
 #else
 #error "please use -std=c++11 compiler flag with a C++11 compliant compiler"
