@@ -34,6 +34,8 @@ classdef DynamicExtension < HeliController
         end
         
         function [u, debug_out] = control(obj, t, x)
+            debug_out = zeros(8, 1);
+            
             %% Alternative state contains Fs and dFs in x7 and x8
             x_alt = zeros(8, 1);
             x_alt(1:6) = x(1:6);
@@ -70,6 +72,13 @@ classdef DynamicExtension < HeliController
                                   - obj.k_eps(2) * (d1eps - eps_traj(2))...
                                   - obj.k_eps(1) * (eps - eps_traj(1));
                               
+            debug_out(1) = eps - eps_traj(1);
+            debug_out(2) = d1eps - eps_traj(2);
+            debug_out(3) = d2eps - eps_traj(3);
+            debug_out(4) = d3eps - eps_traj(4);
+            
+            debug_out(5) = v1;
+                              
             v2 = traj_eval.lamb(4) - obj.k_lamb(4) * (d3lamb - lamb_traj(4))...
                                    - obj.k_lamb(3) * (d2lamb - lamb_traj(3))...
                                    - obj.k_lamb(2) * (d1lamb - lamb_traj(2))...
@@ -90,6 +99,8 @@ classdef DynamicExtension < HeliController
             
             Fs = obj.x78(1);
             
+            debug_out(6:7) = obj.x78;
+            
             %% Convert forces to voltages            
             Ff = (Fs + Fd)/2;
             Fb = (Fs - Fd)/2;
@@ -98,7 +109,12 @@ classdef DynamicExtension < HeliController
             ub = Fr_inv(Fb, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
             
             u = [uf; ub];
-            debug_out = [];
+        end
+    end
+    
+    methods (Access = protected)
+        function out = getDebugOutputSize(~)
+            out = 7;
         end
     end
     
