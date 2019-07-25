@@ -2,9 +2,7 @@ classdef DynamicExtension < HeliController
     %Using feedback linearization on a system with dynamic extension.
     properties (Access = private)
         c
-    end
-    
-    properties (DiscreteState)
+        
         x78
     end
     
@@ -22,13 +20,14 @@ classdef DynamicExtension < HeliController
     methods
         function obj = DynamicExtension()
             obj.c = Constants();
+            obj.x78 = zeros(2, 1);
         end
 
         function initialize(obj)
             if coder.target('MATLAB')
-                c_buildTapes();
-            else
                 c_buildTapes_mex();
+            else
+                c_buildTapes();
             end
             
             obj.x78 = obj.x780;
@@ -42,13 +41,13 @@ classdef DynamicExtension < HeliController
             
             %% Compute coordinate transformation, and two values for linearized system
             if coder.target('MATLAB')
-                phi = c_calcPhi(x_alt);
-                gamma = c_calcGamma(x_alt);
-                lambda = c_calcLambda(x_alt);
-            else
                 phi = c_calcPhi_mex(x_alt);
                 gamma = c_calcGamma_mex(x_alt);
                 lambda = c_calcLambda_mex(x_alt);
+            else
+                phi = c_calcPhi(x_alt);
+                gamma = c_calcGamma(x_alt);
+                lambda = c_calcLambda(x_alt);
             end
             
             %% Compute stabilizing values for virtual inputs on linearized system
@@ -97,16 +96,9 @@ classdef DynamicExtension < HeliController
             
             uf = Fr_inv(Ff, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
             ub = Fr_inv(Fb, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
-        end
-    end
-    
-    methods (Access = protected)
-        function [sz, dt, cp] = getDiscreteStateSpecificationImpl(~, prop_name)
-            if strcmp(prop_name, 'x78')
-                sz = [2, 1];
-                dt = 'double';
-                cp = false;
-            end
+            
+            u = [uf; ub];
+            debug_out = [];
         end
     end
     
