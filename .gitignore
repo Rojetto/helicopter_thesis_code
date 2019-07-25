@@ -1,5 +1,5 @@
 /venv
-/matlab/codegen
+codegen/
 .idea/
 cmake-build-debug/
 /**/__pycache__
@@ -20,3 +20,8 @@ slprj/
 *.rt-win64
 *.mexw64
 *_quarc_win64/
+/heli_adolc/x64
+
+*.suo
+*.sdf
+*.user
