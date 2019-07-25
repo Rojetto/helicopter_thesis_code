@@ -92,6 +92,8 @@ classdef DynamicExtension < HeliController
             ddFs = u_alt(1);
             Fd = u_alt(2);
             
+            debug_out(8) = ddFs;
+            
             %% Integrate ddFs to get Fs
             h = obj.step_width;
             
@@ -114,7 +116,7 @@ classdef DynamicExtension < HeliController
     
     methods (Access = protected)
         function out = getDebugOutputSize(~)
-            out = 7;
+            out = 8;
         end
     end
     
