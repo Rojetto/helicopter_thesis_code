@@ -42,6 +42,12 @@ classdef CascadePid < HeliController
         end
 
         function initialize(obj)
+            obj.elevation_pid.reset();
+            obj.travel_pitch_pid.reset();
+            obj.pitch_vd_pid.reset();
+
+            obj.front_rotor_pid.reset();
+            obj.back_rotor_pid.reset();
         end
         
         function [u, debug_out] = control(obj, t, x)
@@ -74,6 +80,7 @@ classdef CascadePid < HeliController
                 dlamb_error = x(6);
             end
             phi_op = - obj.travel_pitch_pid.compute(t, lamb_error, dlamb_error);
+            debug_out = obj.travel_pitch_pid.ix;
 
             % inner loop: pitch --> Vd
             phi_error = x(1) - phi_op;
@@ -110,7 +117,6 @@ classdef CascadePid < HeliController
             end
 
             u = [uf; ub];
-            debug_out = [];
         end
         
         function F = Fr(obj, w)            
@@ -119,6 +125,12 @@ classdef CascadePid < HeliController
         
         function w = Fr_inv(obj, F)
             w = Fr_inv(F, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
+        end
+    end
+    
+    methods (Access = protected)
+        function out = getDebugOutputSize(~)
+            out = 1;
         end
     end
 end

@@ -2,7 +2,7 @@ classdef (Abstract) HeliController < matlab.System ...
         & matlab.system.mixin.Propagates
     
     properties (Access=private)
-        is_initialized = false
+        last_t = -1
     end
     
     properties (Access=protected)
@@ -46,7 +46,7 @@ classdef (Abstract) HeliController < matlab.System ...
         end
         
         function [u, debug_out] = stepImpl(obj, t, x, t_d, phi_d, eps_d, lamb_d, vf_d, vb_d)
-            if ~obj.is_initialized
+            if obj.last_t < 0 || t < obj.last_t
                 obj.trajectory.t = t_d;
                 obj.trajectory.phi = phi_d;
                 obj.trajectory.eps = eps_d;
@@ -55,16 +55,17 @@ classdef (Abstract) HeliController < matlab.System ...
                 obj.trajectory.vb = vb_d;
                 
                 obj.initialize()
-                obj.is_initialized = true;
             end
             
             [u, debug_out_controller] = obj.control(t, x);
             
-            if length(debug_out_controller) > 0
+            if ~isempty(debug_out_controller)
                 debug_out = debug_out_controller;
             else
                 debug_out = 0;
             end
+            
+            obj.last_t = t;
         end
         
         function [out1, out2] = isOutputFixedSizeImpl(~)

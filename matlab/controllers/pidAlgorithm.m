@@ -16,6 +16,13 @@ classdef pidAlgorithm < handle
             obj.last_x = 0.0;
         end
         
+        function reset(obj)
+            obj.ix = 0.0;
+            obj.last_t = 0.0;
+            obj.has_last_x = false;
+            obj.last_x = 0.0;
+        end
+        
         function out = compute(obj, t, x, dx)
             dt = t - obj.last_t;
             obj.ix = obj.ix + dt * x;
