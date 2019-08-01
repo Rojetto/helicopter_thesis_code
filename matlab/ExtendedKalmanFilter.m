@@ -30,10 +30,10 @@ classdef ExtendedKalmanFilter < matlab.System ...
             
             [~, x_ode] = ode45(@ExtendedKalmanFilter.ode_f, [0, obj.step_width/2, obj.step_width], obj.x);
             x_predicted = x_ode(end, :)';
-            A_without_offset = compute_A_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
+            A_without_offset = compute_A_8_states(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
             A = zeros(9);
             A(1:8,1:8) = A_without_offset;
-            B_without_offset = compute_B_full(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
+            B_without_offset = compute_B_8_states(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
             B = zeros(9, 2);
             B(1:8,:) = B_without_offset;
             C = [1 0 0 0 0 0 0 0 1; 0 1 0 0 0 0 0 0 0; 0 0 1 0 0 0 0 0 0];
