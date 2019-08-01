@@ -1,7 +1,7 @@
 %% configuration
-Q = diag([3, 50, 20, 2, 1, 5, 1, 1]);
+Q = diag([2, 25, 15, 1, 0.2, 20]);
 R = diag([1, 1]);
-S = diag([3, 50, 20, 2, 1, 5, 1, 1]);
+S = diag([2, 25, 15, 1, 0.2, 20]);
 
 riccati_step_width = 0.1;
 
