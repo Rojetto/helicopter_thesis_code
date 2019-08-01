@@ -8,10 +8,12 @@ function dx = system_f_with_params(x, u, ...
     term_centripetal = false;
     term_friction = true;
     term_dynamic_inertia = true;
-    term_motor_pt1 = true;
+    term_motor_pt1 = false;
     term_motor_nonlinear = true;
     term_motor_reaction = false;
     term_rotor_gyro = false;
+    
+    symbolic = true;
 
     g = 9.81;
     
@@ -52,11 +54,15 @@ function dx = system_f_with_params(x, u, ...
     end
 
     if term_motor_nonlinear
-%         syms Fr(w)
-%         Fr(w) = piecewise(w<=-2*q2/p2, p2*w+q2, -2*q2/p2<w<=0,-p2^2/(4*q2)*w^2,0<w<=2*q1/p1,p1^2/(4*q1) * w^2,p1*w-q1);
-
-        Ff = Fr(wf, p1, q1, p2, q2);
-        Fb = Fr(wb, p1, q1, p2, q2);
+        if symbolic
+            syms Fr_symb(w)
+            Fr_symb(w) = piecewise(w<=-2*q2/p2, p2*w+q2, -2*q2/p2<w<=0,-p2^2/(4*q2)*w^2,0<w<=2*q1/p1,p1^2/(4*q1) * w^2,p1*w-q1);
+            Ff = Fr_symb(wf);
+            Fb = Fr_symb(wb);
+        else
+            Ff = Fr(wf, p1, q1, p2, q2);
+            Fb = Fr(wb, p1, q1, p2, q2);
+        end
     else
         Ff = wf;
         Fb = wb;
