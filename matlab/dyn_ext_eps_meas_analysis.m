@@ -1,24 +1,91 @@
-load dyn_ext_eps_static_meas
-
-figure
-subplot(211)
-hold on
-grid on
+load dyn_ext_eps_meas_new.mat
 
 active_indices = log.signals(6).values == -1;
 t_start = min(log.time(active_indices));
 t_meas = log.time(active_indices) - t_start;
 
-plot(t, rad2deg(eps(:, 1)))
-plot(t_meas, rad2deg(log.signals(4).values(active_indices)))
+eps_traj = interp1(t, eps(:,1), t_meas);
 
-subplot(212)
+phi_est = log.signals(7).values(active_indices);
+eps_est = log.signals(8).values(active_indices);
+lamb_est = log.signals(9).values(active_indices);
+dphi_est = log.signals(10).values(active_indices);
+deps_est = log.signals(11).values(active_indices);
+dlamb_est = log.signals(12).values(active_indices);
+
+Fs = debug_out.signals(1).values(6,:)';
+dFs = debug_out.signals(1).values(7,:)';
+
+x = [phi_est, eps_est, lamb_est, dphi_est, deps_est, dlamb_est, Fs, dFs];
+z = zeros(size(x));
+
+c_buildTapes_mex();
+
+for i = 1:size(x, 1)
+    z(i, :) = c_calcPhi_mex(x(i, :)');
+end
+
+
+%%
+figure
+
+subplot(311)
 hold on
 grid on
-plot(t_meas, debug_out.signals(1).values(1,:), 'DisplayName', 'diff eps')
-plot(t_meas, debug_out.signals(1).values(2,:), 'DisplayName', 'diff deps')
-plot(t_meas, debug_out.signals(1).values(5,:), 'DisplayName', 'v1')
-plot(t_meas, debug_out.signals(1).values(8,:), 'DisplayName', 'ddFs')
-plot(t_meas, debug_out.signals(1).values(7,:), 'DisplayName', 'dFs')
+plot(t_meas, eps_est)
+plot(t_meas, eps_traj)
 
-legend show
+subplot(312)
+hold on
+grid on
+plot(t_meas, Fs)
+
+
+subplot(313)
+hold on
+grid on
+plot(t_meas, debug_out.signals(1).values(5,:))
+
+%%
+figure
+
+subplot(411)
+hold on
+grid on
+plot(t_meas, eps_est)
+plot(t_meas, z(:, 1))
+
+
+subplot(412)
+hold on
+grid on
+plot(t_meas, deps_est)
+plot(t_meas, z(:, 2))
+deps_int = cumtrapz(t_meas, z(:, 3));
+plot(t_meas, deps_int)
+
+
+subplot(413)
+hold on
+grid on
+plot(t_meas, z(:, 3))
+ddeps_int = cumtrapz(t_meas, z(:,4))+0.05;
+plot(t_meas, ddeps_int)
+
+
+subplot(414)
+hold on
+grid on
+plot(t_meas, z(:, 4))
+
+
+% subplot(212)
+% hold on
+% grid on
+% plot(t_meas, debug_out.signals(1).values(1,:), 'DisplayName', 'diff eps')
+% plot(t_meas, debug_out.signals(1).values(2,:), 'DisplayName', 'diff deps')
+% plot(t_meas, debug_out.signals(1).values(5,:), 'DisplayName', 'v1')
+% plot(t_meas, debug_out.signals(1).values(8,:), 'DisplayName', 'ddFs')
+% plot(t_meas, debug_out.signals(1).values(7,:), 'DisplayName', 'dFs')
+% 
+% legend show
