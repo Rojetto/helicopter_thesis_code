@@ -5,6 +5,7 @@ classdef DynamicExtension < HeliController
         
         x78
         z_est
+        x_est
     end
     
     properties
@@ -21,6 +22,7 @@ classdef DynamicExtension < HeliController
     properties (Nontunable)
         x780 = [1; 0];
         z_est0 = [-0.349065850398866;0;0.283870645721701;-0.0255697151663404;0;0;0;0];
+        x_est0 = [0;-20/180*pi;0;0;0;0;1;0];
         step_width = 0.002;
     end
     
@@ -34,6 +36,7 @@ classdef DynamicExtension < HeliController
             obj.c = Constants();
             obj.x78 = zeros(2, 1);
             obj.z_est = zeros(8, 1);
+            obj.x_est = zeros(8, 1);
         end
         
         function initialize(obj)
@@ -45,6 +48,7 @@ classdef DynamicExtension < HeliController
             
             obj.x78 = obj.x780;
             obj.z_est = obj.z_est0;
+            obj.x_est = obj.x_est0;
         end
         
         function [u, debug_out] = control(obj, t, x)
@@ -142,10 +146,12 @@ classdef DynamicExtension < HeliController
 
                 ode_params = zeros(26, 1);
                 ode_params(1:2) = x_alt([2, 3]);
-                ode_params(3:10) = x_alt;
+                ode_params(3:10) = obj.x_est;
                 ode_params(11:26) = obj.K;
 
                 obj.z_est = ode_step(@DynamicExtension.obs_ode_rhs, obj.z_est, u_obs, h, ode_params);
+                
+                obj.x_est = phi_inv(obj.z_est, obj.x_est);
             end
             
             %% Controller output
