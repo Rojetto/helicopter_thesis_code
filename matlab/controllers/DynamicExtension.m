@@ -40,11 +40,15 @@ classdef DynamicExtension < HeliController
             obj.x78 = obj.x780;
         end
         
-        function [u, debug_out] = control(obj, t, x)            
+        function [u, debug_out] = control(obj, t, x)
+            debug_out = zeros(14, 1);
+            
             %% Alternative state contains Fs and dFs in x7 and x8
             x_alt = zeros(8, 1);
             x_alt(1:6) = x(1:6);
             x_alt(7:8) = obj.x78;
+            
+            debug_out(1:2) = obj.x78;
             
             %% Compute coordinate transformation, and two values for linearized system
             if coder.target('MATLAB')
@@ -77,6 +81,8 @@ classdef DynamicExtension < HeliController
             z_tilde(1:4) = phi(1:4) - eps_traj(1:4)';
             z_tilde(5:8) = phi(5:8) - lamb_traj(1:4)';
             
+            debug_out(3:10) = z_tilde;
+            
             %% Linearization and stabilizing feedback
             if obj.smc
                 %% SMC
@@ -87,10 +93,15 @@ classdef DynamicExtension < HeliController
                 sigma2 = sum(obj.k_lamb' .* z_tilde(5:8));
                 w(2) = -gamma(2) - sum(obj.k_lamb(1:3)' .* z_tilde(6:8)) - obj.a2 * sign(sigma2);
                 
+                debug_out(11) = sigma1;
+                debug_out(12) = sigma2;
+                
                 u_alt = lambda \ w;
                 
                 ddFs = u_alt(1);
                 Fd = u_alt(2);
+                
+                debug_out(13:14) = u_alt;
             else
                 %% No SMC
                 v1 = eps_traj(5) - obj.k_eps(4) * (d3eps - eps_traj(4))...
@@ -126,13 +137,12 @@ classdef DynamicExtension < HeliController
             ub = Fr_inv(Fb, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
             
             u = [uf; ub];
-            debug_out = [];
         end
     end
     
     methods (Access = protected)
         function out = getDebugOutputSize(~)
-            out = 1;
+            out = 14;
         end
     end
     
