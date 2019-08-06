@@ -4,6 +4,7 @@ classdef DynamicExtension < HeliController
         c
         
         x78
+        z_est
     end
     
     properties
@@ -13,23 +14,28 @@ classdef DynamicExtension < HeliController
         
         a1 = 1;
         a2 = 1;
+        
+        K = [8 0; 24 0; 32 0; 16 0; 0 8; 0 24; 0 32; 0 16]
     end
     
     properties (Nontunable)
         x780 = [1; 0];
+        z_est0 = [-0.349065850398866;0;0.283870645721701;-0.0255697151663404;0;0;0;0];
         step_width = 0.002;
     end
     
     properties (Nontunable, Logical)
         smc = true;
+        use_high_gain_observer = true;
     end
     
     methods
         function obj = DynamicExtension()
             obj.c = Constants();
             obj.x78 = zeros(2, 1);
+            obj.z_est = zeros(8, 1);
         end
-
+        
         function initialize(obj)
             if coder.target('MATLAB')
                 c_buildTapes_mex();
@@ -38,6 +44,7 @@ classdef DynamicExtension < HeliController
             end
             
             obj.x78 = obj.x780;
+            obj.z_est = obj.z_est0;
         end
         
         function [u, debug_out] = control(obj, t, x)
@@ -61,25 +68,21 @@ classdef DynamicExtension < HeliController
                 lambda = c_calcLambda(x_alt);
             end
             
-            eps = phi(1);
-            d1eps = phi(2);
-            d2eps = phi(3);
-            d3eps = phi(4);
-            
-            lamb = phi(5);
-            d1lamb = phi(6);
-            d2lamb = phi(7);
-            d3lamb = phi(8);
-            
             %% Evaluate trajectory
             
             traj_eval = eval_trajectory(obj.trajectory, t);
             eps_traj = traj_eval.eps;
             lamb_traj = traj_eval.lamb;
             
-            z_tilde = zeros(8, 1);
-            z_tilde(1:4) = phi(1:4) - eps_traj(1:4)';
-            z_tilde(5:8) = phi(5:8) - lamb_traj(1:4)';
+            if obj.use_high_gain_observer
+                z_tilde = zeros(8, 1);
+                z_tilde(1:4) = obj.z_est(1:4) - eps_traj(1:4)';
+                z_tilde(5:8) = obj.z_est(5:8) - lamb_traj(1:4)';
+            else
+                z_tilde = zeros(8, 1);
+                z_tilde(1:4) = phi(1:4) - eps_traj(1:4)';
+                z_tilde(5:8) = phi(5:8) - lamb_traj(1:4)';
+            end
             
             debug_out(3:10) = z_tilde;
             
@@ -104,15 +107,10 @@ classdef DynamicExtension < HeliController
                 debug_out(13:14) = u_alt;
             else
                 %% No SMC
-                v1 = eps_traj(5) - obj.k_eps(4) * (d3eps - eps_traj(4))...
-                                  - obj.k_eps(3) * (d2eps - eps_traj(3))...
-                                  - obj.k_eps(200) * (d1eps - eps_traj(2))...
-                                  - obj.k_eps(1) * (eps - eps_traj(1));
+                sum(obj.k_eps' .* z_tilde(1:4));
+                v1 = eps_traj(5) - sum(obj.k_eps' .* z_tilde(1:4));
 
-                v2 = lamb_traj(5) - obj.k_lamb(4) * (d3lamb - lamb_traj(4))...
-                                   - obj.k_lamb(3) * (d2lamb - lamb_traj(3))...
-                                   - obj.k_lamb(2) * (d1lamb - lamb_traj(2))...
-                                   - obj.k_lamb(1) * (lamb - lamb_traj(1));
+                v2 = lamb_traj(5) - sum(obj.k_lamb' .* z_tilde(5:8));
 
                 v = [v1; v2];
 
@@ -126,6 +124,7 @@ classdef DynamicExtension < HeliController
             h = obj.step_width;
             
             obj.x78 = ode_step(@DynamicExtension.dyn_ext_rhs, obj.x78, ddFs, h, []);
+            x_alt(7:8) = obj.x78;
             
             Fs = obj.x78(1);
             
@@ -136,6 +135,20 @@ classdef DynamicExtension < HeliController
             uf = Fr_inv(Ff, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
             ub = Fr_inv(Fb, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
             
+            %% High Gain observer step to estimate z
+            if obj.use_high_gain_observer
+                u_obs = [ddFs; Fd];
+                h = obj.step_width;
+
+                ode_params = zeros(26, 1);
+                ode_params(1:2) = x_alt([2, 3]);
+                ode_params(3:10) = x_alt;
+                ode_params(11:26) = obj.K;
+
+                obj.z_est = ode_step(@DynamicExtension.obs_ode_rhs, obj.z_est, u_obs, h, ode_params);
+            end
+            
+            %% Controller output
             u = [uf; ub];
         end
     end
@@ -151,6 +164,41 @@ classdef DynamicExtension < HeliController
             dx78 = zeros(2, 1);
             dx78(1) = x78(2);
             dx78(2) = ddFs;
+        end
+        
+        function dz_est = obs_ode_rhs(z_est, u, params)
+            y = params(1:2);
+            last_x = params(3:10);
+            K = zeros(8, 2);
+            K(:) = params(11:26);
+            
+            %% Calculate state in original coordinates
+            x = phi_inv(z_est, last_x);
+
+            %% Calculate Gamma and Lambda from state in orig coords
+            if coder.target('MATLAB')
+                gamma = c_calcGamma_mex(x);
+                lambda = c_calcLambda_mex(x);
+            else
+                gamma = c_calcGamma(x);
+                lambda = c_calcLambda(x);
+            end
+            %% Calculate derivative of linearized state
+            dz_est = zeros(8, 1);
+
+            dz_est(1) = z_est(2);
+            dz_est(2) = z_est(3);
+            dz_est(3) = z_est(4);
+
+            dz_est(5) = z_est(6);
+            dz_est(6) = z_est(7);
+            dz_est(7) = z_est(8);
+
+            dz_est([4,8]) = gamma + lambda * u;
+            
+            %% Add observer feedback
+            y_est = z_est([1, 5]);
+            dz_est = dz_est + K*(y - y_est);
         end
     end
 end
