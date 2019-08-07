@@ -4,7 +4,7 @@ classdef FeedbackLinearization < HeliController
         c
     end
 
-    properties (Nontunable)
+    properties
         %ke k Elevation
         ke = [20, 6]
         %kl k Travel
@@ -44,6 +44,8 @@ classdef FeedbackLinearization < HeliController
             d_h = obj.c.d_h;
             d_c = obj.c.d_c;
             
+            g = obj.c.g;
+            
             mup = obj.c.mup;
             mue = obj.c.mue;
             mul = obj.c.mul;
@@ -77,13 +79,13 @@ classdef FeedbackLinearization < HeliController
             ub = Fr_inv(Fb, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
 
             u = [uf; ub];
-            debug_out = [phi_d, u1v, u2v];
+            debug_out = [phi_d; v1; v2; v3; u1v; u2v];
         end
     end
     
     methods (Access=protected)
         function out = getDebugOutputSize(~)
-            out = 3;
+            out = 6;
         end
     end
 end
