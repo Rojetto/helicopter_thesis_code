@@ -1,5 +1,3 @@
-load dyn_ext_eps_meas_new.mat
-
 active_indices = log.signals(6).values == -1;
 t_start = min(log.time(active_indices));
 t_meas = log.time(active_indices) - t_start;
@@ -13,6 +11,7 @@ dphi_est = log.signals(10).values(active_indices);
 deps_est = log.signals(11).values(active_indices);
 dlamb_est = log.signals(12).values(active_indices);
 
+%%
 Fs = debug_out.signals(1).values(6,:)';
 dFs = debug_out.signals(1).values(7,:)';
 
@@ -24,6 +23,30 @@ c_buildTapes_mex();
 for i = 1:size(x, 1)
     z(i, :) = c_calcPhi_mex(x(i, :)');
 end
+
+%%
+z = debug_out.signals(1).values(3:10,:)';
+sigma1 = debug_out.signals(1).values(11,:)';
+sigma2 = debug_out.signals(1).values(12,:)';
+
+%%
+figure
+
+subplot(311)
+hold on
+grid on
+plot(t_meas, rad2deg(eps_est))
+plot(t_meas, rad2deg(eps_traj))
+
+subplot(312)
+hold on
+grid on
+plot(t_meas, z(:,1:4))
+
+subplot(313)
+hold on
+grid on
+plot(t_meas, sigma1)
 
 
 %%
