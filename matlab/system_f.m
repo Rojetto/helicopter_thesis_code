@@ -1,4 +1,8 @@
-function dx = system_f(x, u)
+function dx = system_f(x, u, is_sim)
+    if nargin==2
+        is_sim = false;
+    end
+
     c = Constants();
     
     dx = system_f_with_params(x, u, ...
@@ -6,6 +10,6 @@ function dx = system_f(x, u)
         c.mup, c.mue, c.mul, ...
         c.T_w, c.K_w, ...
         c.p1, c.q1, c.p2, c.q2, ...
-        c.J_m, c.K_m);
+        c.J_m, c.K_m, is_sim);
 end
 

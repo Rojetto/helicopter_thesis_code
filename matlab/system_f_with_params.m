@@ -3,12 +3,16 @@ function dx = system_f_with_params(x, u, ...
     mup, mue, mul, ...
     T_w, K_w, ...
     p1, q1, p2, q2, ...
-    J_m, K_m)
+    J_m, K_m, is_sim)
 
     term_centripetal = false;
     term_friction = true;
     term_dynamic_inertia = true;
-    term_motor_pt1 = true;
+    if is_sim
+        term_motor_pt1 = false;
+    else
+        term_motor_pt1 = true;
+    end
     term_motor_nonlinear = true;
     term_motor_reaction = false;
     term_rotor_gyro = false;
@@ -98,6 +102,10 @@ function dx = system_f_with_params(x, u, ...
         ddphi_rhs = ddphi_rhs - J_m * cos(phi) * deps * wd + J_m * sin(phi) * cos(eps) * dlamb * wd;
         ddeps_rhs = ddeps_rhs + J_m * cos(phi) * dphi * wd - J_m * cos(phi) * sin(eps) * dlamb * wd;
         ddlamb_rhs = ddlamb_rhs + J_m * sin(phi) * cos(eps) * dphi * wd;
+    end
+    
+    if is_sim
+        %ddeps_rhs = ddeps_rhs + 0.04;
     end
 
     ddphi = ddphi_rhs / p_phi_1;

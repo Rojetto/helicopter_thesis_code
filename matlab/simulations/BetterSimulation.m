@@ -150,6 +150,6 @@ wb = block.ContStates.Data(8);
 
 x = [phi, eps, lamb, dphi, deps, dlamb, wf, wb];
 u = [vf, vb];
-dx = system_f(x, u)';
+dx = system_f(x, u, true)';
 
 
