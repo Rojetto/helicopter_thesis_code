@@ -6,8 +6,8 @@ classdef ExtendedKalmanFilter < matlab.System ...
     end
     
     properties
-        x0 = [0; deg2rad(-29); 0; 0; 0; 0; 0; 0; 0]
-        P_diag = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+        x0 = [0; deg2rad(-29); 0; 0; 0; 0; deg2rad(6)]
+        P_diag = [1, 1, 1, 1, 1, 1, 1]
         N_diag = [ 1000, 1000 ]
         W_diag = [ 0.01, 0.0001, 0.0001 ]
         step_width = 0.002
@@ -25,19 +25,19 @@ classdef ExtendedKalmanFilter < matlab.System ...
         end
 
         function x = stepImpl(obj, y, u)
-            ExtendedKalmanFilter.ode_f(0, zeros(9, 1), u);
+            ExtendedKalmanFilter.ode_f(0, zeros(7, 1), u);
             %f = @(t_, x_) system_f(x_, u);
             
             [~, x_ode] = ode45(@ExtendedKalmanFilter.ode_f, [0, obj.step_width/2, obj.step_width], obj.x);
             x_predicted = x_ode(end, :)';
-            A_without_offset = compute_A_8_states(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
-            A = zeros(9);
-            A(1:8,1:8) = A_without_offset;
-            B_without_offset = compute_B_8_states(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), obj.x(7), obj.x(8), u(1), u(2));
-            B = zeros(9, 2);
-            B(1:8,:) = B_without_offset;
-            C = [1 0 0 0 0 0 0 0 1; 0 1 0 0 0 0 0 0 0; 0 0 1 0 0 0 0 0 0];
-            D = [0 0; 0 0; 0 0];
+            A_without_offset = compute_A_6_states(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), u(1), u(2));
+            A = zeros(7);
+            A(1:6,1:6) = A_without_offset;
+            B_without_offset = compute_B_6_states(obj.x(1), obj.x(2), obj.x(3), obj.x(4), obj.x(5), obj.x(6), u(1), u(2));
+            B = zeros(7, 2);
+            B(1:6,:) = B_without_offset;
+            % Output: (phi + phi_off, eps, lamb)
+            C = [1 0 0 0 0 0 1; 0 1 0 0 0 0 0; 0 0 1 0 0 0 0];
             
             ExtendedKalmanFilter.expm_A(0, A);
             F = expm(A * obj.step_width);
@@ -47,14 +47,14 @@ classdef ExtendedKalmanFilter < matlab.System ...
             
             y_predicted = C * x_predicted;
             
-            K = P_predicted * C' * inv(C * P_predicted * C' + obj.W);
+            K = (P_predicted * C') / (C * P_predicted * C' + obj.W);
             x_corrected = x_predicted + K * (y - y_predicted);
-            P_corrected = (eye(9) - K * C) * P_predicted;
+            P_corrected = (eye(7) - K * C) * P_predicted;
             
             % clamp phi_off for weird edge case where it completely
             % diverges
             phi_off_limit = 10 / 180 * pi;
-            x_corrected(9) = max(min(x_corrected(9), phi_off_limit), -phi_off_limit);
+            x_corrected(7) = max(min(x_corrected(7), phi_off_limit), -phi_off_limit);
             
             obj.x = x_corrected;
             obj.P = P_corrected;
@@ -76,7 +76,7 @@ classdef ExtendedKalmanFilter < matlab.System ...
         end
         
         function [out1] = getOutputSizeImpl(~)
-            out1 = 9;
+            out1 = 7;
         end
         
         function [out1] = getOutputDataTypeImpl(~)
@@ -94,11 +94,11 @@ classdef ExtendedKalmanFilter < matlab.System ...
         
         function [sz, dt, cp] = getDiscreteStateSpecificationImpl(~, prop_name)
             if strcmp(prop_name, 'x')
-                sz = [9, 1];
+                sz = [7, 1];
                 dt = 'double';
                 cp = false;
             elseif strcmp(prop_name, 'P')
-                sz = [9, 9];
+                sz = [7, 7];
                 dt = 'double';
                 cp = false;
             end
@@ -117,16 +117,17 @@ classdef ExtendedKalmanFilter < matlab.System ...
                 current_u = u;
             end
             
-            out = zeros(9, 1);
-            out(1:8) = system_f(x, current_u);
-            out(9) = 0; % dphi_off = 0
+            out = zeros(7, 1);
+            dx = system_f([x(1:6); 0; 0], current_u);
+            out(1:6) = dx(1:6);
+            out(7) = 0; % dphi_off = 0
         end
         
         function out = expm_A(t, A)
             persistent current_A
             
             if isempty(current_A)
-                current_A = zeros(9, 9);
+                current_A = zeros(7, 7);
             end
             
             if nargin == 2

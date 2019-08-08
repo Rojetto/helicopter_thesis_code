@@ -4,9 +4,6 @@ classdef GainSchedulingPid < HeliController
         elevation_pid
         travel_pitch_pid
         pitch_vd_pid
-
-        front_rotor_pid
-        back_rotor_pid
         
         c
     end
@@ -19,15 +16,11 @@ classdef GainSchedulingPid < HeliController
         travel_pitch_pid_gains = [ 10, 0, 10; 5, 0, 5; 2, 0, 2; 2, 0, 2; 2.5, 0, 2.5 ]
         %pitch_vd_pid_gains Pitch-Vd PID
         pitch_vd_pid_gains = [4, 0.1, 2]
-        %k_rotor Rotor PD
-        k_rotor = [0, 0]
     end
     
     properties (Nontunable, Logical)
         %feed_forward Use feed forward
         feed_forward = false
-        %rotor_speed_control Rotor speed controller
-        rotor_speed_control = false
     end
     
     methods
@@ -36,9 +29,6 @@ classdef GainSchedulingPid < HeliController
             obj.travel_pitch_pid = pidAlgorithm(obj.travel_pitch_pid_gains(1,:));
             obj.pitch_vd_pid = pidAlgorithm(obj.pitch_vd_pid_gains);
 
-            obj.front_rotor_pid = pidAlgorithm([obj.k_rotor(1), 0, obj.k_rotor(2)]);
-            obj.back_rotor_pid = pidAlgorithm([obj.k_rotor(1), 0, obj.k_rotor(2)]);
-
             obj.c = Constants();
         end
 
@@ -46,9 +36,6 @@ classdef GainSchedulingPid < HeliController
             obj.elevation_pid.reset();
             obj.travel_pitch_pid.reset();
             obj.pitch_vd_pid.reset();
-
-            obj.front_rotor_pid.reset();
-            obj.back_rotor_pid.reset();
         end
         
         function [u, debug_out] = control(obj, t, x)
@@ -57,14 +44,10 @@ classdef GainSchedulingPid < HeliController
             obj.elevation_pid.gains = obj.elevation_pid_gains;
             obj.pitch_vd_pid.gains = obj.pitch_vd_pid_gains;
             
-            obj.front_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
-            obj.back_rotor_pid.gains = [obj.k_rotor(1), 0, obj.k_rotor(2)];
-            
             traj_eval = eval_trajectory(obj.trajectory, t);
             phi_traj = traj_eval.phi;
             eps_traj = traj_eval.eps;
             lamb_traj = traj_eval.lamb;
-            
             
             eps_error = x(2) - eps_traj(1);
             if numel(eps_traj) >= 2
@@ -105,17 +88,9 @@ classdef GainSchedulingPid < HeliController
             
             Ff_d = (Fs_d + Fd_d) / 2;
             Fb_d = (Fs_d - Fd_d) / 2;
-            
-            if obj.rotor_speed_control
-                wf_d = obj.Fr_inv(Ff_d);
-                wb_d = obj.Fr_inv(Fb_d);
-                
-                uf = wf_d - obj.front_rotor_pid.compute_fd(t, x(7) - wf_d);
-                ub = wb_d - obj.back_rotor_pid.compute_fd(t, x(8) - wb_d);
-            else
-                uf = obj.Fr_inv(Ff_d);
-                ub = obj.Fr_inv(Fb_d);
-            end
+
+            uf = obj.Fr_inv(Ff_d);
+            ub = obj.Fr_inv(Fb_d);
 
             u = [uf; ub];
             debug_out = [];
