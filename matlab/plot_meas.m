@@ -40,3 +40,20 @@ grid on
 subplot(236)
 plot(t_meas, rad2deg(log.signals(9).values(active_indices) - lamb_traj))
 grid on
+
+figure
+subplot(211)
+hold on
+grid on
+plot(t_meas, rad2deg(eps_traj(:, 1)))
+plot(t_meas, rad2deg(log.signals(8).values(active_indices)))
+plot(t_meas, rad2deg(lamb_traj(:, 1)))
+plot(t_meas, rad2deg(log.signals(9).values(active_indices)))
+
+subplot(212)
+hold on
+grid on
+vf_meas = log.signals(1).values(:);
+vb_meas = log.signals(2).values(:);
+plot(t_meas, vf_meas(active_indices))
+plot(t_meas, vb_meas(active_indices))
