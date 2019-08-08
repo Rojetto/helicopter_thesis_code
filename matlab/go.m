@@ -4,5 +4,6 @@ addpath simulations
 addpath util
 addpath autodiff
 addpath trajectories
+addpath one_offs
 load trajectories/e_-10_10_l_0_120_t_20.mat
 open heli_master_2015b
