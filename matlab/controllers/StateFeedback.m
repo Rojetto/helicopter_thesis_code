@@ -1,5 +1,5 @@
 classdef StateFeedback < HeliController    
-    properties (Nontunable)
+    properties
         K = zeros(2, 6);
     end
     
