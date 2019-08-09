@@ -48,10 +48,6 @@ classdef TimeVariantLQR < HeliController
             
             out = u_d + u_diff;
             
-            if t == te
-                out = u_d;
-            end
-            
             debug_out = [];
         end
     end
