@@ -9,11 +9,11 @@ classdef GainSchedulingPid < HeliController
     end
     
     properties
-        elevation_levels = [-20, -10, 0, 10, 20]
+        elevation_levels = [-10, 0, 10, 20]
         %elevation_pid_gains Elevation PID
-        elevation_pid_gains = [15, 0.1, 7]
+        elevation_pid_gains = [15, 3, 7]
         %travel_pitch_pid_gains Travel-Pitch PID
-        travel_pitch_pid_gains = [ 10, 0, 10; 5, 0, 5; 2, 0, 2; 2, 0, 2; 2.5, 0, 2.5 ]
+        travel_pitch_pid_gains = [ 4 0.5, 3.5; 2.5, 0.5, 3; 2.5, 0.5, 3; 2.5, 0.5, 3]
         %pitch_vd_pid_gains Pitch-Vd PID
         pitch_vd_pid_gains = [4, 0.1, 2]
     end
