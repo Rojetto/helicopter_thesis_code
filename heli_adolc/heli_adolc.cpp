@@ -257,26 +257,26 @@ void calcLambda(double *X, double *Y)
     int m = 2;
 
     double **result = myalloc(m, r+1);
-    double L3fg1h[2];
-    double L3fg2h[2];
-    double L3fh[2];
+    double L4fg1h[2];
+    double L4fg2h[2];
+    double L4fh[2];
 
     lie_scalar(tapeF, tapeH, n, m, X, r, result);
-    L3fh[0] = result[0][r];
-    L3fh[1] = result[1][r];
+    L4fh[0] = result[0][r];
+    L4fh[1] = result[1][r];
 
     lie_scalar(tapeFG1, tapeH, n, m, X, r, result);
-    L3fg1h[0] = result[0][r];
-    L3fg1h[1] = result[1][r];
+    L4fg1h[0] = result[0][r];
+    L4fg1h[1] = result[1][r];
 
     lie_scalar(tapeFG2, tapeH, n, m, X, r, result);
-    L3fg2h[0] = result[0][r];
-    L3fg2h[1] = result[1][r];
+    L4fg2h[0] = result[0][r];
+    L4fg2h[1] = result[1][r];
 
-    Y[0] = L3fg1h[0] - L3fh[0];
-    Y[1] = L3fg1h[1] - L3fh[1];
-    Y[2] = L3fg2h[0] - L3fh[0];
-    Y[3] = L3fg2h[1] - L3fh[1];
+    Y[0] = L4fg1h[0] - L4fh[0];
+    Y[1] = L4fg1h[1] - L4fh[1];
+    Y[2] = L4fg2h[0] - L4fh[0];
+    Y[3] = L4fg2h[1] - L4fh[1];
 
     myfree(result);
 }
@@ -298,7 +298,7 @@ void calcPhi(double *X, double *Y)
     myfree(result);
 }
 
-void calcPhiJacobian(double *X, double*Y)
+void calcPhiJacobian(double *X, double *Y)
 {
     int r = 4;
     int n = 8;
@@ -315,6 +315,33 @@ void calcPhiJacobian(double *X, double*Y)
             Y[i + r + j*n] = result[1][j][i];
         }
     }
+
+    myfree(result);
+}
+
+void calcRequiredDerivatives(double *X, double *Y)
+{
+    int r = 4;
+    int n = 8;
+    int m = 2;
+
+    double **result = myalloc(m, r+1);
+    lie_scalar(tapeF, tapeH, n, m, X, r, result);
+
+    for (int i = 0; i <= r; i++) {
+        Y[i] = result[0][i];
+        Y[i + r + 1] = result[1][i];
+    }
+
+    lie_scalar(tapeFG1, tapeH, n, m, X, r, result);
+
+    Y[10] = result[0][r];
+    Y[11] = result[1][r];
+
+    lie_scalar(tapeFG2, tapeH, n, m, X, r, result);
+
+    Y[12] = result[0][r];
+    Y[13] = result[1][r];
 
     myfree(result);
 }

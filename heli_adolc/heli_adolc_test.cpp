@@ -17,6 +17,7 @@ int main()
     double *phi = myalloc(n);
     double *phi_jac_result = myalloc(n*n);
     double **phi_jac = myalloc2(n, n);
+    double *all_derivs = myalloc(14);
 
     X[0] = 1.0;
     X[1] = 2.0;
@@ -79,6 +80,13 @@ int main()
     elapsed_microseconds.QuadPart /= frequency.QuadPart;
 
     cout << "Time for " << n_calls << " calls to calcLambda() in us: " << elapsed_microseconds.QuadPart << "\n";
+
+    calcRequiredDerivatives(X, all_derivs);
+    for (int i = 0; i < 14; i++)
+    {
+        cout << all_derivs[i] << "\t";
+    }
+    cout << "\n";
 
     return 0;
 }
