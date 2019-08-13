@@ -20,11 +20,9 @@ tau_e = t(end);
 n_taus = floor(tau_e/riccati_step_width + 1);
 riccati_tau = linspace(0, tau_e, n_taus);
 
-
 P_triu_0 = TimeVariantLQR.full_to_triu(S);
 
 %% solving the riccati equation
-
 
 [~, riccati_P_triu_tau] = ode45(@(tau, P_triu) TimeVariantLQR.riccati_rhs(tau, P_triu, trajectory, R_inv, Q), riccati_tau, P_triu_0);
 

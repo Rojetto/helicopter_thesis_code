@@ -5,9 +5,9 @@ classdef TimeVariantLQRI < HeliController
     end
     
     properties (Nontunable)
-        Q = diag([3, 50, 20, 2, 1, 5, 1, 1, 0.1, 10, 10])
+        Q = diag([3, 50, 20, 2, 1, 5, 0.1, 10, 10])
         R = diag([1, 1])
-        S = diag([3, 50, 20, 2, 1, 5, 1, 1, 0.1, 10, 10])
+        S = diag([3, 50, 20, 2, 1, 5, 0.1, 10, 10])
         
         riccati_tau
         riccati_P_triu_tau
@@ -29,7 +29,7 @@ classdef TimeVariantLQRI < HeliController
         end
         
         function [out, debug_out] = control(obj, t, x_in)
-            x = reshape(x_in(1:8), 8, 1);
+            x = reshape(x_in(1:6), 6, 1);
             te = obj.trajectory.t(end);
             if t > te
                 t = te;
@@ -43,8 +43,6 @@ classdef TimeVariantLQRI < HeliController
                 traj_eval.phi(2); 
                 traj_eval.eps(2); 
                 traj_eval.lamb(2);
-                traj_eval.vf(1);
-                traj_eval.vb(1)
             ];
             x_diff = x - x_d;
             obj.yi = obj.yi + x_diff(1:3)*obj.step_width;
@@ -59,10 +57,6 @@ classdef TimeVariantLQRI < HeliController
             u_diff = - obj.R_inv * B' * P * x_bar;
             
             out = u_d + u_diff;
-            
-            if t == te
-                out = u_d;
-            end
             
             debug_out = [];
         end
@@ -105,17 +99,15 @@ classdef TimeVariantLQRI < HeliController
             x4 = traj_eval.phi(2);
             x5 = traj_eval.eps(2);
             x6 = traj_eval.lamb(2);
-            x7 = traj_eval.vf(1);
-            x8 = traj_eval.vb(1);
             
             u1 = traj_eval.vf(1);
             u2 = traj_eval.vb(1);
             
-            A = zeros(11);
-            A(1:8, 1:8) = compute_A_full(x1, x2, x3, x4, x5, x6, x7, x8, u1, u2);
-            A(9:11, 1:3) = eye(3);
-            B = zeros(11, 2);
-            B(1:8,:) = compute_B_full(x1, x2, x3, x4, x5, x6, x7, x8, u1, u2);
+            A = zeros(9);
+            A(1:6, 1:6) = compute_A_6_states(x1, x2, x3, x4, x5, x6, u1, u2);
+            A(7:9, 1:3) = eye(3);
+            B = zeros(9, 2);
+            B(1:6,:) = compute_B_6_states(x1, x2, x3, x4, x5, x6, u1, u2);
         end
     end
 end
