@@ -9,6 +9,7 @@ int tapeH1 = 1;
 int tapeH2 = 2;
 int tapeFG1 = 3;
 int tapeFG2 = 4;
+int tapeH = 5;
 
 const double g = 9.81;
 
@@ -25,7 +26,6 @@ const double m_h = 1.2006;
 const double mup = 0.0334;
 const double mue = 0.0755;
 const double mul = 0.2569;
-
 
 void functionF(adouble *X, adouble *Y)
 {
@@ -88,6 +88,12 @@ void functionG2(adouble *X, adouble *Y)
     Y[7] = 0.0;
 }
 
+void functionH(adouble *X, adouble *Y)
+{
+    Y[0] = X[1];  // epsilon
+    Y[1] = X[2];  // lambda
+}
+
 void functionH1(adouble *X, adouble *Y)
 {
     adouble eps = X[1];
@@ -103,13 +109,16 @@ void functionH2(adouble *X, adouble *Y)
 void buildTapes()
 {
     int n = 8;
+    int m = 2;
 
     adouble *X = new adouble[n];
     adouble *Y = new adouble[n];
     adouble *Y1 = new adouble[n];
     adouble *Y2 = new adouble[n];
+    adouble *H = new adouble[m];
     adouble Z;
     double *Yp = myalloc(n);
+    double *Hp = myalloc(m);
     double Zp = 0.0;
 
     // Tape for f
@@ -126,6 +135,21 @@ void buildTapes()
     {
         Y[i] >>= Yp[i];
     }
+
+    trace_off();
+
+    // Tape for h
+    trace_on(tapeH);
+
+    for (int i = 0; i < n; i++)
+    {
+        X[i] <<= 0;
+    }
+
+    functionH(X, H);
+
+    H[0] >>= Hp[0];
+    H[1] >>= Hp[1];
 
     trace_off();
 
@@ -215,13 +239,13 @@ void calcGamma(double *X, double *Y)
 {
     int d = 4;
     int n = 8;
+    int m = 2;
 
-    double *result = myalloc(d + 1);
+    double **result = myalloc(m, d + 1);
 
-    lie_scalar(tapeF, tapeH1, n, X, d, result);
-    Y[0] = result[d];
-    lie_scalar(tapeF, tapeH2, n, X, d, result);
-    Y[1] = result[d];
+    lie_scalar(tapeF, tapeH, n, m, X, d, result);
+    Y[0] = result[0][d];
+    Y[1] = result[1][d];
 
     myfree(result);
 }
@@ -230,26 +254,29 @@ void calcLambda(double *X, double *Y)
 {
     int r = 4;
     int n = 8;
+    int m = 2;
 
-    double *result = myalloc(r+1);
+    double **result = myalloc(m, r+1);
+    double L3fg1h[2];
+    double L3fg2h[2];
+    double L3fh[2];
 
-    lie_scalar(tapeF, tapeH1, n, X, r, result);
-    double Lfh1 = result[r];
-    lie_scalar(tapeF, tapeH2, n, X, r, result);
-    double Lfh2 = result[r];
-    lie_scalar(tapeFG1, tapeH1, n, X, r, result);
-    double Lfg1h1 = result[r];
-    lie_scalar(tapeFG1, tapeH2, n, X, r, result);
-    double Lfg1h2 = result[r];
-    lie_scalar(tapeFG2, tapeH1, n, X, r, result);
-    double Lfg2h1 = result[r];
-    lie_scalar(tapeFG2, tapeH2, n, X, r, result);
-    double Lfg2h2 = result[r];
+    lie_scalar(tapeF, tapeH, n, m, X, r, result);
+    L3fh[0] = result[0][r];
+    L3fh[1] = result[1][r];
 
-    Y[0] = Lfg1h1 - Lfh1;
-    Y[1] = Lfg1h2 - Lfh2;
-    Y[2] = Lfg2h1 - Lfh1;
-    Y[3] = Lfg2h2 - Lfh2;
+    lie_scalar(tapeFG1, tapeH, n, m, X, r, result);
+    L3fg1h[0] = result[0][r];
+    L3fg1h[1] = result[1][r];
+
+    lie_scalar(tapeFG2, tapeH, n, m, X, r, result);
+    L3fg2h[0] = result[0][r];
+    L3fg2h[1] = result[1][r];
+
+    Y[0] = L3fg1h[0] - L3fh[0];
+    Y[1] = L3fg1h[1] - L3fh[1];
+    Y[2] = L3fg2h[0] - L3fh[0];
+    Y[3] = L3fg2h[1] - L3fh[1];
 
     myfree(result);
 }
@@ -258,19 +285,14 @@ void calcPhi(double *X, double *Y)
 {
     int r = 4;
     int n = 8;
+    int m = 2;
 
-    double *result = myalloc(r);
+    double **result = myalloc(m, r);
 
-    lie_scalar(tapeF, tapeH1, n, X, r - 1, result);
-    for (int i = 0; i < r; i++)
-    {
-        Y[i] = result[i];
-    }
-
-    lie_scalar(tapeF, tapeH2, n, X, r - 1, result);
-    for (int i = 0; i < r; i++)
-    {
-        Y[i+r] = result[i];
+    lie_scalar(tapeF, tapeH, n, m, X, r - 1, result);
+    for (int i = 0; i < r; i++) {
+        Y[i] = result[0][i];
+        Y[i+r] = result[1][i];
     }
 
     myfree(result);
@@ -280,24 +302,17 @@ void calcPhiJacobian(double *X, double*Y)
 {
     int r = 4;
     int n = 8;
+    int m = 2;
 
-    double **result = myalloc2(n, r);
+    double ***result = myalloc(m, n, r);
 
-    lie_gradient(tapeF, tapeH1, n, X, r - 1, result);
+    lie_gradient(tapeF, tapeH, n, m, X, r - 1, result);
     for (int i = 0; i < r; i++)
     {
         for (int j = 0; j < n; j++)
         {
-            Y[i + j*n] = result[j][i];
-        }
-    }
-
-    lie_gradient(tapeF, tapeH2, n, X, r - 1, result);
-    for (int i = 0; i < r; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
-            Y[i + r + j*n] = result[j][i];
+            Y[i + j*n] = result[0][j][i];
+            Y[i + r + j*n] = result[1][j][i];
         }
     }
 

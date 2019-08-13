@@ -1,6 +1,7 @@
 #include "heli_adolc.h"
 #include "adolc/adutils.h"
 #include <iostream>
+#include <Windows.h>
 
 int main()
 {
@@ -59,6 +60,25 @@ int main()
         }
         cout << "\n";
     }
+
+    LARGE_INTEGER start_time, end_time, elapsed_microseconds;
+    LARGE_INTEGER frequency;
+
+    int n_calls = 1000;
+
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&start_time);
+
+    for (int i = 0; i < n_calls; i++) {
+        calcLambda(X, lambda_result);
+    }
+
+    QueryPerformanceCounter(&end_time);
+    elapsed_microseconds.QuadPart = end_time.QuadPart - start_time.QuadPart;
+    elapsed_microseconds.QuadPart *= 1000000;
+    elapsed_microseconds.QuadPart /= frequency.QuadPart;
+
+    cout << "Time for " << n_calls << " calls to calcLambda() in us: " << elapsed_microseconds.QuadPart << "\n";
 
     return 0;
 }
