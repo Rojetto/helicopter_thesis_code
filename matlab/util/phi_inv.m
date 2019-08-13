@@ -1,6 +1,6 @@
 function x = phi_inv(z, x_guess)
 step_tol = 1e-9;
-step_limit = 100;
+step_limit = 5;
 
 if nargin==1
     x_guess = [0; 0; -0.2; 0.02; 0; 0; 0; 0];
@@ -28,7 +28,7 @@ while true
     end
     
     if i >= step_limit
-        disp('phi_inv did not converge, aborting')
+        %disp('phi_inv did not converge, aborting')
         break
     end
 end
