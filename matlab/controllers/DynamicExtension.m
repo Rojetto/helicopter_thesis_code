@@ -52,24 +52,18 @@ classdef DynamicExtension < HeliController
         end
         
         function [u, debug_out] = control(obj, t, x)
-            debug_out = zeros(14, 1);
+            debug_out = zeros(24, 1);
             
             %% Alternative state contains Fs and dFs in x7 and x8
             x_alt = zeros(8, 1);
             x_alt(1:6) = x(1:6);
             x_alt(7:8) = obj.x78;
             
-            debug_out(1:2) = obj.x78;
-            
             %% Compute coordinate transformation, and two values for linearized system
             if coder.target('MATLAB')
-                phi = c_calcPhi_mex(x_alt);
-                gamma = c_calcGamma_mex(x_alt);
-                lambda = c_calcLambda_mex(x_alt);
+                [phi, gamma, lambda] = c_calcPhiGammaLambda_mex(x_alt);
             else
-                phi = c_calcPhi(x_alt);
-                gamma = c_calcGamma(x_alt);
-                lambda = c_calcLambda(x_alt);
+                [phi, gamma, lambda] = c_calcPhiGammaLambda(x_alt);
             end
             
             %% Evaluate trajectory
@@ -88,8 +82,6 @@ classdef DynamicExtension < HeliController
                 z_tilde(5:8) = phi(5:8) - lamb_traj(1:4)';
             end
             
-            debug_out(3:10) = z_tilde;
-            
             %% Linearization and stabilizing feedback
             if obj.smc
                 %% SMC
@@ -107,8 +99,6 @@ classdef DynamicExtension < HeliController
                 
                 ddFs = u_alt(1);
                 Fd = u_alt(2);
-                
-                debug_out(13:14) = u_alt;
             else
                 %% No SMC
                 sum(obj.k_eps' .* z_tilde(1:4));
@@ -139,8 +129,12 @@ classdef DynamicExtension < HeliController
             uf = Fr_inv(Ff, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
             ub = Fr_inv(Fb, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
             
-            %% High Gain observer step to estimate z
-            if obj.use_high_gain_observer
+            %% High Gain observer step to estimate z            
+            %if obj.use_high_gain_observer
+                debug_out(1:8) = x_alt;
+                debug_out(9:16) = obj.x_est;
+                debug_out(17:24) = obj.z_est;
+                
                 u_obs = [ddFs; Fd];
                 h = obj.step_width;
 
@@ -152,16 +146,21 @@ classdef DynamicExtension < HeliController
                 obj.z_est = ode_step(@DynamicExtension.obs_ode_rhs, obj.z_est, u_obs, h, ode_params);
                 
                 obj.x_est = phi_inv(obj.z_est, obj.x_est);
-            end
+            %end
             
             %% Controller output
             u = [uf; ub];
+%             if t > 60
+%                 u = [1; 1];
+%             else
+%                 u = [0; 0];
+%             end
         end
     end
     
     methods (Access = protected)
         function out = getDebugOutputSize(~)
-            out = 14;
+            out = 24;
         end
     end
     
@@ -174,20 +173,17 @@ classdef DynamicExtension < HeliController
         
         function dz_est = obs_ode_rhs(z_est, u, params)
             y = params(1:2);
-            last_x = params(3:10);
+            % WARNING, only works when z_est = Phi(x_est), needs to be
+            % ensured externally
+            x_est = params(3:10);
             K = zeros(8, 2);
             K(:) = params(11:26);
-            
-            %% Calculate state in original coordinates
-            x = phi_inv(z_est, last_x);
 
             %% Calculate Gamma and Lambda from state in orig coords
             if coder.target('MATLAB')
-                gamma = c_calcGamma_mex(x);
-                lambda = c_calcLambda_mex(x);
+                [~, gamma, lambda] = c_calcPhiGammaLambda_mex(x_est);
             else
-                gamma = c_calcGamma(x);
-                lambda = c_calcLambda(x);
+                [~, gamma, lambda] = c_calcPhiGammaLambda(x_est);
             end
             %% Calculate derivative of linearized state
             dz_est = zeros(8, 1);
