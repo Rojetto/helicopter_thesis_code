@@ -23,8 +23,11 @@ function dx = system_f_with_params(x, u, ...
     dphi = x(4);
     deps = x(5);
     dlamb = x(6);
-    wf = x(7);
-    wb = x(8);
+    
+    if term_motor_pt1
+        wf = x(7);
+        wb = x(8);
+    end
 
     vf = u(1);
     vb = u(2);
@@ -108,6 +111,10 @@ function dx = system_f_with_params(x, u, ...
     ddeps = ddeps_rhs / p_eps_1;
     ddlamb = ddlamb_rhs / p_lamb_1;
 
-    dx = [dphi; deps; dlamb; ddphi; ddeps; ddlamb; dwf; dwb];
+    if term_motor_pt1
+        dx = [dphi; deps; dlamb; ddphi; ddeps; ddlamb; dwf; dwb];
+    else
+        dx = [dphi; deps; dlamb; ddphi; ddeps; ddlamb];
+    end
 end
 
