@@ -1,30 +1,27 @@
 classdef TimeVariantLQRI < HeliController
     properties (Access=private)
-        R_inv
         yi
     end
     
-    properties (Nontunable)
+    properties
         Q = diag([3, 50, 20, 2, 1, 5, 0.1, 10, 10])
         R = diag([1, 1])
         S = diag([3, 50, 20, 2, 1, 5, 0.1, 10, 10])
         
         riccati_tau
         riccati_P_triu_tau
-        
+    end    
+    
+    properties (Nontunable)
         step_width = 0.002;
     end
     
     methods
-        function obj = TimeVariantLQRI()
-            obj.R_inv = zeros(2);
-            
+        function obj = TimeVariantLQRI()            
             obj.yi = zeros(3, 1);
         end
         
         function initialize(obj)
-            obj.R_inv = inv(obj.R);
-            
             obj.yi = zeros(3, 1);
         end
         
@@ -54,7 +51,7 @@ classdef TimeVariantLQRI < HeliController
             P = TimeVariantLQRI.triu_to_full(P_triu);
             [~, B] = TimeVariantLQRI.get_SS_at_time(obj.trajectory, t);
             
-            u_diff = - obj.R_inv * B' * P * x_bar;
+            u_diff = obj.R \ (-B' * P * x_bar);
             
             out = u_d + u_diff;
             
