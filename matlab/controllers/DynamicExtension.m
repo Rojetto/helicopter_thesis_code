@@ -16,7 +16,10 @@ classdef DynamicExtension < HeliController
         a1 = 1;
         a2 = 1;
         
-        K = [8 0; 24 0; 32 0; 16 0; 0 8; 0 24; 0 32; 0 16]
+        b1 = 100;
+        b2 = 1;
+        
+        K
     end
     
     properties (Nontunable)
@@ -29,6 +32,7 @@ classdef DynamicExtension < HeliController
     properties (Nontunable, Logical)
         smc = true;
         use_high_gain_observer = true;
+        use_weird_observer = true;
     end
     
     methods
@@ -52,7 +56,7 @@ classdef DynamicExtension < HeliController
         end
         
         function [u, debug_out] = control(obj, t, x)
-            debug_out = zeros(24, 1);
+            debug_out = zeros(36, 1);
             
             %% Alternative state contains Fs and dFs in x7 and x8
             x_alt = zeros(8, 1);
@@ -72,7 +76,7 @@ classdef DynamicExtension < HeliController
             eps_traj = traj_eval.eps;
             lamb_traj = traj_eval.lamb;
             
-            if obj.use_high_gain_observer
+            if obj.use_high_gain_observer || obj.use_weird_observer
                 z_tilde = zeros(8, 1);
                 z_tilde(1:4) = obj.z_est(1:4) - eps_traj(1:4)';
                 z_tilde(5:8) = obj.z_est(5:8) - lamb_traj(1:4)';
@@ -87,21 +91,26 @@ classdef DynamicExtension < HeliController
                 %% SMC
                 w = zeros(2, 1);
                 sigma1 = sum(obj.k_eps' .* z_tilde(1:4));
-                w(1) = -gamma(1) - sum(obj.k_eps(1:3)' .* z_tilde(2:4)) - obj.a1 * sign(sigma1);
+                w(1) = -gamma(1) - sum(obj.k_eps(1:3)' .* z_tilde(2:4)) - obj.a1 * tanh(obj.b1 * sigma1);
                 
                 sigma2 = sum(obj.k_lamb' .* z_tilde(5:8));
-                w(2) = -gamma(2) - sum(obj.k_lamb(1:3)' .* z_tilde(6:8)) - obj.a2 * sign(sigma2);
-                
-                debug_out(11) = sigma1;
-                debug_out(12) = sigma2;
+                w(2) = -gamma(2) - sum(obj.k_lamb(1:3)' .* z_tilde(6:8)) - obj.a2 * tanh(obj.b2 * sigma2);
                 
                 u_alt = lambda \ w;
                 
                 ddFs = u_alt(1);
                 Fd = u_alt(2);
+                
+                debug_out(25) = sigma1;
+                debug_out(26) = sigma2;
+                debug_out(27:28) = w;
+                debug_out(29:30) = u_alt;
+                debug_out(31) = -gamma(1);
+                debug_out(32) = - sum(obj.k_eps(1:3)' .* z_tilde(2:4));
+                debug_out(33) = - obj.a1 * sign(sigma1);
+                debug_out(34:36) = z_tilde(2:4);
             else
                 %% No SMC
-                sum(obj.k_eps' .* z_tilde(1:4));
                 v1 = eps_traj(5) - sum(obj.k_eps' .* z_tilde(1:4));
 
                 v2 = lamb_traj(5) - sum(obj.k_lamb' .* z_tilde(5:8));
@@ -130,7 +139,7 @@ classdef DynamicExtension < HeliController
             ub = Fr_inv(Fb, obj.c.p1, obj.c.q1, obj.c.p2, obj.c.q2);
             
             %% High Gain observer step to estimate z            
-            %if obj.use_high_gain_observer
+            if obj.use_high_gain_observer
                 debug_out(1:8) = x_alt;
                 debug_out(9:16) = obj.x_est;
                 debug_out(17:24) = obj.z_est;
@@ -143,10 +152,26 @@ classdef DynamicExtension < HeliController
                 ode_params(3:10) = obj.x_est;
                 ode_params(11:26) = obj.K;
 
-                obj.z_est = ode_step(@DynamicExtension.obs_ode_rhs, obj.z_est, u_obs, h, ode_params);
+                obj.z_est = ode_step(@DynamicExtension.high_gain_ode_rhs, obj.z_est, u_obs, h, ode_params);
                 
                 obj.x_est = phi_inv(obj.z_est, obj.x_est);
-            %end
+            elseif obj.use_weird_observer
+                debug_out(1:8) = x_alt;
+                debug_out(9:16) = obj.x_est;
+                debug_out(17:24) = obj.z_est;
+                
+                u_obs = [ddFs; Fd];
+                h = obj.step_width;
+
+                ode_params = zeros(53, 1);
+                ode_params(1:5) = x_alt([1, 2, 3, 7, 8]); % y
+                ode_params(6:13) = obj.x_est;
+                ode_params(14:53) = obj.K;
+
+                obj.z_est = ode_step(@DynamicExtension.weird_ode_rhs, obj.z_est, u_obs, h, ode_params);
+                
+                obj.x_est = phi_inv(obj.z_est, obj.x_est);
+            end
             
             %% Controller output
             u = [uf; ub];
@@ -160,7 +185,7 @@ classdef DynamicExtension < HeliController
     
     methods (Access = protected)
         function out = getDebugOutputSize(~)
-            out = 24;
+            out = 36;
         end
     end
     
@@ -171,7 +196,7 @@ classdef DynamicExtension < HeliController
             dx78(2) = ddFs;
         end
         
-        function dz_est = obs_ode_rhs(z_est, u, params)
+        function dz_est = high_gain_ode_rhs(z_est, u, params)
             y = params(1:2);
             % WARNING, only works when z_est = Phi(x_est), needs to be
             % ensured externally
@@ -200,6 +225,38 @@ classdef DynamicExtension < HeliController
             
             %% Add observer feedback
             y_est = z_est([1, 5]);
+            dz_est = dz_est + K*(y - y_est);
+        end
+        
+        function dz_est = weird_ode_rhs(z_est, u, params)
+            y = params(1:5);
+            % WARNING, only works when z_est = Phi(x_est), needs to be
+            % ensured externally
+            x_est = params(6:13);
+            K = zeros(8, 5);
+            K(:) = params(14:53);
+
+            %% Calculate Gamma and Lambda from state in orig coords
+            if coder.target('MATLAB')
+                [~, gamma, lambda] = c_calcPhiGammaLambda_mex(x_est);
+            else
+                [~, gamma, lambda] = c_calcPhiGammaLambda(x_est);
+            end
+            %% Calculate derivative of linearized state
+            dz_est = zeros(8, 1);
+
+            dz_est(1) = z_est(2);
+            dz_est(2) = z_est(3);
+            dz_est(3) = z_est(4);
+
+            dz_est(5) = z_est(6);
+            dz_est(6) = z_est(7);
+            dz_est(7) = z_est(8);
+
+            dz_est([4,8]) = gamma + lambda * u;
+            
+            %% Add observer feedback
+            y_est = x_est([1, 2, 3, 7, 8]);
             dz_est = dz_est + K*(y - y_est);
         end
     end
