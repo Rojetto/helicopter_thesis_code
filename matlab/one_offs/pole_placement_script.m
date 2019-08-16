@@ -1,7 +1,7 @@
-four_poles = false;
+four_poles = true;
 
 if four_poles
-p = [-4 -4 -4 -4];
+p = [-20 -2 -0.5+2i -0.5-2i];
 else
 p = [-0.5 -0.5 -0.5];
 end
@@ -14,11 +14,11 @@ poly = expand((x - p(1))*(x - p(2))*(x - p(3)));
 end
 poly_coeffs = coeffs(poly);
 
-k0 = double(poly_coeffs(1))
-k1 = double(poly_coeffs(2))
-k2 = double(poly_coeffs(3))
+k0 = double(poly_coeffs(1));
+k1 = double(poly_coeffs(2));
+k2 = double(poly_coeffs(3));
 if four_poles
-k3 = double(poly_coeffs(4))
+k3 = double(poly_coeffs(4));
 end
 
 %sim pole_placement_test
@@ -49,11 +49,17 @@ else
 ySol(t_symb) = dsolve(ode, [cond1 cond2 cond3])
 end
 
+if four_poles
+    disp(mat2str([k0 k1 k2 k3]))
+else
+    disp(mat2str([k0 k1 k2 1]))
+end
+
 t_plot = 0:0.1:10;
-% figure
-% plot(t_plot, ySol(t_plot))
-% grid
+figure
+plot(t_plot, ySol(t_plot))
+grid
 
 if four_poles
-disp(mat2str([k3, 0; k2, 0; k1, 0; k0, 0; 0, k3; 0, k2; 0, k1; 0, k0]))
+%disp(mat2str([k3, 0; k2, 0; k1, 0; k0, 0; 0, k3; 0, k2; 0, k1; 0, k0]))
 end
