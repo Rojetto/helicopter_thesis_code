@@ -3,7 +3,7 @@ four_poles = false;
 if four_poles
 p = [-4 -4 -4 -4];
 else
-p = [-3 -3 -3];
+p = [-0.5 -0.5 -0.5];
 end
 
 syms x

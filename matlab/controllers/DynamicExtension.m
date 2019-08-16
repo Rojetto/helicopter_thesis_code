@@ -56,7 +56,7 @@ classdef DynamicExtension < HeliController
         end
         
         function [u, debug_out] = control(obj, t, x)
-            debug_out = zeros(36, 1);
+            debug_out = zeros(44, 1);
             
             %% Alternative state contains Fs and dFs in x7 and x8
             x_alt = zeros(8, 1);
@@ -69,6 +69,8 @@ classdef DynamicExtension < HeliController
             else
                 [phi, gamma, lambda] = c_calcPhiGammaLambda(x_alt);
             end
+            
+            debug_out(37:44) = phi;
             
             %% Evaluate trajectory
             
@@ -185,7 +187,7 @@ classdef DynamicExtension < HeliController
     
     methods (Access = protected)
         function out = getDebugOutputSize(~)
-            out = 36;
+            out = 44;
         end
     end
     
