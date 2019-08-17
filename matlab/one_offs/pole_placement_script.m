@@ -1,9 +1,9 @@
-four_poles = true;
+four_poles = false;
 
 if four_poles
 p = [-20 -2 -0.5+2i -0.5-2i];
 else
-p = [-0.5 -0.5 -0.5];
+p = [-2 -3+1i -3-1i];
 end
 
 syms x
