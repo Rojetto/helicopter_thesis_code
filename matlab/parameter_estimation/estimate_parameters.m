@@ -43,7 +43,7 @@ exp1_p_phi_2 = sys_est.Report.Parameters.ParVector(2);
 
 [clips, data, inits] = make_experiment_clips(...
     {'exp1_free_swing_large', 'exp1_free_swing_small'}, 'phi', ...
-    'StartTimes', [10, 5], 'EndTimes', [41, 26]);
+    'StartTimes', [10, 5], 'EndTimes', [41, 26], 'ClipLength', 100);
 
 sys_init = idnlgrey('grey_exp1', [1, 2, 2], [exp1_p_phi_1; exp1_p_phi_2; 0.04], inits);
 sys_init.Parameters(1).Fixed = true;
@@ -58,7 +58,7 @@ if do_plots
 end
 
 % resulting parameters
-mu_phi = sys_est.Report.Parameters.ParVector(3);
+mu_phi = sys_est.Report.Parameters.ParVector(3)
 
 %% get eps parameters for exp3 but ignore friction coefficient result
 
@@ -92,7 +92,7 @@ exp3_p_eps_2 = sys_est.Report.Parameters.ParVector(2);
 
 [clips, data, inits] = make_experiment_clips(...
     {'exp3_free_swing_large', 'exp3_free_swing_small'}, 'eps', ...
-    'StartTimes', [9, 6.5], 'EndTimes', [100, 70]);
+    'StartTimes', [9, 6.5], 'EndTimes', [100, 70], 'ClipLength', 100);
 
 sys_init = idnlgrey('grey_exp3', [1, 2, 2], [exp3_p_eps_1; exp3_p_eps_2; 0.076], inits);
 sys_init.Parameters(1).Fixed = true;
@@ -107,7 +107,7 @@ if do_plots
 end
 
 % resulting parameters
-mu_eps = sys_est.Report.Parameters.ParVector(3);
+mu_eps = sys_est.Report.Parameters.ParVector(3)
 
 
 %% p_eps_2 and p_eps_3 from static elevation steps
@@ -191,7 +191,7 @@ p_eps_1 = sys_est.Report.Parameters.ParVector(1);
 
 %% get p_eps_2 and p_eps_3
 [clips, data, inits] = make_experiment_clips({'elevation_steps'}, 'eps', ...
-    'StartTimes', 5, 'EndTimes', 171, 'ResamplingDecimation', 4);
+    'StartTimes', 5, 'EndTimes', 171, 'ResamplingDecimation', 4, 'ClipLength', 200);
 
 sys_init = idnlgrey('grey_exp5', [1, 2, 2], [p_eps_1; 1.33; 0.838; mu_eps], inits);
 sys_init.Parameters(1).Fixed = true;
@@ -261,17 +261,18 @@ dc = -g*(dh*g*mh+p_eps_2)*intermediate2/intermediate1
 mc = -intermediate1/(g^2*intermediate2)
 
 %% exp4 lambda parameters
+if false
 p_lamb_1 = mh*(lh^2+lp^2) + mc*lc^2;
 
-files = {'exp4_lamb_feedback_rect_a10_f0_05',
-'exp4_lamb_feedback_sine_a20_f0_1',
-'exp4_lamb_feedback_sine_a20_f0_2_Vs7',
-%'exp4_lamb_open_step_phi_neg',
-%'exp4_lamb_open_step_phi_pos'
+files = {%'exp4_lamb_feedback_rect_a10_f0_05',
+%'exp4_lamb_feedback_sine_a20_f0_1',
+%'exp4_lamb_feedback_sine_a20_f0_2_Vs7',
+'exp4_lamb_open_step_phi_neg',
+'exp4_lamb_open_step_phi_pos'
 };
 
-start_times = [0, 0, 0];
-%start_times = [7, 7];
+%start_times = [0, 0, 0];
+start_times = [7, 7];
 %start_times = [0, 0, 0, 7, 7];
 
 [clips, data, inits] = make_experiment_clips(files, 'lamb',...
@@ -300,7 +301,52 @@ end
 % resulting parameters
 %p_lamb_1 = sys_est.Report.Parameters.ParVector(1);
 mu_lamb = sys_est.Report.Parameters.ParVector(2);
+end
+%% exp2 mu_lambda from free swing
+p_lamb_1 = mh*(lh^2+lp^2) + mc*lc^2;
 
+files = {%'exp4_lamb_feedback_rect_a10_f0_05',
+%'exp4_lamb_feedback_sine_a20_f0_1',
+%'exp4_lamb_feedback_sine_a20_f0_2_Vs7',
+%'exp4_lamb_open_step_phi_neg',
+%'exp4_lamb_open_step_phi_pos',
+'exp2_free_swing'
+};
+
+%start_times = [0, 0, 0];
+%start_times = [7, 7];
+%start_times = [0, 0, 0, 7, 7];
+start_times = [3];
+end_times = [60];
+
+[clips, data, inits] = make_experiment_clips(files, 'lamb',...
+    'InputVariables', {'uf', 'ub', 'phi'},...
+    'StartTimes', start_times,...
+    'EndTimes', end_times,...
+    'ClipLength', 90);
+n_clips = numel(clips);
+
+inits(end+1) = struct('Name', 'phi_off',...
+    'Unit', 'rad',...
+    'Value', zeros(1, n_clips),...
+    'Minimum', deg2rad(-10)*ones(1, n_clips),...
+    'Maximum', deg2rad(10)*ones(1, n_clips),...
+    'Fixed', false(1, n_clips));
+
+sys_init = idnlgrey('grey_exp4_only_lamb', [1, 3, 3], [p_lamb_1, 0.25], inits);
+sys_init.Parameters(1).Fixed = true;
+
+% estimate model parameters
+sys_est = nlgreyest(data, sys_init, 'Display', 'on');
+
+% plot
+if do_plots
+    plot_meas_and_fit(sys_est, data, 'Exp4 lambda parameters')
+end
+
+% resulting parameters
+%p_lamb_1 = sys_est.Report.Parameters.ParVector(1);
+mu_lamb = sys_est.Report.Parameters.ParVector(2);
 
 %%
 if false
