@@ -57,3 +57,16 @@ vf_meas = log.signals(1).values(:);
 vb_meas = log.signals(2).values(:);
 plot(t_meas, vf_meas(active_indices))
 plot(t_meas, vb_meas(active_indices))
+
+figure
+subplot(311)
+plot(t_meas, rad2deg(log.signals(10).values(active_indices)))
+grid on
+
+subplot(312)
+plot(t_meas, rad2deg(log.signals(11).values(active_indices)))
+grid on
+
+subplot(313)
+plot(t_meas, rad2deg(log.signals(12).values(active_indices)))
+grid on
