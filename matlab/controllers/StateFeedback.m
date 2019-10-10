@@ -23,10 +23,23 @@ classdef StateFeedback < HeliController
             u_d = [traj_eval.vf(1); traj_eval.vb(1)];
             
             u = u_d - obj.K * (x - x_d);
-            debug_out = [];
+            
+            T = [0.5, 0.5; 0.5, -0.5];
+            K_star = T * obj.K;
+            k_eps = K_star(1, 2);
+            k_deps = K_star(1, 5);
+            x_diff = x - x_d;
+            u_diff = - K_star * x_diff;
+            debug_out = [-k_eps * x_diff(2); -k_deps * x_diff(5); u_diff(1)];
         end
         
         function initialize(obj)
+        end
+    end
+    
+    methods (Access = protected)
+        function out = getDebugOutputSize(~)
+            out = 3;
         end
     end
 end

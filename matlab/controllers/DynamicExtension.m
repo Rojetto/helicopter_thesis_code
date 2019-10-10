@@ -91,21 +91,21 @@ classdef DynamicExtension < HeliController
             %% Linearization and stabilizing feedback
             if obj.smc
                 %% SMC
-                w = zeros(2, 1);
+                v = zeros(2, 1);
                 sigma1 = sum(obj.k_eps' .* z_tilde(1:4));
-                w(1) = -gamma(1) - sum(obj.k_eps(1:3)' .* z_tilde(2:4)) - obj.a1 * tanh(obj.b1 * sigma1);
+                v(1) = eps_traj(4) - sum(obj.k_eps(1:3)' .* z_tilde(2:4)) - obj.a1 * tanh(obj.b1 * sigma1);
                 
                 sigma2 = sum(obj.k_lamb' .* z_tilde(5:8));
-                w(2) = -gamma(2) - sum(obj.k_lamb(1:3)' .* z_tilde(6:8)) - obj.a2 * tanh(obj.b2 * sigma2);
+                v(2) = lamb_traj(4) - sum(obj.k_lamb(1:3)' .* z_tilde(6:8)) - obj.a2 * tanh(obj.b2 * sigma2);
                 
-                u_alt = lambda \ w;
+                u_alt = lambda \ (v - gamma);
                 
                 ddFs = u_alt(1);
                 Fd = u_alt(2);
                 
                 debug_out(25) = sigma1;
                 debug_out(26) = sigma2;
-                debug_out(27:28) = w;
+                debug_out(27:28) = v;
                 debug_out(29:30) = u_alt;
                 debug_out(31) = -gamma(1);
                 debug_out(32) = - sum(obj.k_eps(1:3)' .* z_tilde(2:4));

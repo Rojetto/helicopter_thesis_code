@@ -104,7 +104,8 @@ function dx = system_f_with_params(x, u, ...
     end
     
     if is_sim
-        %ddeps_rhs = ddeps_rhs + 0.04;
+        ddeps_rhs = ddeps_rhs + 0.04;
+        ddlamb_rhs = ddlamb_rhs + 0.02;
     end
 
     ddphi = ddphi_rhs / p_phi_1;
